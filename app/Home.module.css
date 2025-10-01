@@ -1,0 +1,134 @@
+/* app/Home.module.css */
+
+.container {
+  position: relative;
+  width: 400px;
+  height: 300px;
+}
+
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.background {
+  background-image: url("/Background2.png");
+  z-index: 1;
+}
+
+.dragon {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  top: 25px;
+  left: 25px;
+  background-image: url("/Dragon2.png");
+  background-size: cover;
+  z-index: 2;
+}
+
+.knight {
+  position: absolute;
+  width: 100px;
+  top: 190px;
+  left: 40px;
+  z-index: 2;
+}
+
+.hit {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  top: 105px;
+  left: 180px;
+  background-image: url("/Hit.png");
+  background-size: cover;
+  opacity: 0;
+  z-index: 3;
+}
+
+/* Animations */
+.wiggle {
+  animation: wiggle 0.5s ease;
+}
+
+@keyframes wiggle {
+  0% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(10px);
+  }
+  45% {
+    transform: translateX(-8px);
+  }
+  60% {
+    transform: translateX(8px);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+  90% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.flash {
+  animation: flash 0.6s forwards;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.jab {
+  animation: jab 0.5s ease;
+}
+
+@keyframes jab {
+  0% {
+    transform: translateX(0);
+  }
+  40% {
+    transform: translateX(40px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Button class (scoped!) */
+.attackButton {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+}
