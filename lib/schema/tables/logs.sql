@@ -1,8 +1,19 @@
 DROP TABLE IF EXISTS logs;
 CREATE TABLE logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    campaign_id INT NOT NULL,
+    campaign_id INT, -- nullable for ON DELETE SET NULL
     message TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
-)
+);
+
+DELIMITER $$
+CREATE TRIGGER logs_campaign_id_not_null
+BEFORE INSERT ON logs
+FOR EACH ROW
+BEGIN
+  IF NEW.campaign_id IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'campaign_id cannot be NULL on insert';
+  END IF;
+END$$
+DELIMITER ;
