@@ -1,3 +1,5 @@
+SET FOREIGN_KEY_CHECKS=0;
+
 -- Accounts table
 source schema/tables/accounts.sql;
 
@@ -23,3 +25,5 @@ source schema/tables/character_items.sql;
 source schema/tables/character_armours.sql;
 source schema/tables/character_weapons.sql;
 source schema/tables/character_shields.sql;
+
+SET FOREIGN_KEY_CHECKS=1;
