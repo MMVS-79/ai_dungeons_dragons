@@ -1,5 +1,7 @@
 // Run: GEMINI_API_KEY=your_key node test-gemini.js
 
+
+// OLD DEMO FILE 
 import { GoogleGenAI } from "@google/genai";
 
 const API_KEY = process.env.GEMINI_API_KEY;

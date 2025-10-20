@@ -4,7 +4,7 @@
 -- Campaigns table and related tables
 \i schema/tables/campaigns.sql
 \i schema/tables/chats.sql
-\i schema/tables/logs.sql
+\i schema/tables/event_history.sql
 
 -- Unit tables
 \i schema/tables/races.sql
