@@ -1,138 +1,38 @@
-"use client";
-import { useRef, useState, useEffect } from "react";
-import styles from "./Home.module.css";
+import Navbar from "./components/Navbar";
+import styles from "./page.module.css";
 
-interface Dragon {
-  id: number;
-  name: string;
-  hp: number;
-  max_hp: number;
-}
-
-export default function Home() {
-  const dragonRef = useRef<HTMLDivElement>(null);
-  const hitRef = useRef<HTMLDivElement>(null);
-  const knightRef = useRef<HTMLImageElement>(null);
-
-  const [dragon, setDragon] = useState<Dragon | null>(null);
-  const [loading, setLoading] = useState(true);
-  const ATTACK_DAMAGE = 10;
-
-  // Fetch dragon stats on mount
-  useEffect(() => {
-    fetchDragonStats();
-  }, []);
-
-  const fetchDragonStats = async () => {
-    try {
-      const response = await fetch("/api/dragon");
-      const data = await response.json();
-
-      if (data.success) {
-        setDragon(data.dragon);
-      }
-    } catch (error) {
-      console.error("Failed to fetch dragon:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const triggerAttack = async () => {
-    const dragonEl = dragonRef.current;
-    const hit = hitRef.current;
-    const knight = knightRef.current;
-
-    if (dragonEl) {
-      dragonEl.classList.remove(styles.wiggle);
-      void dragonEl.offsetWidth;
-      dragonEl.classList.add(styles.wiggle);
-    }
-
-    if (hit) {
-      hit.classList.remove(styles.flash);
-      void hit.offsetWidth;
-      hit.classList.add(styles.flash);
-    }
-
-    if (knight) {
-      knight.classList.remove(styles.jab);
-      void knight.offsetWidth;
-      knight.classList.add(styles.jab);
-    }
-
-    // NEW: Database update
-    try {
-      const response = await fetch("/api/dragon", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ damage: ATTACK_DAMAGE })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setDragon(data.dragon);
-
-        if (data.dragon.hp <= 0) {
-          alert("Dragon defeated! 🎉");
-        }
-      }
-    } catch (error) {
-      console.error("Attack failed:", error);
-    }
-  };
-
-  if (loading) {
-    return <div className={styles.loading}>Loading dragon stats...</div>;
-  }
-
+export default function Landing() {
   return (
-    <div>
-      <div className={styles.container}>
-        <div className={`${styles.layer} ${styles.background}`}></div>
-        <div
-          ref={dragonRef}
-          className={styles.dragon}
-        ></div>
-        <img
-          ref={knightRef}
-          src="/Knight.png"
-          alt="Knight"
-          className={styles.knight}
-        />
-        <div
-          ref={hitRef}
-          className={styles.hit}
-        ></div>
-      </div>
-
-      {/* NEW: HP Display */}
-      {dragon && (
-        <div className={styles.hpDisplay}>
-          <h2>{dragon.name}</h2>
-          <div className={styles.hpBar}>
-            <div
-              className={styles.hpFill}
-              style={{ width: `${(dragon.hp / dragon.max_hp) * 100}%` }}
-            />
-          </div>
-          <p className={styles.hpText}>
-            {dragon.hp} / {dragon.max_hp} HP
+    <>
+      <Navbar />
+      <main className={styles.mainGrid}>
+        <div className={styles.hero}>
+          <h1>Your Adventure Awaits You</h1>
+          <p>
+            Step into the tavern with nothing but your imagination—our intelligent Game Master takes it from there. No prep, no spreadsheets—just fair rulings, smart prompts, and a living world that remembers each adventure. Start your campaign, roll the dice, and let your story unfold..
           </p>
         </div>
-      )}
 
-      {/* Added disabled state */}
-      <button
-        onClick={triggerAttack}
-        className={styles.attackButton}
-        disabled={dragon?.hp === 0}
-      >
-        {dragon?.hp === 0 ? "Dragon Defeated!" : "Attack!"}
-      </button>
-    </div>
+        <div className={styles.heroImage}>
+          <img src="20 Dice image.png" alt="D&D Illustration" />
+        </div>
+
+        {/* Story section */}
+        <section id="story" className={styles.section}>
+          <h2>Story</h2>
+          <p>
+            Dive into a living, breathing adventure where your choices shape the journey. Powered by advanced AI, our game brings a D&D-style narrative to life interactive, button-based decisions with dice based results. Every choice you make creates branching paths, unexpected encounters, and unique outcomes, making each playthrough a one-of-a-kind story.
+          </p>
+        </section>
+
+        {/* Character section */}
+        <section id="character" className={styles.section}>
+          <h2>Characters</h2>
+          <p>
+            Create your hero and bring them to life. Choose your character’s race, class, and background, shaping who they are and how they interact with the world. From cunning rogues to mighty warriors, every decision influences your abilities, story opportunities, and the way the adventure unfolds—just like in a classic D&D campaign.
+          </p>
+        </section>
+      </main>
+    </>
   );
 }
