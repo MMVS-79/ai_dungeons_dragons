@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS campaigns;
 CREATE TABLE campaigns (
     id INT PRIMARY KEY AUTO_INCREMENT,
     account_id INT NOT NULL,

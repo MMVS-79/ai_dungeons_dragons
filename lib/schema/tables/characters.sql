@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS characters;
 CREATE TABLE characters (
     id INT PRIMARY KEY AUTO_INCREMENT,
     race_id INT NOT NULL,
