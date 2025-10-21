@@ -1,25 +1,29 @@
+SET FOREIGN_KEY_CHECKS=0;
+
 -- Accounts table
-\i schema/tables/accounts.sql
+source schema/tables/accounts.sql;
 
 -- Campaigns table and related tables
-\i schema/tables/campaigns.sql
-\i schema/tables/chats.sql
-\i schema/tables/logs.sql
+source schema/tables/campaigns.sql;
+source schema/tables/chats.sql;
+source schema/tables/logs.sql;
 
 -- Unit tables
-\i schema/tables/races.sql
-\i schema/tables/classes.sql
-\i schema/tables/enemies.sql
-\i schema/tables/characters.sql
+source schema/tables/races.sql;
+source schema/tables/classes.sql;
+source schema/tables/enemies.sql;
+source schema/tables/characters.sql;
 
 -- Inventory tables
-\i schema/tables/items.sql
-\i schema/tables/armours.sql
-\i schema/tables/weapons.sql
-\i schema/tables/shields.sql
+source schema/tables/items.sql;
+source schema/tables/armours.sql;
+source schema/tables/weapons.sql;
+source schema/tables/shields.sql;
 
 -- Junction tables for character inventory
-\i schema/tables/character_items.sql
-\i schema/tables/character_armours.sql
-\i schema/tables/character_weapons.sql
-\i schema/tables/character_shields.sql
+source schema/tables/character_items.sql;
+source schema/tables/character_armours.sql;
+source schema/tables/character_weapons.sql;
+source schema/tables/character_shields.sql;
+
+SET FOREIGN_KEY_CHECKS=1;

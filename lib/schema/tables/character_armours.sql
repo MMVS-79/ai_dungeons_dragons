@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS character_armours;
 CREATE TABLE character_armours (
     id INT PRIMARY KEY AUTO_INCREMENT,
     character_id INT NOT NULL,
