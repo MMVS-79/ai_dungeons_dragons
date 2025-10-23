@@ -2,29 +2,29 @@
 
 ## Overview
 
-The LLM integration adds event tracking capabilities to the `event_history` table to enable context-aware narrative generation using the Gemini AI service. This allows the game engine to track structured event data and maintain narrative continuity across multiple game events.
+The LLM integration adds event tracking capabilities to the `logs` table to enable context-aware narrative generation using the Gemini AI service. This allows the game engine to track structured event data and maintain narrative continuity across multiple game events.
 
 ## Schema Changes
 
-### Event History Table Enhancement
+### Logs Table Enhancement
 
-**File:** `lib/schema/tables/event_history.sql`
+**File:** `lib/schema/tables/logs.sql`
 
-The `event_history` table stores LLM-generated events and their effects for context injection into subsequent prompts. It has been extended with two new columns to store structured event information:
+The `logs` table stores LLM-generated events and their effects for context injection into subsequent prompts. It includes structured event information with these columns:
 
 ```sql
-CREATE TABLE event_history (
+CREATE TABLE logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    campaign_id INT NOT NULL,
+    campaign_id INT,
     message TEXT NOT NULL,
-    event_type VARCHAR(50),                    -- NEW
-    event_data JSON,                           -- NEW
+    event_type VARCHAR(50),
+    event_data JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
 )
 ```
 
-**New Columns:**
+**Event Columns:**
 
 | Column | Type | Purpose |
 |--------|------|---------|
@@ -53,35 +53,27 @@ The `event_data` JSON field stores stat modifications with this structure:
 }
 ```
 
-## Migration Guide
+## Database Setup
 
-### Migration File
+The `logs` table is created with `event_type` and `event_data` columns included in the base schema. The database is managed through the rebuild system:
 
-**File:** `lib/schema/migrations/001_add_event_data_to_logs.sql`
+**Automatic Deployment:**
 
-This migration adds the new columns to an existing `event_history` table:
+The `lib/rebuild.sh` script runs via cron and automatically:
+1. Checksums all schema files in `lib/schema/tables/*.sql`
+2. Detects changes and runs `lib/rebuild.sql` if schemas changed
+3. Recreates all tables from the source files
 
-```sql
-ALTER TABLE event_history 
-ADD COLUMN event_type VARCHAR(50) AFTER message,
-ADD COLUMN event_data JSON AFTER event_type;
+**Manual Rebuild:**
+
+To force a database rebuild:
+
+```bash
+cd lib
+./rebuild.sh --force
 ```
 
-**Running the Migration:**
-
-1. Ensure your database is initialized with the base schema
-2. Run the migration file:
-
-   ```bash
-   mysql -u root -p dnd_game < lib/schema/migrations/001_add_event_data_to_logs.sql
-   ```
-
-### Data Migration
-
-Existing log entries are automatically populated with default values:
-
-- `event_type` = `'NARRATIVE'` (neutral, no stat effects)
-- `event_data` = `'{"health": 0, "attack": 0, "defense": 0}'` (no changes)
+This will recreate all tables including the `logs` table with the LLM columns.
 
 ## Integration Points
 
@@ -97,7 +89,7 @@ LLMService.generateEvent() creates:
   effects: { health: -8, attack: 0, defense: -2 }
 }
         ↓
-Save to event_history table:
+Save to logs table:
 - message = "The dragon roars and breathes fire!"
 - event_type = "COMBAT_ACTION"
 - event_data = {"health": -8, "attack": 0, "defense": -2}
@@ -114,7 +106,7 @@ When generating new events, the game engine retrieves previous events to provide
 
 ```sql
 -- Fetch last 5 events for narrative continuity
-SELECT message FROM event_history 
+SELECT message, event_type, event_data FROM logs 
 WHERE campaign_id = ? 
 ORDER BY created_at DESC 
 LIMIT 5;
@@ -127,17 +119,17 @@ These messages are passed to the LLM in `recentEvents` array for coherent storyt
 ### Campaigns (Parent)
 
 - `id` - Campaign identifier
-- Each campaign tracks multiple `event_history` entries
+- Each campaign tracks multiple `logs` entries
 
 ### Characters (Stat Storage)
 
-- `health`, `attack`, `defense` - Character stats modified by events in event_history
+- `health`, `attack`, `defense` - Character stats modified by events in logs
 - Stats are updated based on `event_data` effects
 
 ### Chats (Conversation Log)
 
-- Separate from event_history; stores NPC/LLM conversations
-- Event history tracks game events; Chats track conversations
+- Separate from logs; stores NPC/LLM conversations
+- Logs track game events; Chats track conversations
 
 ## Example Queries
 
@@ -153,7 +145,7 @@ SELECT
   JSON_EXTRACT(event_data, '$.attack') AS attack_effect,
   JSON_EXTRACT(event_data, '$.defense') AS defense_effect,
   created_at
-FROM event_history
+FROM logs
 WHERE campaign_id = ?
 ORDER BY created_at DESC
 LIMIT 10;
@@ -167,14 +159,14 @@ SELECT
   SUM(JSON_EXTRACT(event_data, '$.health')) AS total_health_change,
   SUM(JSON_EXTRACT(event_data, '$.attack')) AS total_attack_change,
   SUM(JSON_EXTRACT(event_data, '$.defense')) AS total_defense_change
-FROM event_history
+FROM logs
 GROUP BY campaign_id;
 ```
 
 ### Filter by Event Type
 
 ```sql
-SELECT * FROM event_history
+SELECT * FROM logs
 WHERE campaign_id = ? AND event_type = 'ITEM_DROP'
 ORDER BY created_at DESC;
 ```
@@ -196,27 +188,26 @@ Possible future schema additions:
 - **player_choice**: Track which choice the player made from event options
 - **audio_path**: Reference generated audio/voice lines
 
-## Rollback Procedure
-
-If needed, revert the migration:
-
-```sql
-ALTER TABLE event_history 
-DROP COLUMN event_type,
-DROP COLUMN event_data;
-```
-
-**Note:** This will lose all stored event metadata.
-
-## Testing
+## Schema Verification
 
 Verify the schema was applied correctly:
 
 ```sql
-DESCRIBE event_history;
+DESCRIBE logs;
 ```
 
 Expected output should show:
 
 - `event_type` column (VARCHAR(50))
 - `event_data` column (JSON)
+
+## Rollback to Simple Logs
+
+If you need to remove the LLM columns, update `lib/schema/tables/logs.sql` to remove the `event_type` and `event_data` columns, then run:
+
+```bash
+cd lib
+./rebuild.sh --force
+```
+
+**Note:** This will recreate the table and lose all stored data.
