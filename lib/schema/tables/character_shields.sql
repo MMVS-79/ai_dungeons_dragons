@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS character_shields;
 CREATE TABLE character_shields (
     id INT PRIMARY KEY AUTO_INCREMENT,
     character_id INT NOT NULL,

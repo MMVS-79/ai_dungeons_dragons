@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS character_items;
 CREATE TABLE character_items (
     id INT PRIMARY KEY AUTO_INCREMENT,
     character_id INT NOT NULL,

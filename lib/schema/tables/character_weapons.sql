@@ -1,4 +1,5 @@
-CREATE TABLE character_items (
+DROP TABLE IF EXISTS character_weapons;
+CREATE TABLE character_weapons (
     id INT PRIMARY KEY AUTO_INCREMENT,
     character_id INT NOT NULL,
     weapon_id INT NOT NULL,

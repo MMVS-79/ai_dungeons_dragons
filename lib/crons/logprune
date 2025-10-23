@@ -1,0 +1,1 @@
+0 0 * * * linode find /home/linode/ai_dungeons_dragons/lib /home/linode -maxdepth 1 -name "*.log" -exec truncate -s 0 {} \;
