@@ -1,6 +1,6 @@
-### This is an explanation of the Event_Handler core logic ###
+## This is an explanation of the Event_Handler core logic ###
 
-## Main event types are: "Environmental", "Descriptive", "Item_Drop" and "Combat"(Combat generalized as event to smooth out engine execution).
+### Main event types are: "Environmental", "Descriptive", "Item_Drop" and "Combat"(Combat generalized as event to smooth out engine execution).
 
   "Environmental" : LLM responds with event_type: "Environmental", UI layout includes background, player_sprite, non_player_sprite, Text_box, Button_1 and Button_2.  
   LLM responds with descriptive text displayed to front_end(in text_box), provides 2 Jsons each representing one option.  
