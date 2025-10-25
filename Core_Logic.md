@@ -13,7 +13,7 @@
           Regular Dice_roll: 5 <= dice_roll <= 15.  
                 Player receive a scaled amount of the stat bonus = original_amount*((dice_roll-10)/10+1), max 150% efficacy, min 50% efficacy.  
           Critical Success: Player either receives healing scaling from 20-100% of max_HP based on dice_roll amount above 15, or receives a parallel stat boost(if org=ATK gain max_HP or DEF)  
-          Note: I'm thinking about making this a LLM call because if I'm gonna roll a dice to determine which half of the coin gives which type of bonus then if I land in stat I have to roll for type of stat gain, simpler just to ask Gemini, what do you want to do, and if you choose stat, decide which stat and how much.  
+          Note: I'm thinking about making this a LLM call because if I'm gonna roll a dice to determine which half of the coin gives which type of bonus then if I land in stat I have to roll for type of stat gain, at that point it's simpler to just ask Gemini, what do you want to do, and if you choose stat, decide which stat and how much.  
 
   "Descriptive": UI is player_sprite, background and text_box.  
   Makes the player read funny text, nothing happens.  
