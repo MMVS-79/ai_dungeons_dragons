@@ -15,7 +15,7 @@
           Critical Success: Player either receives healing scaling from 20-100% of max_HP based on dice_roll amount above 15, or receives a parallel stat boost(if org=ATK gain max_HP or DEF)  
           Note: I'm thinking about making this a LLM call because if I'm gonna roll a dice to determine which half of the coin gives which type of bonus then if I land in stat I have to roll for type of stat gain, at that point it's simpler to just ask Gemini, what do you want to do, and if you choose stat, decide which stat and how much.  
 
-  "Descriptive": UI is player_sprite, background and text_box.  
+  "Descriptive": UI is player_sprite, background and text_box with button "Keep Going" or "Continue On", which sends endpoint to engine signaling the player's done reading.
   Makes the player read funny text, nothing happens.  
 
   "Item_Drop" : Same UI as "Environmental" except the non_player sprite is the item, for example, an "Orcish_Stinger"(#003) on the ground.  
