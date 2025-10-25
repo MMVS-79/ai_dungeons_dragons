@@ -28,7 +28,7 @@
                 Same HP punishment logic for potions, it turns into poison. Equipment breaks and hurts you.(I considered a tier down system but it doesn't match the same strength of penalty of the "Environmental" Critcal failure.)  
                 At dice_roll = 1, backend additionally rolls for "Death" at 10%, if hit, player dies.  
           Regular Dice_roll: 5 <= dice_roll <= 15.  
-                Player receives the equipment, potion scales on effectiveness similar to "Environmental".  
+                Player receives the equipment. ONLY potion scales on effectiveness similar to "Environmental".  
           Critical Success: Equipment can TIER UP! Now increments in the backend, the Equipment_Score by a maximum of 4 based on dice_roll, (4 at dice_roll = 20), and fetch the "New_Equipment" and applies to player. Equipment_Score is capped at the maximum # of rows-header in the corresponding equipment entity table.  
                 Potion max heals, yes it's boring but skill issue if you roll 20 on a potion.  
   "Combat": To be implemented separately, but the UI is player_sprite, monster_sprite, background, text_box and button_1, button_2.  
