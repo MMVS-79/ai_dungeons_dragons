@@ -30,7 +30,7 @@
           Regular Dice_roll: 5 <= dice_roll <= 15.  
                 Player receives the equipment. ONLY potion scales on effectiveness similar to "Environmental".  
           Critical Success: Equipment can TIER UP! Equipment_Score now increments in the backend. Equipment_Score goes up by a maximum of 4 based on dice_roll, (4 at dice_roll = 20), backend performs fetch on the "New_Equipment" and applies it to player. Equipment_Score is capped at the maximum # of rows minus header in the corresponding equipment entity table.  
-                Potion max heals, yes it's boring but skill issue if you roll 20 on a potion.  
+                Potion max heals and gives a randoms stat boost, similar to "Environmental".  
   "Combat": To be implemented separately, but the UI is player_sprite, monster_sprite, background, text_box and button_1, button_2.  
 
   Don't @ me, I decided to change some stuff while I was writing this, so if you see missing implementation in the code, that means it's WIP and I decided to adapt it.  
