@@ -31,6 +31,6 @@
                 Player receives the equipment. ONLY potion scales on effectiveness similar to "Environmental".  
           Critical Success: Equipment can TIER UP! Equipment_Score now increments in the backend. Equipment_Score goes up by a maximum of 4 based on dice_roll, (4 at dice_roll = 20), backend performs fetch on the "New_Equipment" and applies it to player. Equipment_Score is capped at the maximum # of rows minus header in the corresponding equipment entity table.  
                 Potion max heals and gives a randoms stat boost, similar to "Environmental".  
-  "Combat": To be implemented separately, but the UI is player_sprite, monster_sprite, background, text_box and button_1, button_2.  
+  "Combat": To be implemented separately, but the UI is player_sprite, monster_sprite, background, text_box and button_1, button_2. In the future this will expand categorically, AKA the type will become "Goblin Combat", "Cyclops Combat" and "Dragon Showdown". I need each event type to map to a unique set of assets, or the same set but a different monster_sprite.
 
   Don't @ me, I decided to change some stuff while I was writing this, so if you see missing implementation in the code, that means it's WIP and I decided to adapt it.  
