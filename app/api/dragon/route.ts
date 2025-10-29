@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
+interface Dragon {
+  id: number;
+  name: string;
+  hp: number;
+  max_hp: number;
+}
+
 // GET dragon stats
 export async function GET() {
   try {
     const [rows] = await pool.query("SELECT * FROM dragon WHERE id = 1");
-    const dragon = (rows as any[])[0];
+    const dragon = (rows as Dragon[])[0];
 
     return NextResponse.json({
       success: true,
@@ -27,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Get current dragon HP
     const [rows] = await pool.query("SELECT hp FROM dragon WHERE id = 1");
-    const currentHp = (rows as any[])[0].hp;
+    const currentHp = (rows as Pick<Dragon, "hp">[])[0].hp;
 
     // Calculate new HP (don't go below 0)
     const newHp = Math.max(0, currentHp - damage);
@@ -37,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch updated dragon
     const [updatedRows] = await pool.query("SELECT * FROM dragon WHERE id = 1");
-    const dragon = (updatedRows as any[])[0];
+    const dragon = (updatedRows as Dragon[])[0];
 
     return NextResponse.json({
       success: true,

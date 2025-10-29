@@ -1,0 +1,1 @@
+* * * * * linode bash /home/linode/ai_dungeons_dragons/lib/rebuild.sh >> /home/linode/mysql_rebuild.log 2>&1

@@ -2,6 +2,7 @@
   "name": "ai_dungeons_dragons",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -9,6 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/genai": "^1.22.0",
     "dotenv": "^17.2.3",
     "mysql2": "^3.15.2",
     "next": "^15.5.3",
