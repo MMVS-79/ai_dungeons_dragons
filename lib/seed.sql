@@ -25,19 +25,19 @@ INSERT INTO items (name, health, description, sprite_path) VALUES
 ('Large Health Potion', 100, 'Restores 100 health points.', 'sprites/large_health_potion.png');
 
 -- Seed Weapons
-INSERT INTO weapons (name, attack, description, sprite_path) VALUES
-('Short Sword', 10, 'A basic short sword.', 'sprites/short_sword.png'),
-('Long Bow', 15, 'A long-range bow.', 'sprites/long_bow.png'),
-('Staff of Fire', 20, 'A magical staff that shoots fire.', 'sprites/staff_of_fire.png');
+INSERT INTO weapons (name, attack, description, sprite_path, rarity) VALUES
+('Short Sword', 10, 'A basic short sword.', 'sprites/short_sword.png', 0),
+('Long Bow', 15, 'A long-range bow.', 'sprites/long_bow.png', 1),
+('Staff of Fire', 20, 'A magical staff that shoots fire.', 'sprites/staff_of_fire.png', 2);
 
 -- Seed Armours
-INSERT INTO armours (name, health, description, sprite_path) VALUES
-('Leather Armour', 20, 'Basic leather armour.', 'sprites/leather_armour.png'),
-('Chainmail', 40, 'Sturdy chainmail armour.', 'sprites/chainmail.png'),
-('Plate Armour', 60, 'Heavy plate armour.', 'sprites/plate_armour.png');
+INSERT INTO armours (name, health, description, sprite_path, rarity) VALUES
+('Leather Armour', 20, 'Basic leather armour.', 'sprites/leather_armour.png', 0),
+('Chainmail', 40, 'Sturdy chainmail armour.', 'sprites/chainmail.png', 1),
+('Plate Armour', 60, 'Heavy plate armour.', 'sprites/plate_armour.png', 2);
 
 -- Seed Shields
-INSERT INTO shields (name, defense, description, sprite_path) VALUES
-('Wooden Shield', 5, 'A basic wooden shield.', 'sprites/wooden_shield.png'),
-('Iron Shield', 10, 'A sturdy iron shield.', 'sprites/iron_shield.png'),
-('Dragon Shield', 20, 'A shield made from dragon scales.', 'sprites/dragon_shield.png');
+INSERT INTO shields (name, defense, description, sprite_path, rarity) VALUES
+('Wooden Shield', 5, 'A basic wooden shield.', 'sprites/wooden_shield.png', 0),
+('Iron Shield', 10, 'A sturdy iron shield.', 'sprites/iron_shield.png', 1),
+('Dragon Shield', 20, 'A shield made from dragon scales.', 'sprites/dragon_shield.png', 2);
