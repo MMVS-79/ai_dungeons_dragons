@@ -3,6 +3,7 @@ CREATE TABLE shields (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     defense INT NOT NULL,
+    rarity INT NOT NULL UNIQUE,
     description TEXT,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

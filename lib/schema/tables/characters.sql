@@ -9,9 +9,15 @@ CREATE TABLE characters (
     attack INT NOT NULL,
     defense INT NOT NULL,
     sprite_path VARCHAR(255),
+    armour_id INT DEFAULT NULL,
+    weapon_id INT DEFAULT NULL,
+    shield_id INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE RESTRICT,
     FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE RESTRICT,
-    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+    FOREIGN KEY (armour_id) REFERENCES armours(id) ON DELETE RESTRICT,
+    FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE RESTRICT,
+    FOREIGN KEY (shield_id) REFERENCES shields(id) ON DELETE RESTRICT
 )
