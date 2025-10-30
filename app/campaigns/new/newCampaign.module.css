@@ -1,0 +1,433 @@
+.pageContainer {
+  display: flex;
+  min-height: 100vh;
+  padding-top: 150px;
+  background: #0a0a0a;
+}
+
+/* Side Panel */
+.sidePanel {
+  width: 300px;
+  background: rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 40px 20px;
+  position: fixed;
+  height: calc(100vh - 150px);
+  left: 0;
+  top: 150px;
+}
+
+.sidePanelTitle {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 40px;
+  padding-left: 10px;
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.stepItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stepNumber {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+}
+
+.stepLabel {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.activeStep {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid white;
+}
+
+.activeStep .stepNumber {
+  background: white;
+  color: #0a0a0a;
+  border-color: white;
+}
+
+.activeStep .stepLabel {
+  color: white;
+}
+
+.completedStep .stepNumber {
+  background: #aa5555;
+  border-color: #aa5555;
+  color: white;
+}
+
+.completedStep .stepLabel {
+  color: white;
+}
+
+/* Main Content */
+.mainContent {
+  margin-left: 300px;
+  flex: 1;
+  padding: 40px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stepContent {
+  width: 100%;
+  max-width: 800px;
+  min-height: 500px;
+}
+
+.stepTitle {
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.stepDescription {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 50px;
+}
+
+/* Name Step */
+.nameInput {
+  width: 100%;
+  padding: 20px 25px;
+  font-size: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  color: white;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.nameInput:focus {
+  border-color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nameInput::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Stats Step */
+.statsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.statLabel {
+  font-size: 20px;
+  color: white;
+  font-weight: 500;
+}
+
+.slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+}
+
+/* Race and Class Steps */
+.optionsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
+}
+
+.optionCard {
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.optionCard:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-5px);
+}
+
+.optionCard.selected {
+  background: rgba(170, 85, 85, 0.2);
+  border-color: #aa5555;
+}
+
+.optionTitle {
+  font-size: 28px;
+  color: white;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.bonuses {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bonus {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+/* Preview Step */
+.previewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.previewSection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.previewLabel {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.previewValue {
+  font-size: 28px;
+  color: white;
+  font-weight: bold;
+}
+
+.finalStats {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.finalStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 20px;
+  color: white;
+}
+
+.finalStatValue {
+  font-weight: bold;
+  font-size: 24px;
+  color: #aa5555;
+}
+
+/* Navigation Buttons */
+.navigationButtons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 60px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.backButton,
+.nextButton,
+.startButton {
+  padding: 18px 40px;
+  font-size: 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.backButton {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.nextButton,
+.startButton {
+  background: #aa5555;
+  color: white;
+  flex: 1;
+  max-width: 300px;
+}
+
+.nextButton:hover,
+.startButton:hover {
+  background: #bb6666;
+  transform: translateY(-2px);
+}
+
+.nextButton:disabled {
+  background: rgba(170, 85, 85, 0.3);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.startButton {
+  background: #55aa55;
+}
+
+.startButton:hover {
+  background: #66bb66;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .sidePanel {
+    width: 250px;
+  }
+
+  .mainContent {
+    margin-left: 250px;
+    padding: 40px 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    flex-direction: column;
+    padding-top: 120px;
+  }
+
+  .sidePanel {
+    position: relative;
+    width: 100%;
+    height: auto;
+    top: 0;
+    padding: 20px;
+  }
+
+  .stepsList {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 10px;
+  }
+
+  .stepItem {
+    flex-direction: column;
+    min-width: 80px;
+    padding: 10px;
+  }
+
+  .stepLabel {
+    font-size: 14px;
+  }
+
+  .mainContent {
+    margin-left: 0;
+    padding: 20px;
+  }
+
+  .stepTitle {
+    font-size: 36px;
+  }
+
+  .optionsContainer {
+    grid-template-columns: 1fr;
+  }
+}
