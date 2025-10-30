@@ -17,7 +17,7 @@ export default function ItemPanel() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.Items}>
+      <div className={styles.ItemPanel}>
         <p className={styles.inventoryTitle}>Inventory</p>
 
         <p className={styles.equipmentTitle}>Equipment</p>

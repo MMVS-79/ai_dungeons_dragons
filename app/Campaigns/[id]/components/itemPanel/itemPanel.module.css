@@ -8,7 +8,7 @@
   color: white;
 }
 
-.Items {
+.ItemPanel {
   width: 500px;
   height: 500px;
   background: radial-gradient(circle at center, #333 0%, #000 100%);
