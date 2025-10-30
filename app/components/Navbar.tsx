@@ -13,7 +13,7 @@ export default function Navbar() {
       <div className={styles.brand}>
         <Link href="/" className={styles.logoLink}>
           <img
-            src="icons/white logo - circle.png"
+            src="/icons/white logo - circle.png"
             alt="Logo"
             className={styles.logo}
           />
@@ -23,15 +23,15 @@ export default function Navbar() {
 
       {/* Buttons (desktop only) */}
       <div className={styles.buttons}>
-        <Link href="/Campaigns" className={styles.button}>
+        <Link href="/campaigns" className={styles.button}>
           Play Campaign
         </Link>
-        <a href="#about-us" className={styles.button}>
+        <Link href="/#about-us" className={styles.button}>
           About Us
-        </a>
+        </Link>
         <Link href="/login" className={`${styles.button} ${styles.login}`}>
           <img
-            src="icons/Login icon.png"
+            src="/icons/Login icon.png"
             alt="Logo"
             className={styles.loginIcon}
           />
@@ -55,14 +55,14 @@ export default function Navbar() {
           <div></div>
         </div>
         <Link
-          href="/Campaigns"
+          href="/campaigns"
           className={styles.mobileButton}
           onClick={() => setMenuOpen(false)}
         >
           Play Campaign
         </Link>
         <a
-          href="#about-us"
+          href="/#about-us"
           className={styles.mobileButton}
           onClick={() => setMenuOpen(false)}
         >
@@ -74,7 +74,7 @@ export default function Navbar() {
           onClick={() => setMenuOpen(false)}
         >
           <img
-            src="icons/Login icon.png"
+            src="/icons/Login icon.png"
             alt="Logo"
             className={styles.loginIcon}
           />

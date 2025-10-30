@@ -4,7 +4,6 @@ import styles from "./page.module.css";
 export default function Landing() {
   return (
     <>
-      <Navbar />
       <main className={styles.mainGrid}>
         {/* Main Info Section */}
         <div className={styles.mainInfo}>
