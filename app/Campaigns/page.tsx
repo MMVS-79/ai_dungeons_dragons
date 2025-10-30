@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // <-- import router
+import { useRouter } from "next/navigation";
 import styles from "./campaign.module.css";
 
 interface Campaign {
@@ -13,21 +13,15 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [nextId, setNextId] = useState(1);
 
-  const router = useRouter(); // initialize router
+  const router = useRouter();
 
-  const addCampaign = () => {
+  const goToNewCampaign = () => {
     if (campaigns.length >= 5) {
       alert("You can only have up to 5 campaigns at a time.");
       return;
     }
-
-    const newCampaign: Campaign = {
-      id: nextId,
-      name: `Temporary Campaign #${nextId}`,
-    };
-
-    setCampaigns((prev) => [newCampaign, ...prev]);
-    setNextId((id) => id + 1);
+    // Navigate to the new campaign page
+    router.push("/campaigns/new");
   };
 
   const deleteCampaign = (id: number) => {
@@ -38,7 +32,7 @@ export default function CampaignsPage() {
   };
 
   const goToCampaign = (id: number) => {
-    router.push(`/campaigns/${id}`); // navigate to campaign page
+    router.push(`/campaigns/${id}`);
   };
 
   return (
@@ -50,7 +44,7 @@ export default function CampaignsPage() {
           {/* New Campaign Panel */}
           <div
             className={styles.newCampaignPanel}
-            onClick={addCampaign}
+            onClick={goToNewCampaign}
             role="button"
             aria-label="Create new campaign"
           >
@@ -63,14 +57,14 @@ export default function CampaignsPage() {
             <div
               key={c.id}
               className={styles.campaignPanel}
-              onClick={() => goToCampaign(c.id)} // navigate on click
+              onClick={() => goToCampaign(c.id)}
               style={{ cursor: "pointer" }}
             >
               <div className={styles.campaignInfo}>{c.name}</div>
               <button
                 className={styles.deleteButton}
                 onClick={(e) => {
-                  e.stopPropagation(); // prevent panel click from firing
+                  e.stopPropagation();
                   deleteCampaign(c.id);
                 }}
               >
