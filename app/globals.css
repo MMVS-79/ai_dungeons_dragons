@@ -1,16 +1,11 @@
-/* ================================================== */
-/* globals.css - Dark background with subtle light  */
-/* ================================================== */
 
-/* ------------------- */
-/* CSS Variables        */
-/* ------------------- */
+/* Dark background with subtle light  */
 :root {
   --background-color: #0a0a0a;  /* main dark background */
   --foreground-color: #ededed;  /* text color */
   --light-gradient: radial-gradient(
     ellipse 150% 150% at 150% -70%,          /* position of the light */
-    rgba(255, 255, 255, 0.15),    /* soft white light */
+    rgb(255, 255, 255),    /* soft white light */
     var(--background-color) 95%   /* fade into dark */
   );
 }

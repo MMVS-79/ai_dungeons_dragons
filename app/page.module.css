@@ -1,50 +1,139 @@
-/* 12-column grid for main layout */
 .mainGrid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
   gap: 16px;
-  padding: 120px 64px 64px; /* top padding keeps text clear of navbar */
-  min-height: 100vh;
+  padding-top: 220px;
   color: var(--foreground);
 }
 
-.hero {
-  grid-column: 3 / 7;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: justify;
+.mainInfo {
+  align-items: center;
+  padding: 0 10% 200px;
   gap: 24px;
   line-height: 1.4;
 }
 
-.hero h1 {
-  font-size: 36px;
+.mainInfo h1 {
+  font-size: 52px;
   font-weight: bold;
+  margin-bottom: 30px;
 }
 
-.heroImage {
-  grid-column: 8 / 11;
-  display: flex;
-  justify-content: center;
-  margin-top: 3.5rem;
-  align-items: center;
+.mainInfoBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
-.heroImage img {
-  width: 100%;
-  height: auto;
-  border-radius: 12px;
-  object-fit: contain;
-}
-
-.hero p {
-  font-size: 25px;
+.mainInfoText {
+  font-size: 32px;
+  text-align: justify;
   color: #ccc;
+  width: auto;
+  min-width: 400px;
+}
+
+.mainInfoImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+}
+
+.mainInfoImage img {
+  padding-top: 8px;
+  height: 100%;
+  max-height: 300px;
+}
+
+@media (max-width: 1035px) {
+  .mainInfoBody {
+    grid-template-columns: 1fr;
+  }
+
+  .mainInfoImage {
+    margin-top: 100px;
+    width: 100%;
+  }
+}
+
+/* about us section */
+.aboutUs {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-self: center;
+  margin: 0 10% 250px;
+}
+
+.aboutUs h2 {
+  font-weight: 700;
+  font-size: 36px;
+  margin-bottom: 25px;
+  text-align: center;   
+}
+
+.aboutUs h3 {
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 45px;
+  text-align: center;   
+}
+
+.aboutUsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  row-gap: 100px;
+  column-gap: 100px;
+  justify-self: center;
+}
+
+.profile {
+  place-items: center;
+  width: 300px;
+  border: solid;
+  border-radius: 20px;
+  background-color: #818181;
+}
+
+.memberPicture {
+  display: flex;
+  height: 100px;
+  border-radius: 50px;
+  margin: 20px 0 20px;
+}
+
+.memberName {
+  font-weight: 700;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.memberRole {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.memberBackground {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.profileLinks img {
+  height: 30px;
+  margin: 0 10px 16px;
+}
+
+@media (max-width: 1100px) and (min-width: 769px) {
+  .aboutUsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .aboutUsGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* CTA buttons */
-.ctas {
+/* .ctas {
   display: flex;
   justify-content: flex-start;
   gap: 16px;
@@ -61,24 +150,4 @@
 
 .primary:hover {
   background: #383838;
-}
-
-/* Story and Character sections: header centered, text left-aligned */
-.section {
-  grid-column: 3 / 11;
-  margin-top: 80px;
-}
-
-.section h2 {
-  font-size: 32px;
-  margin-top: 300px;
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.section p {
-  font-size: 25px;
-  color: #bbb;
-  text-align: justify;
-  line-height: 1.4;
-}
+} */

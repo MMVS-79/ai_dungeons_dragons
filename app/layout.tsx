@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "D&D",
-  description: "The best D&D experience"
+  title: "Dumbgeons & Dragons",
+  description: "The best D&D experience",
+  icons: {
+    icon: "/icons/black logo - circle.png"
+  }
 };
 
 export default function RootLayout({

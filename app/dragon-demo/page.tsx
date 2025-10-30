@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
-import styles from "./dragon.module.css";
+import Image from "next/image";
+import styles from "./Home.module.css";
 
 interface Dragon {
   id: number;
@@ -97,11 +98,14 @@ export default function Home() {
           ref={dragonRef}
           className={styles.dragon}
         ></div>
-        <img
+        <Image
           ref={knightRef}
           src="/Knight.png"
           alt="Knight"
           className={styles.knight}
+          width={200}
+          height={200}
+          priority
         />
         <div
           ref={hitRef}
