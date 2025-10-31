@@ -1,0 +1,114 @@
+.panel {
+  background: linear-gradient(to bottom right, #000000, #303030);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 2px solid #ffffff;
+  /* box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); */
+  height: 300px;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  max-height: 300px;
+}
+
+.header {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+}
+
+.eventHeader {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #ff4949;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.statsContainer {
+  margin-top: 1rem;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.hpBar {
+  width: 100%;
+  background-color: #000000;
+  border-radius: 9999px;
+  height: 0.75rem;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.hpBarFill {
+  background-color: #dc2626;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.enemyImage {
+  text-align: center;
+  margin: 0 auto 0.5rem;
+  width: 100%;
+  max-width: 100px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.enemyImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.itemFound {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.itemImage {
+  margin: 0 auto 0.5rem;
+  width: 100%;
+  max-width: 80px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itemImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.itemName {
+  color: #fef3c7;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.itemDescription {
+  color: #fbbf24;
+  font-size: 0.875rem;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  color: #d97706;
+  font-style: italic;
+}
