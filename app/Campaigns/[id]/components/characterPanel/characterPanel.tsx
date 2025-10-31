@@ -9,6 +9,7 @@ interface Item {
   image: string;
   attack?: number;
   defense?: number;
+  hpBonus?: number;
   healAmount?: number;
   description: string;
 }
@@ -32,12 +33,14 @@ interface CharacterPanelProps {
   playerState: PlayerState;
   playerAttack: number;
   playerDefense: number;
+  playerMaxHp: number;  // Added this prop
 }
 
 export default function CharacterPanel({ 
   playerState,
   playerAttack,
-  playerDefense 
+  playerDefense,
+  playerMaxHp  // Added this parameter
 }: CharacterPanelProps) {
   return (
     <div className={styles.panel}>
@@ -58,12 +61,12 @@ export default function CharacterPanel({
       <div className={styles.statsContainer}>
         <div className={styles.statRow}>
           <span>HP:</span>
-          <span>{playerState.hp} / {playerState.maxHp}</span>
+          <span>{playerState.hp} / {playerMaxHp}</span>
         </div>
         <div className={styles.hpBar}>
           <div 
             className={styles.hpBarFill}
-            style={{ width: `${(playerState.hp / playerState.maxHp) * 100}%` }}
+            style={{ width: `${(playerState.hp / playerMaxHp) * 100}%` }}
           />
         </div>
         

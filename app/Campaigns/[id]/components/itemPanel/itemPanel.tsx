@@ -9,6 +9,7 @@ interface Item {
   image: string;
   attack?: number;
   defense?: number;
+  hpBonus?: number;  // Added for armor
   healAmount?: number;
   description: string;
 }
@@ -58,7 +59,7 @@ export default function ItemPanel({
     } else if (item.type === 'weapon') {
       return `${item.name}\n+${item.attack} Attack`;
     } else if (item.type === 'armor') {
-      return `${item.name}\n+${item.defense} Defense`;
+      return `${item.name}\n+${item.hpBonus} Max HP`;  // Changed from defense to hpBonus
     } else if (item.type === 'shield') {
       return `${item.name}\n+${item.defense} Defense`;
     }
@@ -73,7 +74,7 @@ export default function ItemPanel({
         onClick={() => setIsExpanded(true)}
         style={{ cursor: 'pointer' }}
       >
-        <h2 className={styles.header}>🎒 Inventory (Click to Open)</h2>
+        <h2 className={styles.header}>Inventory (Click to Open)</h2>
         
         <div className={styles.section}>
           <h3 className={styles.sectionHeader}>Equipped</h3>
@@ -124,7 +125,7 @@ export default function ItemPanel({
             onMouseMove={handleMouseMove}
           >
             <div className={styles.expandedHeader}>
-              <h2 className={styles.expandedTitle}>🎒 Inventory</h2>
+              <h2 className={styles.expandedTitle}>Inventory</h2>
               <button
                 onClick={() => setIsExpanded(false)}
                 className={styles.closeButton}
@@ -226,6 +227,7 @@ export default function ItemPanel({
                   alt={selectedItem.name}
                   width={100}
                   height={100}
+                  unoptimized
                 />
               </div>
               <h3 className={styles.detailTitle}>{selectedItem.name}</h3>
@@ -236,7 +238,10 @@ export default function ItemPanel({
               {selectedItem.type === 'weapon' && (
                 <p className={styles.detailStats}>Attack: +{selectedItem.attack}</p>
               )}
-              {(selectedItem.type === 'armor' || selectedItem.type === 'shield') && (
+              {selectedItem.type === 'armor' && (
+                <p className={styles.detailStats}>Max HP: +{selectedItem.hpBonus}</p>
+              )}
+              {selectedItem.type === 'shield' && (
                 <p className={styles.detailStats}>Defense: +{selectedItem.defense}</p>
               )}
             </div>
@@ -286,6 +291,7 @@ export default function ItemPanel({
                   alt={selectedEquipment.item.name}
                   width={100}
                   height={100}
+                  unoptimized
                 />
               </div>
               <h3 className={styles.detailTitle}>{selectedEquipment.item.name}</h3>
@@ -293,7 +299,10 @@ export default function ItemPanel({
               {selectedEquipment.item.type === 'weapon' && (
                 <p className={styles.detailStats}>Attack: +{selectedEquipment.item.attack}</p>
               )}
-              {(selectedEquipment.item.type === 'armor' || selectedEquipment.item.type === 'shield') && (
+              {selectedEquipment.item.type === 'armor' && (
+                <p className={styles.detailStats}>Max HP: +{selectedEquipment.item.hpBonus}</p>
+              )}
+              {selectedEquipment.item.type === 'shield' && (
                 <p className={styles.detailStats}>Defense: +{selectedEquipment.item.defense}</p>
               )}
             </div>

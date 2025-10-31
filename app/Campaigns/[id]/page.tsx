@@ -17,6 +17,7 @@ interface Item {
   image: string;
   attack?: number;
   defense?: number;
+  hpBonus?: number;  // Added for armor HP bonus
   healAmount?: number;
   description: string;
 }
@@ -92,7 +93,7 @@ const generateLLMResponse = (
     // Exploring
     const eventRoll = Math.random() * 100;
 
-    if (diceRoll >= 16) {
+    if (diceRoll >= 20) {
       return {
         type: "combat",
         message: `You rolled a ${diceRoll}! A Goblin Warrior jumps out from the shadows!`,
@@ -106,7 +107,7 @@ const generateLLMResponse = (
         },
         choices: ["Attack", "Use Potion"],
       };
-    } else if (diceRoll >= 14 && eventRoll < 33) {
+    } else if (diceRoll >= 10 && eventRoll < 33) {
       // Found weapon
       return {
         type: "equipment",
@@ -116,13 +117,13 @@ const generateLLMResponse = (
           id: `weapon_${Date.now()}`,
           name: "Steel Blade",
           type: "weapon",
-          image: "/items/rare_sword.png",
+          image: "/items/epic_sword.png",
           attack: 8,
           description: "A sharp steel blade (+8 Attack)",
         },
         choices: ["Pick Up", "Leave It"],
       };
-    } else if (diceRoll >= 14 && eventRoll < 66) {
+    } else if (diceRoll >= 10 && eventRoll < 66) {
       // Found armor
       return {
         type: "equipment",
@@ -133,12 +134,12 @@ const generateLLMResponse = (
           name: "Leather Armor",
           type: "armor",
           image: "/items/rare_armour.png",
-          defense: 6,
-          description: "Sturdy leather protection (+6 Defense)",
+          hpBonus: 20,
+          description: "Sturdy iron protection (+20 Max HP)",
         },
         choices: ["Pick Up", "Leave It"],
       };
-    } else if (diceRoll >= 14) {
+    } else if (diceRoll >= 10) {
       // Found shield
       return {
         type: "equipment",
@@ -148,13 +149,13 @@ const generateLLMResponse = (
           id: `shield_${Date.now()}`,
           name: "Knight's Shield",
           type: "shield",
-          image: "/items/rare_shield.png",
-          defense: 4,
-          description: "A reliable shield (+4 Defense)",
+          image: "/items/epic_shield.png",
+          defense: 6,
+          description: "A reliable shield (+6 Defense)",
         },
         choices: ["Pick Up", "Leave It"],
       };
-    } else if (diceRoll >= 10) {
+    } else if (diceRoll >= 1) {
       return {
         type: "item",
         message: `You rolled a ${diceRoll}! You found a Health Potion hidden in the ruins!`,
@@ -186,7 +187,7 @@ export default function CampaignPage() {
   const [playerState, setPlayerState] = useState<PlayerState>({
     name: "Yardle the Dwarf Warrior",
     image: "/characters/warrior.png",
-    hp: 50,
+    hp: 65,
     maxHp: 50,
     baseAttack: 10,
     baseDefense: 5,
@@ -217,8 +218,22 @@ export default function CampaignPage() {
         attack: 5,
         description: "+5 Attack",
       },
-      armor: undefined,
-      shield: undefined,
+      armor:  {
+        id: `armor1`,
+        name: "Leather Armor",
+        type: "armor",
+        image: "/items/common_armour.png",
+        hpBonus: 15,
+        description: "Sturdy leather protection (+15 Max HP)",
+      },
+      shield: {
+        id: `shield1`,
+        name: "Knight's Shield",
+        type: "shield",
+        image: "/items/rare_shield.png",
+        defense: 4,
+        description: "A reliable shield (+4 Defense)",
+      },
     },
   });
 
@@ -236,13 +251,14 @@ export default function CampaignPage() {
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
 
-  // Calculate total stats
+  // Calculate total stats - armor now affects maxHp instead of defense
   const playerAttack =
     playerState.baseAttack + (playerState.equipped.weapon?.attack || 0);
   const playerDefense =
     playerState.baseDefense +
-    (playerState.equipped.armor?.defense || 0) +
     (playerState.equipped.shield?.defense || 0);
+  const playerMaxHp = 
+    playerState.maxHp + (playerState.equipped.armor?.hpBonus || 0);
 
   // Main action handler
   const handleChatAction = async (choice: string) => {
@@ -314,13 +330,25 @@ export default function CampaignPage() {
           | "shield";
         const oldEquipment = playerState.equipped[equipmentSlot];
 
-        setPlayerState((prev) => ({
-          ...prev,
-          equipped: {
+        setPlayerState((prev) => {
+          const newState = { ...prev };
+          
+          // If replacing armor, adjust HP to not exceed new max
+          if (equipmentSlot === "armor") {
+            const oldHpBonus = oldEquipment?.hpBonus || 0;
+            const newHpBonus = pendingEquipment.hpBonus || 0;
+            const newMaxHp = prev.maxHp + newHpBonus;
+            
+            newState.hp = Math.min(prev.hp, newMaxHp);
+          }
+          
+          newState.equipped = {
             ...prev.equipped,
             [equipmentSlot]: pendingEquipment,
-          },
-        }));
+          };
+          
+          return newState;
+        });
 
         setMessages((prev) => [
           ...prev,
@@ -442,7 +470,7 @@ export default function CampaignPage() {
     if (item.type === "potion") {
       setPlayerState((prev) => ({
         ...prev,
-        hp: Math.min(prev.hp + (item.healAmount || 0), prev.maxHp),
+        hp: Math.min(prev.hp + (item.healAmount || 0), playerMaxHp),
         inventory: prev.inventory.filter((i) => i.id !== item.id),
       }));
 
@@ -462,8 +490,8 @@ export default function CampaignPage() {
   const handleEquipItem = (item: Item, slot: string) => {
     setPlayerState((prev) => {
       const newState = { ...prev };
-
-      // Unequip old item if exists - don't add back to inventory
+      
+      // If equipping armor, HP stays the same (new maxHp just increases)
       // Equip new item
       newState.equipped = {
         ...newState.equipped,
@@ -476,13 +504,23 @@ export default function CampaignPage() {
   };
 
   const handleDropEquipment = (slot: string) => {
-    setPlayerState((prev) => ({
-      ...prev,
-      equipped: {
+    setPlayerState((prev) => {
+      const newState = { ...prev };
+      
+      // If unequipping armor, cap HP to new maxHp
+      if (slot === "armor" && prev.equipped.armor) {
+        const lostHpBonus = prev.equipped.armor.hpBonus || 0;
+        const newMaxHp = prev.maxHp;
+        newState.hp = Math.min(prev.hp, newMaxHp);
+      }
+      
+      newState.equipped = {
         ...prev.equipped,
         [slot]: undefined,
-      },
-    }));
+      };
+      
+      return newState;
+    });
 
     setMessages((prev) => [
       ...prev,
@@ -505,6 +543,7 @@ export default function CampaignPage() {
             playerState={playerState}
             playerAttack={playerAttack}
             playerDefense={playerDefense}
+            playerMaxHp={playerMaxHp}
           />
           <ItemPanel
             inventory={playerState.inventory}
