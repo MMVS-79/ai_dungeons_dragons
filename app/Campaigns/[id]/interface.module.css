@@ -1,17 +1,61 @@
 .pageContainer {
-  display: flex;
-  flex-direction: column;
-  padding: 40px;
-  gap: 20px;
+  background: linear-gradient(to bottom right, #ffffff00, #ffffff00);
+  padding: 1rem;
+  margin-top: 160px;
 }
 
 .header {
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: bold;
+  text-align: center;
+  color: #fbbf24;
+  margin-bottom: 1.5rem;
 }
 
 .panelsGrid {
+  max-width: 1400px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: minmax(200px, 1fr) minmax(300px, 2fr) minmax(200px, 1fr);
+  grid-template-areas: 
+    "left center right";
+  gap: 1rem;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  grid-area: left;
+}
+
+.centerColumns {
+  display: flex;
+  flex-direction: column;
+  grid-area: center;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  grid-area: right;
+}
+
+.leftColumn, .centerColumns, .rightColumn {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0; /* critical to allow shrinking */
+}
+
+@media (max-width: 1024px) {
+  .panelsGrid {
+    margin-top: -50px;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas: 
+      "center center"
+      "left right";
+  }
 }

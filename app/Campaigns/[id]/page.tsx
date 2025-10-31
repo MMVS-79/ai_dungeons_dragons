@@ -1,38 +1,535 @@
 "use client";
 
-import { useParams } from "next/navigation"; // get dynamic route params
+import { useState } from "react";
+import { useParams } from "next/navigation";
 import styles from "./interface.module.css";
-// import CharacterPanel from "./components/characterPanel/characterPanel";
-// import ChatPanel from "./components/chatPanel/chatPanel";
+import CharacterPanel from "./components/characterPanel/characterPanel";
+import EventPanel from "./components/eventPanel/eventPanel";
+import ChatPanel from "./components/chatPanel/chatPanel";
 import ItemPanel from "./components/itemPanel/itemPanel";
 import DicePanel from "./components/dicePanel/dicePanel";
 
-interface Campaign {
-  id: number;
+// Type definitions (might want to put these in a separate types.ts file later)
+interface Item {
+  id: string;
   name: string;
+  type: "weapon" | "armor" | "shield" | "potion";
+  image: string;
+  attack?: number;
+  defense?: number;
+  healAmount?: number;
+  description: string;
 }
+
+interface PlayerState {
+  name: string;
+  image: string;
+  hp: number;
+  maxHp: number;
+  baseAttack: number;
+  baseDefense: number;
+  inventory: Item[];
+  equipped: {
+    weapon?: Item;
+    armor?: Item;
+    shield?: Item;
+  };
+}
+
+interface EnemyState {
+  name: string;
+  image: string;
+  hp: number;
+  maxHp: number;
+  attack: number;
+  defense: number;
+}
+
+interface GameEvent {
+  type: "combat" | "item" | "story" | "equipment" | null;
+  data?: any;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  choices?: string[];
+}
+
+// Mock LLM response generator (replace this with your actual LLM API call later)
+const generateLLMResponse = (
+  choice: string,
+  diceRoll: number,
+  gameState: any
+) => {
+  if (gameState.enemyState && gameState.enemyState.hp > 0) {
+    // In combat
+    if (choice === "Attack") {
+      const playerDamage = Math.max(
+        1,
+        gameState.playerAttack - gameState.enemyState.defense + (diceRoll - 10)
+      );
+      const enemyDamage = Math.max(
+        1,
+        gameState.enemyState.attack - gameState.playerDefense
+      );
+
+      return {
+        type: "combat",
+        message: `You rolled a ${diceRoll}! You strike the ${gameState.enemyState.name} for ${playerDamage} damage! The ${gameState.enemyState.name} retaliates for ${enemyDamage} damage!`,
+        playerDamage: enemyDamage,
+        enemyDamage: playerDamage,
+        choices: ["Attack", "Use Potion"],
+      };
+    } else if (choice === "Use Potion") {
+      return {
+        type: "potion_prompt",
+        message: "Select a potion from your inventory to use.",
+        choices: ["Attack", "Use Potion"],
+      };
+    }
+  } else {
+    // Exploring
+    const eventRoll = Math.random() * 100;
+
+    if (diceRoll >= 16) {
+      return {
+        type: "combat",
+        message: `You rolled a ${diceRoll}! A Goblin Warrior jumps out from the shadows!`,
+        enemy: {
+          name: "Goblin Warrior",
+          hp: 30,
+          maxHp: 30,
+          attack: 8,
+          defense: 3,
+          image: "/characters/goblin.png",
+        },
+        choices: ["Attack", "Use Potion"],
+      };
+    } else if (diceRoll >= 14 && eventRoll < 33) {
+      // Found weapon
+      return {
+        type: "equipment",
+        equipmentType: "weapon",
+        message: `You rolled a ${diceRoll}! You discovered a gleaming Steel Blade in an old chest!`,
+        equipment: {
+          id: `weapon_${Date.now()}`,
+          name: "Steel Blade",
+          type: "weapon",
+          image: "/items/rare_sword.png",
+          attack: 8,
+          description: "A sharp steel blade (+8 Attack)",
+        },
+        choices: ["Pick Up", "Leave It"],
+      };
+    } else if (diceRoll >= 14 && eventRoll < 66) {
+      // Found armor
+      return {
+        type: "equipment",
+        equipmentType: "armor",
+        message: `You rolled a ${diceRoll}! You found a suit of Leather Armor hanging on the wall!`,
+        equipment: {
+          id: `armor_${Date.now()}`,
+          name: "Leather Armor",
+          type: "armor",
+          image: "/items/rare_armour.png",
+          defense: 6,
+          description: "Sturdy leather protection (+6 Defense)",
+        },
+        choices: ["Pick Up", "Leave It"],
+      };
+    } else if (diceRoll >= 14) {
+      // Found shield
+      return {
+        type: "equipment",
+        equipmentType: "shield",
+        message: `You rolled a ${diceRoll}! A Knight's Shield lies against the wall!`,
+        equipment: {
+          id: `shield_${Date.now()}`,
+          name: "Knight's Shield",
+          type: "shield",
+          image: "/items/rare_shield.png",
+          defense: 4,
+          description: "A reliable shield (+4 Defense)",
+        },
+        choices: ["Pick Up", "Leave It"],
+      };
+    } else if (diceRoll >= 10) {
+      return {
+        type: "item",
+        message: `You rolled a ${diceRoll}! You found a Health Potion hidden in the ruins!`,
+        item: {
+          id: `potion_${Date.now()}`,
+          name: "Health Potion",
+          type: "potion",
+          image: "/items/red_potion.png",
+          healAmount: 20,
+          description: "Restores 20 HP",
+        },
+        choices: ["Continue Forward", "Search Area"],
+      };
+    } else {
+      return {
+        type: "story",
+        message: `You rolled a ${diceRoll}. You carefully navigate through the dark corridor. Nothing happens... yet.`,
+        choices: ["Continue Forward", "Search Area"],
+      };
+    }
+  }
+};
 
 export default function CampaignPage() {
   const params = useParams();
-  const { id } = params; // dynamic route id as string
+  const { id } = params;
 
-  // Example: if you fetch campaign data, you could do it here
-  // For now, just simulating a campaign object
-  const campaign: Campaign = {
-    id: Number(id),
-    name: `Campaign #${id}`,
+  // Centralized game state
+  const [playerState, setPlayerState] = useState<PlayerState>({
+    name: "Yardle the Dwarf Warrior",
+    image: "/characters/warrior.png",
+    hp: 50,
+    maxHp: 50,
+    baseAttack: 10,
+    baseDefense: 5,
+    inventory: [
+      {
+        id: "potion1",
+        name: "Health Potion",
+        type: "potion",
+        image: "/items/red_potion.png",
+        healAmount: 20,
+        description: "Restores 20 HP",
+      },
+      {
+        id: "potion2",
+        name: "Health Potion",
+        type: "potion",
+        image: "/items/red_potion.png",
+        healAmount: 20,
+        description: "Restores 20 HP",
+      },
+    ],
+    equipped: {
+      weapon: {
+        id: "sword1",
+        name: "Iron Sword",
+        type: "weapon",
+        image: "/items/rare_sword.png",
+        attack: 5,
+        description: "+5 Attack",
+      },
+      armor: undefined,
+      shield: undefined,
+    },
+  });
+
+  const [enemyState, setEnemyState] = useState<EnemyState | null>(null);
+  const [currentEvent, setCurrentEvent] = useState<GameEvent>({ type: null });
+  const [pendingEquipment, setPendingEquipment] = useState<Item | null>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "1",
+      text: "You stand at the entrance of an ancient dungeon. The air is thick with mystery. What do you do?",
+      choices: ["Continue Forward", "Search Area"],
+    },
+  ]);
+  const [diceRolling, setDiceRolling] = useState(false);
+  const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
+  const [actionLocked, setActionLocked] = useState(false);
+
+  // Calculate total stats
+  const playerAttack =
+    playerState.baseAttack + (playerState.equipped.weapon?.attack || 0);
+  const playerDefense =
+    playerState.baseDefense +
+    (playerState.equipped.armor?.defense || 0) +
+    (playerState.equipped.shield?.defense || 0);
+
+  // Main action handler
+  const handleChatAction = async (choice: string) => {
+    // Prevent input spam
+    if (actionLocked) return;
+    setActionLocked(true);
+
+    try {
+      // Handle equipment pickup/leave
+      if (pendingEquipment && (choice === "Pick Up" || choice === "Leave It")) {
+        if (choice === "Pick Up") {
+          const equipmentSlot = pendingEquipment.type as
+            | "weapon"
+            | "armor"
+            | "shield";
+
+          // Check if slot is occupied
+          if (playerState.equipped[equipmentSlot]) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                text: `You already have a ${equipmentSlot} equipped. Would you like to replace it?`,
+                choices: ["Replace Equipment", "Leave It"],
+              },
+            ]);
+            return;
+          } else {
+            // Equip directly
+            setPlayerState((prev) => ({
+              ...prev,
+              equipped: {
+                ...prev.equipped,
+                [equipmentSlot]: pendingEquipment,
+              },
+            }));
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                text: `You equipped the ${pendingEquipment.name}!`,
+                choices: ["Continue Forward", "Search Area"],
+              },
+            ]);
+          }
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              text: `You decided to leave the ${pendingEquipment.name} behind.`,
+              choices: ["Continue Forward", "Search Area"],
+            },
+          ]);
+        }
+
+        setPendingEquipment(null);
+        setCurrentEvent({ type: null });
+        setActionLocked(false);
+        return;
+      }
+
+      // Handle replace equipment
+      if (pendingEquipment && choice === "Replace Equipment") {
+        const equipmentSlot = pendingEquipment.type as
+          | "weapon"
+          | "armor"
+          | "shield";
+        const oldEquipment = playerState.equipped[equipmentSlot];
+
+        setPlayerState((prev) => ({
+          ...prev,
+          equipped: {
+            ...prev.equipped,
+            [equipmentSlot]: pendingEquipment,
+          },
+        }));
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            text: `You replaced your ${oldEquipment?.name} with the ${pendingEquipment.name}!`,
+            choices: ["Continue Forward", "Search Area"],
+          },
+        ]);
+
+        setPendingEquipment(null);
+        setCurrentEvent({ type: null });
+        setActionLocked(false);
+        return;
+      }
+
+      // 1. Trigger dice roll
+      setDiceRolling(true);
+      setLastDiceResult(null);
+
+      // Simulate dice roll animation
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const diceResult = Math.floor(Math.random() * 20) + 1;
+      setLastDiceResult(diceResult);
+      setDiceRolling(false);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // 2. Generate LLM response (replace with actual API call)
+      const response = generateLLMResponse(choice, diceResult, {
+        enemyState,
+        playerAttack,
+        playerDefense,
+      });
+
+      // 3. Update game state based on response
+      if (response.type === "combat") {
+        if (response.enemy) {
+          // New combat encounter
+          setEnemyState(response.enemy);
+          setCurrentEvent({ type: "combat", data: response.enemy });
+        } else if (
+          response.enemyDamage !== undefined &&
+          response.playerDamage !== undefined
+        ) {
+          // Combat damage
+          setEnemyState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  hp: Math.max(0, prev.hp - response.enemyDamage),
+                }
+              : null
+          );
+
+          setPlayerState((prev) => ({
+            ...prev,
+            hp: Math.max(0, prev.hp - response.playerDamage),
+          }));
+
+          // Check if combat ended
+          if (enemyState && enemyState.hp - response.enemyDamage <= 0) {
+            setTimeout(() => {
+              setEnemyState(null);
+              setCurrentEvent({ type: null });
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString(),
+                  text: `Victory! The ${enemyState.name} has been defeated!`,
+                  choices: ["Continue Forward", "Search Area"],
+                },
+              ]);
+            }, 1500);
+          }
+        }
+      } else if (response.type === "item" && response.item) {
+        if (playerState.inventory.length < 10) {
+          setPlayerState((prev) => ({
+            ...prev,
+            inventory: [...prev.inventory, response.item],
+          }));
+          setCurrentEvent({ type: "item", data: response.item });
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              text: "Your inventory is full! You cannot pick up the item.",
+              choices: ["Continue Forward", "Search Area"],
+            },
+          ]);
+          return;
+        }
+      } else if (response.type === "equipment" && response.equipment) {
+        setPendingEquipment(response.equipment);
+        setCurrentEvent({ type: "equipment", data: response.equipment });
+      } else if (response.type === "story") {
+        setCurrentEvent({ type: "story" });
+      }
+
+      // 4. Update chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          text: response.message,
+          choices: response.choices,
+        },
+      ]);
+    } finally {
+      // --- Ensure it always unlocks ---
+      setActionLocked(false);
+    }
+  };
+
+  const handleItemUse = (item: Item) => {
+    if (item.type === "potion") {
+      setPlayerState((prev) => ({
+        ...prev,
+        hp: Math.min(prev.hp + (item.healAmount || 0), prev.maxHp),
+        inventory: prev.inventory.filter((i) => i.id !== item.id),
+      }));
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          text: `You used ${item.name} and restored ${item.healAmount} HP!`,
+          choices: enemyState
+            ? ["Attack", "Use Potion"]
+            : ["Continue Forward", "Search Area"],
+        },
+      ]);
+    }
+  };
+
+  const handleEquipItem = (item: Item, slot: string) => {
+    setPlayerState((prev) => {
+      const newState = { ...prev };
+
+      // Unequip old item if exists - don't add back to inventory
+      // Equip new item
+      newState.equipped = {
+        ...newState.equipped,
+        [slot]: item,
+      };
+      newState.inventory = newState.inventory.filter((i) => i.id !== item.id);
+
+      return newState;
+    });
+  };
+
+  const handleDropEquipment = (slot: string) => {
+    setPlayerState((prev) => ({
+      ...prev,
+      equipped: {
+        ...prev.equipped,
+        [slot]: undefined,
+      },
+    }));
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        text: `You unequipped your ${slot}.`,
+        choices: enemyState
+          ? ["Attack", "Use Potion"]
+          : ["Continue Forward", "Search Area"],
+      },
+    ]);
   };
 
   return (
     <div className={styles.pageContainer}>
-      <h1 className={styles.header}>{campaign.name}</h1>
-
       <div className={styles.panelsGrid}>
-        {/* Layout example: 2x2 grid */}
-        {/* <CharacterPanel />
-        <ChatPanel /> */}
-        <ItemPanel />
-        <DicePanel />
+        {/* Left Column */}
+        <div className={styles.leftColumn}>
+          <CharacterPanel
+            playerState={playerState}
+            playerAttack={playerAttack}
+            playerDefense={playerDefense}
+          />
+          <ItemPanel
+            inventory={playerState.inventory}
+            equipped={playerState.equipped}
+            onUseItem={handleItemUse}
+            onEquipItem={handleEquipItem}
+            onDropEquipment={handleDropEquipment}
+            inCombat={enemyState !== null && enemyState.hp > 0}
+          />
+        </div>
+
+        {/* Center Column */}
+        <div className={styles.centerColumns}>
+          <ChatPanel
+            messages={messages}
+            onAction={handleChatAction}
+            disabled={diceRolling}
+          />
+        </div>
+
+        {/* Right Column */}
+        <div className={styles.rightColumn}>
+          <EventPanel currentEvent={currentEvent} enemyState={enemyState} />
+          <DicePanel isRolling={diceRolling} lastResult={lastDiceResult} />
+        </div>
       </div>
     </div>
   );
