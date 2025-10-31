@@ -20,6 +20,15 @@ export default function CampaignsPage() {
       alert("You can only have up to 5 campaigns at a time.");
       return;
     }
+
+    // const newCampaign: Campaign = {
+    //   id: nextId,
+    //   name: `Temporary Campaign #${nextId}`,
+    // };
+
+    // setCampaigns((prev) => [newCampaign, ...prev]);
+    // setNextId((id) => id + 1);
+
     // Navigate to the new campaign page
     router.push("/campaigns/new");
   };

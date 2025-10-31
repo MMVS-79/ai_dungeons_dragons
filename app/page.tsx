@@ -44,13 +44,13 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
+                <a href="https://linkedin.com" target="_blank">
+                  <img src="./icons/icon_linkedin.png" />
+                </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_linkedin.png" />
-                </a>
-                <a href="https://linkedin.com" target="_blank">
                   <img src="./icons/icon_github.png" />
                 </a>
               </div>
@@ -66,13 +66,13 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
+                <a href="https://linkedin.com" target="_blank">
+                  <img src="./icons/icon_linkedin.png" />
+                </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_linkedin.png" />
-                </a>
-                <a href="https://linkedin.com" target="_blank">
                   <img src="./icons/icon_github.png" />
                 </a>
               </div>
@@ -88,13 +88,13 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
+                <a href="https://linkedin.com" target="_blank">
+                  <img src="./icons/icon_linkedin.png" />
+                </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_linkedin.png" />
-                </a>
-                <a href="https://linkedin.com" target="_blank">
                   <img src="./icons/icon_github.png" />
                 </a>
               </div>
@@ -110,13 +110,13 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
+                <a href="https://linkedin.com" target="_blank">
+                  <img src="./icons/icon_linkedin.png" />
+                </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_linkedin.png" />
-                </a>
-                <a href="https://linkedin.com" target="_blank">
                   <img src="./icons/icon_github.png" />
                 </a>
               </div>
@@ -132,13 +132,13 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
+                <a href="https://linkedin.com" target="_blank">
+                  <img src="./icons/icon_linkedin.png" />
+                </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_linkedin.png" />
-                </a>
-                <a href="https://linkedin.com" target="_blank">
                   <img src="./icons/icon_github.png" />
                 </a>
               </div>
@@ -154,13 +154,13 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
+                <a href="https://linkedin.com" target="_blank">
+                  <img src="./icons/icon_linkedin.png" />
+                </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_linkedin.png" />
-                </a>
-                <a href="https://linkedin.com" target="_blank">
                   <img src="./icons/icon_github.png" />
                 </a>
               </div>

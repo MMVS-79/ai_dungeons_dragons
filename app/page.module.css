@@ -43,7 +43,7 @@
   max-height: 300px;
 }
 
-@media (max-width: 1035px) {
+@media (max-width: 1024px) {
   .mainInfoBody {
     grid-template-columns: 1fr;
   }

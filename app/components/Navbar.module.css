@@ -162,7 +162,7 @@
 }
 
 /* Media query: small screens */
-@media (max-width: 1035px) {
+@media (max-width: 1024px) {
   .buttons {
     display: none;
     flex-direction: column;
