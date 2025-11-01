@@ -17,7 +17,7 @@ interface Item {
   image: string;
   attack?: number;
   defense?: number;
-  hpBonus?: number;  // Added for armor HP bonus
+  hpBonus?: number;
   healAmount?: number;
   description: string;
 }
@@ -509,7 +509,6 @@ export default function CampaignPage() {
       
       // If unequipping armor, cap HP to new maxHp
       if (slot === "armor" && prev.equipped.armor) {
-        const lostHpBonus = prev.equipped.armor.hpBonus || 0;
         const newMaxHp = prev.maxHp;
         newState.hp = Math.min(prev.hp, newMaxHp);
       }
@@ -522,16 +521,18 @@ export default function CampaignPage() {
       return newState;
     });
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        text: `You unequipped your ${slot}.`,
-        choices: enemyState
-          ? ["Attack", "Use Potion"]
-          : ["Continue Forward", "Search Area"],
-      },
-    ]);
+    setMessages((prev) => {
+      const lastChoices = prev.length > 0 ? prev[prev.length - 1].choices : undefined;
+    
+      return [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          text: `You unequipped your ${slot}.`,
+          choices: lastChoices,
+        },
+      ];
+    });
   };
 
   return (
