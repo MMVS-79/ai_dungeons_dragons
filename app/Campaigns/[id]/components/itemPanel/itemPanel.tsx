@@ -9,7 +9,7 @@ interface Item {
   image: string;
   attack?: number;
   defense?: number;
-  hpBonus?: number;  // Added for armor
+  hpBonus?: number;
   healAmount?: number;
   description: string;
 }
