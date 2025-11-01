@@ -1,7 +1,8 @@
 .pageContainer {
   background: linear-gradient(to bottom right, #ffffff00, #ffffff00);
   padding: 1rem;
-  margin-top: 160px;
+  margin-top: var(--navbar-height, 140px);
+  transition: margin-top 0.4s ease;
 }
 
 .header {
@@ -51,7 +52,7 @@
 
 @media (max-width: 1024px) {
   .panelsGrid {
-    margin-top: -50px;
+    margin-top: 20px;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
     grid-template-areas: 
