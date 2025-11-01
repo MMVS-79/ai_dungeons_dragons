@@ -93,7 +93,21 @@ const generateLLMResponse = (
     // Exploring
     const eventRoll = Math.random() * 100;
 
-    if (diceRoll >= 20) {
+    if (diceRoll >= 19) {
+      return {
+        type: "combat",
+        message: `You rolled a ${diceRoll}! A Red Dragon crashed down from the sky!`,
+        enemy: {
+          name: "Red Dragon",
+          hp: 100,
+          maxHp: 100,
+          attack: 30,
+          defense: 15,
+          image: "/characters/dragon.png",
+        },
+        choices: ["Attack", "Use Potion"],
+      };
+    } else if (diceRoll >= 16) {
       return {
         type: "combat",
         message: `You rolled a ${diceRoll}! A Goblin Warrior jumps out from the shadows!`,
@@ -118,8 +132,8 @@ const generateLLMResponse = (
           name: "Steel Blade",
           type: "weapon",
           image: "/items/epic_sword.png",
-          attack: 8,
-          description: "A sharp steel blade (+8 Attack)",
+          attack: 10,
+          description: "A sharp steel blade (+10 Attack)",
         },
         choices: ["Pick Up", "Leave It"],
       };
@@ -134,8 +148,8 @@ const generateLLMResponse = (
           name: "Leather Armor",
           type: "armor",
           image: "/items/rare_armour.png",
-          hpBonus: 20,
-          description: "Sturdy iron protection (+20 Max HP)",
+          hpBonus: 30,
+          description: "Sturdy iron protection (+30 Max HP)",
         },
         choices: ["Pick Up", "Leave It"],
       };
@@ -150,8 +164,8 @@ const generateLLMResponse = (
           name: "Knight's Shield",
           type: "shield",
           image: "/items/epic_shield.png",
-          defense: 6,
-          description: "A reliable shield (+6 Defense)",
+          defense: 10,
+          description: "A reliable shield (+10 Defense)",
         },
         choices: ["Pick Up", "Leave It"],
       };
@@ -383,7 +397,7 @@ export default function CampaignPage() {
         enemyState,
         playerAttack,
         playerDefense,
-      });
+      })!;
 
       // 3. Update game state based on response
       if (response.type === "combat") {
