@@ -33,14 +33,14 @@ interface CharacterPanelProps {
   playerState: PlayerState;
   playerAttack: number;
   playerDefense: number;
-  playerMaxHp: number;  // Added this prop
+  playerMaxHp: number;
 }
 
 export default function CharacterPanel({ 
   playerState,
   playerAttack,
   playerDefense,
-  playerMaxHp  // Added this parameter
+  playerMaxHp
 }: CharacterPanelProps) {
   return (
     <div className={styles.panel}>
@@ -51,8 +51,8 @@ export default function CharacterPanel({
           <Image 
             src={playerState.image} 
             alt={playerState.name}
-            width={80}
-            height={80}
+            width={512}
+            height={512}
           />
         </div>
         <h3 className={styles.characterName}>{playerState.name}</h3>

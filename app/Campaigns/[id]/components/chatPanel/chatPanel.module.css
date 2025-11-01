@@ -6,8 +6,8 @@
   /* box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); */
   display: flex;
   flex-direction: column;
-  height: 700px;
-  max-height: 700px;
+  height: 820px;
+  max-height: 820px;
 }
 
 .header {

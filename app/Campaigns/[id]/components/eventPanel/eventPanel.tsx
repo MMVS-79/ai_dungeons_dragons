@@ -47,8 +47,8 @@ export default function EventPanel({
             <Image 
               src={enemyState.image} 
               alt={enemyState.name}
-              width={100}
-              height={100}
+              width={512}
+              height={512}
             />
           </div>
           
@@ -80,8 +80,8 @@ export default function EventPanel({
               <Image 
                 src={currentEvent.data.image} 
                 alt={currentEvent.data.name}
-                width={80}
-                height={80}
+                width={512}
+                height={512}
               />
             </div>
             <div className={styles.itemName}>{currentEvent.data.name}</div>
@@ -98,8 +98,8 @@ export default function EventPanel({
               <Image 
                 src={currentEvent.data.image} 
                 alt={currentEvent.data.name}
-                width={80}
-                height={80}
+                width={512}
+                height={512}
               />
             </div>
             <div className={styles.itemName}>{currentEvent.data.name}</div>
