@@ -10,7 +10,8 @@
   min-width: 0;
   flex: 1 1 auto;
   box-sizing: border-box;
-  max-height: 385px;
+  max-height: 380px;
+  height: 380px;
 }
 
 .header {

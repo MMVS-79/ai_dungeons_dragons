@@ -5,7 +5,8 @@
   border: 2px solid #ffffff;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s;
-  max-height: 385px;
+  max-height: 380px;
+  height: 380px;
 }
 
 .panel:hover {
