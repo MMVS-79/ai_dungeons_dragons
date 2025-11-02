@@ -11,12 +11,13 @@ export default function Navbar() {
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
 
-  // Check if we're on a campaign page
-  const isCampaignPage = pathname?.startsWith("/campaigns/") && pathname.split("/").length > 2;
+  // Check if we're on a campaign page (exclude /campaigns/new)
+  const pathSegments = pathname?.split("/") || [];
+  const isCampaignPage = pathSegments[1] === "campaigns" && pathSegments[2] && pathSegments[2] !== "new";
 
   // Set collapsed state based on page on mount
   useEffect(() => {
-    setIsCollapsed(isCampaignPage);
+    setIsCollapsed(Boolean(isCampaignPage));
     setIsMounted(true);
   }, [isCampaignPage]);
 
@@ -29,7 +30,7 @@ export default function Navbar() {
       if (isCollapsed) {
         height = isMobile ? '60px' : '60px';   // collaped mobile : collapsed desktop
       } else {
-        height = isMobile ? '80px' : '25px'; // expanded mobile : expanded desktop
+        height = isMobile ? '80px' : '160px'; // expanded mobile : expanded desktop
       }
 
       document.documentElement.style.setProperty('--navbar-height', height);

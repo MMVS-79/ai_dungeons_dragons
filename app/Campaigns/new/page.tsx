@@ -115,7 +115,6 @@ export default function NewCampaignPage() {
 
   return (
     <>
-      <Navbar />
       <div className={styles.pageContainer}>
         {/* Side Panel */}
         <div className={styles.sidePanel}>
