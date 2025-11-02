@@ -1,5 +1,4 @@
-import Navbar from "./components/Navbar";
-import styles from "./page.module.css";
+import styles from "./home.module.css";
 
 export default function Landing() {
   return (
