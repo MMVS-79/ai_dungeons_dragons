@@ -1,39 +1,65 @@
 // armour
 https://www.flaticon.com/free-icon/armor_8519926
-
 https://www.flaticon.com/free-icon/knight_909450
-
 https://www.flaticon.com/free-icon/armour_7835730
 
 
 // shields
 https://www.flaticon.com/free-icon/shield_9414678
-
 https://www.flaticon.com/free-icon/shield_4021553
-
 https://www.flaticon.com/free-icon/award_1959469
 
 // swords
 https://www.flaticon.com/free-icon/sword_4155687
-
 https://www.flaticon.com/free-icon/sword_4155897
-
 https://www.flaticon.com/free-icon/sword_4330788
 
 // items
 https://www.flaticon.com/free-icon/love-potion_9812572
-
 https://www.flaticon.com/free-icon/potion_2029453
-
 https://www.flaticon.com/free-icon/poison_9276363
-
 https://www.flaticon.com/free-icon/scrolls_13112882
 
-// goblin
-https://www.flaticon.com/free-icon/goblin_2332632
+// other
+https://www.flaticon.com/free-icon/treasure-chest_4320061
 
-// warrior
-https://www.flaticon.com/free-icon/warrior_2332589
+---------------------------------------------------
 
-// dragon
+// characters
+https://www.flaticon.com/free-icon/warrior_2332589 // dwarf warrior
+https://www.flaticon.com/free-icon/archer_2332597 // elf archer
+https://www.flaticon.com/free-icon/elf_4413190 // rogue elf
+
+// enemies
+https://www.flaticon.com/free-icon/santa-claus_2332736
+https://www.flaticon.com/free-icon/zeus_2332642
+
+// bosses
 https://www.flaticon.com/free-icon/dragon_2332588
+https://www.flaticon.com/free-icon/dragon_4413197 // black dragon
+https://www.flaticon.com/free-icon/griffin_6007998
+https://www.flaticon.com/free-icon/chimera_2332571
+
+// high tier
+https://www.flaticon.com/free-icon/monster_2332614 // troll
+https://www.flaticon.com/free-icon/vampire_2332775
+https://www.flaticon.com/free-icon/minotaur_2332712
+https://wiki.melvoridle.com/w/Hill_Giant // cyclops
+https://www.flaticon.com/free-icon/ghost_2332612
+
+// mid tier
+https://www.flaticon.com/free-icon/undead_4413209 // orc
+https://www.flaticon.com/free-icon/echidna_2332593
+https://www.flaticon.com/free-icon/wizard_2332721?term=wizard&page=1&position=67 // dark wizard
+https://www.flaticon.com/free-icon/centaur_2332567
+https://www.flaticon.com/free-icon/devil_2332664
+
+// low tier
+https://www.flaticon.com/free-icon/mouse_3099299
+https://www.flaticon.com/free-icon/zombie_2332812
+https://www.flaticon.com/free-icon/goblin_2332632
+https://wiki.melvoridle.com/w/Wicked_Spider
+https://www.flaticon.com/free-icon/mummy_2332720
+
+// other
+https://www.flaticon.com/free-icon/treasures_4215429 // mimic
