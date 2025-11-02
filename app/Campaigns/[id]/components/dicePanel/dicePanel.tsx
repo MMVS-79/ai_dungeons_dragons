@@ -11,7 +11,7 @@ interface DicePanelProps {
 
 export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null); // Added for text inside box
+  const resultRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
@@ -19,6 +19,7 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
     dice: THREE.Group;
   } | null>(null);
   const faceToNumberMap = useRef<Map<number, number>>(new Map());
+  const faceDataRef = useRef<Array<{center: THREE.Vector3, vertices: THREE.Vector3[]}>>([]);
 
   // ===== CUSTOMIZABLE COLORS - CHANGE THESE IN CODE =====
   const DICE_COLOR = 0x000000;
@@ -80,6 +81,7 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
     const positions = geometry.attributes.position.array;
     const faceMeshes: THREE.Mesh[] = [];
     const faceCenters: THREE.Vector3[] = [];
+    const faceData: Array<{center: THREE.Vector3, vertices: THREE.Vector3[]}> = [];
     faceToNumberMap.current.clear();
 
     // Create a small plane for each face with the number texture
@@ -109,6 +111,12 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
         .add(v3)
         .divideScalar(3);
       faceCenters.push(center.clone());
+      
+      // Store face data for rotation calculation
+      faceData.push({
+        center: center.clone(),
+        vertices: [v1.clone(), v2.clone(), v3.clone()]
+      });
 
       const edge1 = new THREE.Vector3().subVectors(v2, v1);
       const edge2 = new THREE.Vector3().subVectors(v3, v1);
@@ -123,11 +131,19 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
       canvas.width = 256;
       canvas.height = 256;
       const ctx = canvas.getContext("2d")!;
+
+      // Flip horizontally to fix mirroring
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.translate(-canvas.width, 0);
+          
       ctx.fillStyle = NUMBER_COLOR;
       ctx.font = "bold 200px Arial";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(numberForFace.toString(), 128, 128);
+
+      ctx.restore();
 
       const texture = new THREE.CanvasTexture(canvas);
       const planeMaterial = new THREE.MeshBasicMaterial({
@@ -140,15 +156,31 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
       const planeGeometry = new THREE.PlaneGeometry(0.4, 0.4);
       const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
-      // Position plane at face center, pushed slightly outward (reduced from 1.02 to 1.005)
+      // Position plane at face center
       plane.position.copy(center.normalize().multiplyScalar(0.8));
 
-      // Orient plane to match face normal
-      plane.lookAt(plane.position.clone().add(normal));
+      // Find the top vertex (highest Y)
+      let topVertex = v1.clone();
+      for (const v of [v2, v3]) {
+        if (v.y > topVertex.y) {
+          topVertex = v.clone();
+        }
+      }
+      
+      // Up vector from center to top vertex
+      const upVector = new THREE.Vector3().subVectors(topVertex, center).normalize();
+      
+      // Orient plane to face with up vector
+      const targetPosition = plane.position.clone().normalize();
+      const matrix = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), targetPosition, upVector);
+      const quaternion = new THREE.Quaternion().setFromRotationMatrix(matrix);
+      plane.quaternion.copy(quaternion);
 
       dice.add(plane);
       faceMeshes.push(plane);
     }
+    
+    faceDataRef.current = faceData;
 
     sceneRef.current = { scene, camera, renderer, dice };
 
@@ -199,7 +231,7 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
     };
   }, [isRolling, lastResult]);
 
-  // Calculate rotation to show the face with the given number facing the camera
+  // Calculate rotation to show the face with the given number facing the camera with number upright
   const getRotationForResult = (
     targetNumber: number,
     faceCenters: THREE.Vector3[]
@@ -217,20 +249,45 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
       return new THREE.Euler(0, 0, 0);
     }
 
-    // Get the face center in world space
+    const face = faceDataRef.current[targetFaceIndex];
     const faceCenter = faceCenters[targetFaceIndex].clone().normalize();
-
-    // We want this face to point toward camera (which is at positive Z)
-    // Camera looks down -Z axis, so we want face normal to point to +Z
     const targetDirection = new THREE.Vector3(0, 0, 1);
 
-    // Create a quaternion that rotates faceCenter to targetDirection
-    const quaternion = new THREE.Quaternion();
-    quaternion.setFromUnitVectors(faceCenter, targetDirection);
+    // Find the top vertex (highest Y coordinate)
+    let topVertex = face.vertices[0].clone();
+    for (const v of face.vertices) {
+      if (v.y > topVertex.y) {
+        topVertex = v.clone();
+      }
+    }
 
-    // Convert quaternion to euler
+    // Create up vector from center to top vertex
+    const upVector = new THREE.Vector3().subVectors(topVertex, face.center).normalize();
+
+    // Step 1: Rotate face normal to point at camera
+    const quaternion1 = new THREE.Quaternion();
+    quaternion1.setFromUnitVectors(faceCenter, targetDirection);
+
+    // Apply first rotation to the up vector
+    const rotatedUp = upVector.clone().applyQuaternion(quaternion1);
+
+    // Step 2: Rotate around Z-axis (face normal) to make top point up
+    const projectedUp = new THREE.Vector2(rotatedUp.x, rotatedUp.y);
+    const targetUp = new THREE.Vector2(0, 1);
+    
+    // Calculate angle needed to align with Y-axis (up direction)
+    const angle = Math.atan2(targetUp.y, targetUp.x) - Math.atan2(projectedUp.y, projectedUp.x);
+
+    // Create second rotation around Z-axis
+    const quaternion2 = new THREE.Quaternion();
+    quaternion2.setFromAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+
+    // Combine both rotations
+    const finalQuaternion = quaternion2.multiply(quaternion1);
+
+    // Convert to Euler
     const euler = new THREE.Euler();
-    euler.setFromQuaternion(quaternion);
+    euler.setFromQuaternion(finalQuaternion);
 
     return euler;
   };
