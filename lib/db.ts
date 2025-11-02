@@ -1,3 +1,18 @@
+/**
+ * Database Connection Handler
+ * ---------------------------
+ * Creates and exports a reusable database client for MySQL/PostgreSQL.
+ * 
+ * Responsibilities:
+ * - query(): execute SQL statements from schema/tables/
+ * - connect(): establish DB connection
+ * - close(): clean up connection
+ * 
+ * Used by:
+ * - gameEngine.service.ts → read/write player and campaign data
+ * - llm.service.ts → store LLM event logs
+ */
+
 import 'dotenv/config';
 import mysql from "mysql2/promise";
 
