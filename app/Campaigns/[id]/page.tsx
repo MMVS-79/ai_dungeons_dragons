@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import styles from "./interface.module.css";
 import CharacterPanel from "./components/characterPanel/characterPanel";
 import EventPanel from "./components/eventPanel/eventPanel";
@@ -93,7 +93,7 @@ const generateLLMResponse = (
     // Exploring
     const eventRoll = Math.random() * 100;
 
-    if (diceRoll >= 19) {
+    if (diceRoll >= 20) {
       return {
         type: "combat",
         message: `You rolled a ${diceRoll}! A Red Dragon crashed down from the sky!`,
@@ -103,11 +103,12 @@ const generateLLMResponse = (
           maxHp: 100,
           attack: 30,
           defense: 15,
-          image: "/characters/dragon.png",
+          image: "/characters/enemy/boss/dragon.png",
+          isBoss: true, // Add this flag
         },
         choices: ["Attack", "Use Potion"],
       };
-    } else if (diceRoll >= 16) {
+    } else if (diceRoll >= 15) {
       return {
         type: "combat",
         message: `You rolled a ${diceRoll}! A Goblin Warrior jumps out from the shadows!`,
@@ -117,7 +118,7 @@ const generateLLMResponse = (
           maxHp: 30,
           attack: 8,
           defense: 3,
-          image: "/characters/goblin.png",
+          image: "/characters/enemy/low/goblin.png",
         },
         choices: ["Attack", "Use Potion"],
       };
@@ -195,12 +196,13 @@ const generateLLMResponse = (
 
 export default function CampaignPage() {
   const params = useParams();
+  const router = useRouter();
   const { id } = params;
 
   // Centralized game state
   const [playerState, setPlayerState] = useState<PlayerState>({
     name: "Yardle the Dwarf Warrior",
-    image: "/characters/warrior.png",
+    image: "/characters/player/warrior.png",
     hp: 65,
     maxHp: 50,
     baseAttack: 10,
@@ -264,6 +266,8 @@ export default function CampaignPage() {
   const [diceRolling, setDiceRolling] = useState(false);
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [showVictory, setShowVictory] = useState(false);
 
   // Calculate total stats - armor now affects maxHp instead of defense
   const playerAttack =
@@ -276,8 +280,8 @@ export default function CampaignPage() {
 
   // Main action handler
   const handleChatAction = async (choice: string) => {
-    // Prevent input spam
-    if (actionLocked) return;
+    // Prevent input spam OR if game has ended
+    if (actionLocked || showGameOver || showVictory) return;
     setActionLocked(true);
 
     try {
@@ -410,22 +414,41 @@ export default function CampaignPage() {
           response.playerDamage !== undefined
         ) {
           // Combat damage
+          const newEnemyHp = Math.max(0, (enemyState?.hp || 0) - response.enemyDamage);
+          const newPlayerHp = Math.max(0, playerState.hp - response.playerDamage);
+          
+          // Check game end conditions IMMEDIATELY
+          const playerDied = newPlayerHp <= 0;
+          const enemyDefeated = enemyState && newEnemyHp <= 0;
+          const wasBoss = enemyDefeated && (enemyState as any).isBoss === true;
+                  
+          // Set game end states immediately to block further actions
+          if (playerDied) {
+            setShowGameOver(true);
+            setActionLocked(true);
+          } else if (wasBoss) {
+            setShowVictory(true);
+            setActionLocked(true);
+          }
+
           setEnemyState((prev) =>
             prev
               ? {
                   ...prev,
-                  hp: Math.max(0, prev.hp - response.enemyDamage),
+                  hp: newEnemyHp,
                 }
               : null
           );
 
           setPlayerState((prev) => ({
             ...prev,
-            hp: Math.max(0, prev.hp - response.playerDamage),
+            hp: newPlayerHp,
           }));
 
-          // Check if combat ended
-          if (enemyState && enemyState.hp - response.enemyDamage <= 0) {
+          // Show messages with delay (for dramatic effect)
+          if (playerDied) {
+            // Don't need to do anything, modal already showing
+          } else if (enemyDefeated && !wasBoss) {
             setTimeout(() => {
               setEnemyState(null);
               setCurrentEvent({ type: null });
@@ -549,6 +572,10 @@ export default function CampaignPage() {
     });
   };
 
+  const handleReturnToCampaigns = () => {
+    router.push("/campaigns");
+  };
+
   return (
     <div className={styles.pageContainer}>
       <div className={styles.panelsGrid}>
@@ -575,7 +602,7 @@ export default function CampaignPage() {
           <ChatPanel
             messages={messages}
             onAction={handleChatAction}
-            disabled={diceRolling}
+            disabled={diceRolling || showGameOver || showVictory}  // Add game end conditions
           />
         </div>
 
@@ -585,6 +612,50 @@ export default function CampaignPage() {
           <DicePanel isRolling={diceRolling} lastResult={lastDiceResult} />
         </div>
       </div>
+
+      {/* Add pointer-events: none to entire grid when game ends */}
+      {(showGameOver || showVictory) && (
+        <div className={styles.disableOverlay}></div>
+      )}
+
+      {/* Game Over Modal */}
+      {showGameOver && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h1 className={styles.modalTitle}>You Died!</h1>
+            <p className={styles.modalText}>Your adventure has come to an end...</p>
+            <button 
+              className={styles.modalButton}
+              onClick={handleReturnToCampaigns}
+            >
+              Return to Campaigns
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Victory Modal */}
+      {showVictory && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h1 className={styles.modalTitle}>You Beat The Boss!</h1>
+            <div className={styles.victoryImage}>
+              <img 
+                src="/victory.png" 
+                alt="Victory" 
+                className={styles.victoryImg}
+              />
+            </div>
+            <p className={styles.modalText}>Congratulations, brave adventurer!</p>
+            <button 
+              className={styles.modalButton}
+              onClick={handleReturnToCampaigns}
+            >
+              Return to Campaigns
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
