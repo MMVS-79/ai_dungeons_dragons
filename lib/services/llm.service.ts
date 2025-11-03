@@ -1,6 +1,16 @@
 /**
- * LLM Service - Gemini API Integration
- * Generates D&D events based on game context with history awareness
+ * LLM Service
+ * -----------
+ * Handles all LLM-based event generation and context tracking.
+ * 
+ * Responsibilities:
+ * - generateEvent(context): Sends current character + recent events to model.
+ * - parseLLMResponse(): Extracts event text, type, and effects.
+ * - logLLMEvent(): Saves model outputs into logs table for traceability.
+ * 
+ * Interacts With:
+ * - gameEngine.service.ts → for next-event requests.
+ * - DB (logs.sql) → saves and retrieves LLM responses.
  */
 
 import { GoogleGenAI } from "@google/genai";

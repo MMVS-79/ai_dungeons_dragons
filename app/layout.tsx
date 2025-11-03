@@ -13,19 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "D&D",
-  description: "The best D&D experience"
+  title: "Dumbgeons & Dragons",
+  description: "The best D&D experience",
+  icons: {
+    icon: "/icons/black logo - circle.png"
+  }
 };
 
 export default function RootLayout({
   children
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{
+          minHeight: "100vh",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--background)",
+          color: "var(--foreground)"
+        }}
       >
         {children}
       </body>
