@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
-import styles from "./Home.module.css";
+import styles from "./dragon.module.css";
 
 interface Dragon {
   id: number;
