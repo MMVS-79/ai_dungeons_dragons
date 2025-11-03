@@ -1,6 +1,11 @@
 /**
  * Environment Configuration Helper
+ * -------------------------
+ * Loads and validates required environment variable GEMINI_API_KEY from (.env)
+ * is available.
+ * 
  */
+
 
 export function getEnvVar(key: string, fallback?: string): string {
   const value = process.env[key];

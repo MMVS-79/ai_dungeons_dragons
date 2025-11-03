@@ -1,6 +1,21 @@
 /**
- * LLM Service Type Definitions
- * Contract for LLM integration with game engine
+ * LLM Types
+ * ----------
+ * Shared TypeScript interfaces used by the LLMService for generating and interpreting
+ * game events. Ensures consistent data structures between Backend, GameEngine, and WebClient.
+ * 
+ * Includes:
+ * - LLMEvent:        { type, text, optional effects/data }
+ * - LLMEventEffect:  { target, effectType, value, optional description }
+ * - LLMGameContext:  { player info, enemy info, recentEvents, environment }
+ * - Item:            { name, description, optional image, rarity, modifiers }
+ * - Equipment:       { extends Item; slot, optional durability }
+ * 
+ * These types directly support:
+ *  - llm.service.ts
+ *  - gameEngine.service.ts
+ *  - DB schema (items, armours, weapons, enemies, logs)
+ *  - Frontend panels (eventPanel.tsx)
  */
 
 // Event types matching your test-gemini.js
