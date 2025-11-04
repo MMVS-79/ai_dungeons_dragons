@@ -476,9 +476,9 @@ export default function CampaignPage() {
         if (playerState.inventory.length < 10) {
           setPlayerState((prev) => ({
             ...prev,
-            inventory: [...prev.inventory, ...(response.item ? [response.item] : [])],
+            inventory: [...prev.inventory, response.item as Item],
           }));
-          setCurrentEvent({ type: "item", data: response.item });
+          setCurrentEvent({ type: "item", data: response.item as Item});
         } else {
           setMessages((prev) => [
             ...prev,
@@ -491,8 +491,8 @@ export default function CampaignPage() {
           return;
         }
       } else if (response.type === "equipment" && response.equipment) {
-        setPendingEquipment(response.equipment);
-        setCurrentEvent({ type: "equipment", data: response.equipment });
+        setPendingEquipment(response.equipment as Item);
+        setCurrentEvent({ type: "equipment", data: response.equipment as Item});
       } else if (response.type === "story") {
         setCurrentEvent({ type: "story" });
       }
