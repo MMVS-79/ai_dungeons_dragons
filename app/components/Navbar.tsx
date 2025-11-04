@@ -63,12 +63,14 @@ export default function Navbar() {
               src="/icons/white logo - circle.png"
               alt="Logo"
               className={styles.collapsedLogo}
+              width={64}
+              height={64}
             />
             <span className={styles.collapsedProjectName}>Dumbgeons & Dragons</span>
           </div>
           <div className={styles.collapsedCenter}>
             <span className={styles.expandText}>Click to expand navigation bar</span>
-            <Image className={styles.Arrow} src="/icons/down_arrow.png" alt="expand navigation bar arrow" />
+            <Image className={styles.Arrow} src="/icons/down_arrow.png" alt="expand navigation bar arrow" width={20} height={10} />
           </div>
         </div>
       )}
@@ -82,6 +84,8 @@ export default function Navbar() {
               src="/icons/white logo - circle.png"
               alt="Logo"
               className={styles.logo}
+              width={64}
+              height={64}
             />
             <span className={styles.projectName}>Dumbgeons & Dragons</span>
           </Link>
@@ -100,6 +104,8 @@ export default function Navbar() {
               src="/icons/Login icon.png"
               alt="Logo"
               className={styles.loginIcon}
+              width={20} 
+              height={20}
             />
             Login
           </Link>
@@ -118,7 +124,7 @@ export default function Navbar() {
             className={styles.collapseStrip}
             onClick={() => setIsCollapsed(true)}
           >
-            <Image className={styles.Arrow} src="/icons/up_arrow.png" alt="collapse navigation bar arrow" />
+            <Image className={styles.Arrow} src="/icons/up_arrow.png" alt="collapse navigation bar arrow" width={20} height={10} />
           </div>
         )}
 
@@ -152,6 +158,8 @@ export default function Navbar() {
               src="/icons/Login icon.png"
               alt="Logo"
               className={styles.loginIcon}
+              width={20}
+              height={20}
             />
             Login
           </Link>
