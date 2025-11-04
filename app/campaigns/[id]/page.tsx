@@ -490,7 +490,7 @@ export default function CampaignPage() {
           ]);
           return;
         }
-      } else if (response.type === "equipment" && response.equipment) {
+      } else if (response.type === "equipment" && response.equipment as Item) {
         setPendingEquipment(response.equipment as Item);
         setCurrentEvent({ type: "equipment", data: response.equipment as Item});
       } else if (response.type === "story") {
