@@ -650,7 +650,7 @@ export default function CampaignPage() {
             <h1 className={styles.modalTitle}>You Beat The Boss!</h1>
             <div className={styles.victoryImage}>
               <Image 
-                src="/victory.png" 
+                src="/other/victory.png" 
                 alt="Victory" 
                 className={styles.victoryImg}
                 width={512}
