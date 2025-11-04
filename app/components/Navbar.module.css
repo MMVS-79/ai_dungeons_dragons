@@ -162,7 +162,7 @@
 }
 
 /* Media query: small screens */
-@media (max-width: 1035px) {
+@media (max-width: 1024px) {
   .buttons {
     display: none;
     flex-direction: column;
@@ -192,4 +192,151 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 220px;
+}
+
+/* Collapsed state */
+.navbar.collapsed {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+/* Collapsed bar */
+.collapsedBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  
+  background: radial-gradient(
+    ellipse 150% 150% at 150% -70%,
+    rgba(255, 255, 255),
+    #0a0a0a 95%
+  );
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+  
+  border-bottom: 1px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10%;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.collapsedBar:hover {
+  background: rgba(0, 0, 0, 0.8);
+  height: 60px;
+}
+
+.collapsedBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collapsedLogo {
+  height: 30px;
+  width: 30px;
+  object-fit: contain;
+}
+
+.collapsedProjectName {
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+}
+
+.collapsedCenter {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.expandText {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.Arrow {
+  height: 10px;
+}
+
+/* Collapse strip at bottom of navbar */
+.collapseStrip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 101;
+}
+
+.collapseStrip:hover {
+  background: transparent;
+  height: 35px;
+}
+
+/* Ensure navbar has smooth transitions */
+.navbar {
+  transition: all 0.4s ease;
+}
+
+/* Update spacer */
+.navbarSpacer {
+  height: 140px;
+  transition: height 0.4s ease;
+}
+
+@media (max-width: 1024px) {
+  .navbarSpacer {
+    height: 100px;
+  }
+  
+  .expandText {
+    font-size: 12px;
+  }
+  
+  .collapsedProjectName {
+    font-size: 16px;
+  }
+
+  .collapsedBar {
+    height: 80px;
+  }
+
+  .collapsedBrand,
+  .collapsedCenter {
+    transition: transform 0.4s ease, gap 0.4s ease;
+  }
+  
+  .collapsedBrand {
+    transform: translateY(-15px);
+  }
+
+  .collapsedCenter {
+    transform: translate(-50%, 15px);
+  }
+
+  .collapsedCenter {
+    gap: 2px;
+  }
 }

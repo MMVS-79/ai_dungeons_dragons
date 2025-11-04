@@ -62,8 +62,8 @@
 //   data?: any;
 // }
 
-interface Message {
-  id: string;
-  text: string;
-  choices?: string[];
-}
+// interface Message {
+//   id: string;
+//   text: string;
+//   choices?: string[];
+// }

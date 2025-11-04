@@ -1,0 +1,152 @@
+.pageContainer {
+  background: linear-gradient(to bottom right, #ffffff00, #ffffff00);
+  padding: 1rem;
+  margin-top: var(--navbar-height);
+  transition: margin-top 0.4s ease;
+}
+
+.header {
+  font-size: 2.25rem;
+  font-weight: bold;
+  text-align: center;
+  color: #fbbf24;
+  margin-bottom: 1.5rem;
+}
+
+.panelsGrid {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(300px, 2fr) minmax(200px, 1fr);
+  grid-template-areas: 
+    "left center right";
+  gap: 1rem;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  grid-area: left;
+}
+
+.centerColumns {
+  display: flex;
+  flex-direction: column;
+  grid-area: center;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  grid-area: right;
+}
+
+.leftColumn, .centerColumns, .rightColumn {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0; /* critical to allow shrinking */
+}
+
+@media (max-width: 1024px) {
+  .panelsGrid {
+    margin-top: 20px;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas: 
+      "center center"
+      "left right";
+  }
+}
+
+/* Modal styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: linear-gradient(to bottom right, #1f2937, #111827);
+  border: 3px solid #fbbf24;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modalTitle {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #fbbf24;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.modalText {
+  font-size: 1.25rem;
+  color: #d1d5db;
+  margin-bottom: 2rem;
+}
+
+.victoryImage {
+  margin: 1.5rem 0;
+}
+
+.victoryImg {
+  max-width: 300px;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.modalButton {
+  background: #fbbf24;
+  color: #111827;
+  font-size: 1.25rem;
+  font-weight: bold;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modalButton:hover {
+  background: #f59e0b;
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(251, 191, 36, 0.4);
+}
+
+/* Disable overlay to prevent all clicks when game ends */
+.disableOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  pointer-events: all;
+  cursor: not-allowed;
+}
