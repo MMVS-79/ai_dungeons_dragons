@@ -2,10 +2,10 @@
 INSERT INTO accounts (email) VALUES ('admin@example.com');
 
 -- Seed enemies
-INSERT INTO enemies (name, health, attack, defense, sprite_path) VALUES
-('Goblin', 30, 5, 2, 'sprites/goblin.png'),
-('Orc', 50, 10, 5, 'sprites/orc.png'),
-('Dragon', 200, 25, 15, 'sprites/dragon.png');
+INSERT INTO enemies (name, health, attack, defense, sprite_path,is_boss) VALUES
+('Goblin', 30, 5, 2, 'sprites/goblin.png',0),
+('Orc', 50, 10, 5, 'sprites/orc.png',0),
+('Dragon', 200, 25, 15, 'sprites/dragon.png',1);
 
 -- Seed Races
 INSERT INTO races (name, health, attack, defense, sprite_path) VALUES
