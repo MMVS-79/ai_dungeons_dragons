@@ -472,7 +472,7 @@ export default function CampaignPage() {
             }, 1500);
           }
         }
-      } else if (response.type === "item" && response.item) {
+      } else if (response.type === "item" && response.item as Item) {
         if (playerState.inventory.length < 10) {
           setPlayerState((prev) => ({
             ...prev,
