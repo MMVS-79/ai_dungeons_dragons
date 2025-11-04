@@ -476,7 +476,7 @@ export default function CampaignPage() {
         if (playerState.inventory.length < 10) {
           setPlayerState((prev) => ({
             ...prev,
-            inventory: [...prev.inventory, response.item],
+            inventory: [...prev.inventory, ...(response.item ? [response.item] : [])],
           }));
           setCurrentEvent({ type: "item", data: response.item });
         } else {
