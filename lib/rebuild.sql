@@ -21,9 +21,9 @@ source schema/tables/weapons.sql;
 source schema/tables/shields.sql;
 
 -- Junction tables for character inventory
-source schema/tables/character_items.sql;
-source schema/tables/character_armours.sql;
-source schema/tables/character_weapons.sql;
-source schema/tables/character_shields.sql;
+source schema/tables/items.sql;
+source schema/tables/armours.sql;
+source schema/tables/weapons.sql;
+source schema/tables/shields.sql;
 
 SET FOREIGN_KEY_CHECKS=1;
