@@ -2,7 +2,7 @@
 INSERT INTO accounts (email) VALUES ('admin@example.com');
 
 -- Seed enemies
-INSERT INTO enemies (name, health, attack, defense, sprite_path,is_boss) VALUES
+INSERT INTO enemies (name, health, attack, defense, sprite_path, is_boss) VALUES
 ('Goblin', 30, 5, 2, 'sprites/goblin.png', 0),
 ('Orc', 50, 10, 5, 'sprites/orc.png', 0),
 ('Dragon', 200, 25, 15, 'sprites/dragon.png', 1);
