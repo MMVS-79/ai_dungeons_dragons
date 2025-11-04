@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import styles from "./interface.module.css";
 import CharacterPanel from "./components/characterPanel/characterPanel";
 import EventPanel from "./components/eventPanel/eventPanel";
 import ChatPanel from "./components/chatPanel/chatPanel";
 import ItemPanel from "./components/itemPanel/itemPanel";
 import DicePanel from "./components/dicePanel/dicePanel";
+
 
 // Type definitions (might want to put these in a separate types.ts file later)
 interface Item {
@@ -44,11 +46,20 @@ interface EnemyState {
   maxHp: number;
   attack: number;
   defense: number;
+  isBoss?: boolean;
 }
 
-interface GameEvent {
-  type: "combat" | "item" | "story" | "equipment" | null;
-  data?: any;
+export type GameEvent =
+  | { type: "combat"; data: EnemyState }
+  | { type: "item"; data: Item }
+  | { type: "equipment"; data: Item }
+  | { type: "story"; data?: undefined }
+  | { type: null; data?: undefined };
+
+export interface GameStateContext {
+  enemyState: EnemyState | null;
+  playerAttack: number;
+  playerDefense: number;
 }
 
 interface Message {
@@ -61,7 +72,7 @@ interface Message {
 const generateLLMResponse = (
   choice: string,
   diceRoll: number,
-  gameState: any
+  gameState: GameStateContext
 ) => {
   if (gameState.enemyState && gameState.enemyState.hp > 0) {
     // In combat
@@ -104,7 +115,7 @@ const generateLLMResponse = (
           attack: 30,
           defense: 15,
           image: "/characters/enemy/boss/dragon.png",
-          isBoss: true, // Add this flag
+          isBoss: true,
         },
         choices: ["Attack", "Use Potion"],
       };
@@ -197,7 +208,6 @@ const generateLLMResponse = (
 export default function CampaignPage() {
   const params = useParams();
   const router = useRouter();
-  const { id } = params;
 
   // Centralized game state
   const [playerState, setPlayerState] = useState<PlayerState>({
@@ -353,7 +363,6 @@ export default function CampaignPage() {
           
           // If replacing armor, adjust HP to not exceed new max
           if (equipmentSlot === "armor") {
-            const oldHpBonus = oldEquipment?.hpBonus || 0;
             const newHpBonus = pendingEquipment.hpBonus || 0;
             const newMaxHp = prev.maxHp + newHpBonus;
             
@@ -420,7 +429,7 @@ export default function CampaignPage() {
           // Check game end conditions IMMEDIATELY
           const playerDied = newPlayerHp <= 0;
           const enemyDefeated = enemyState && newEnemyHp <= 0;
-          const wasBoss = enemyDefeated && (enemyState as any).isBoss === true;
+          const wasBoss = enemyDefeated && enemyState?.isBoss === true;
                   
           // Set game end states immediately to block further actions
           if (playerDied) {
@@ -640,10 +649,12 @@ export default function CampaignPage() {
           <div className={styles.modalContent}>
             <h1 className={styles.modalTitle}>You Beat The Boss!</h1>
             <div className={styles.victoryImage}>
-              <img 
+              <Image 
                 src="/victory.png" 
                 alt="Victory" 
                 className={styles.victoryImg}
+                width={512}
+                height={512}
               />
             </div>
             <p className={styles.modalText}>Congratulations, brave adventurer!</p>

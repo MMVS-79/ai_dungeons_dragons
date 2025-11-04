@@ -1,4 +1,5 @@
 import styles from "./home.module.css";
+import Image from "next/image";
 
 export default function Landing() {
   return (
@@ -17,7 +18,7 @@ export default function Landing() {
               and let your story unfold..
             </p>
             <div className={styles.mainInfoImage}>
-              <img
+              <Image
                 src="webpage-images/20 Dice image.png"
                 alt="D&D Illustration"
               />
@@ -34,7 +35,7 @@ export default function Landing() {
           </h3>
           <div className={styles.aboutUsGrid}>
             <div className={styles.profile}>
-              <img
+              <Image
                 src="webpage-images/profile_test.png"
                 alt="name1"
                 className={styles.memberPicture}
@@ -44,19 +45,19 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <img src="./icons/icon_linkedin.png" />
+                  <Image src="./icons/icon_linkedin.png" alt="linkedin logo icon" />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_github.png" />
+                  <Image src="./icons/icon_github.png" alt="github logo icon" />
                 </a>
               </div>
             </div>
 
             <div className={styles.profile}>
-              <img
+              <Image
                 src="webpage-images/profile_test.png"
                 alt="name1"
                 className={styles.memberPicture}
@@ -66,19 +67,19 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <img src="./icons/icon_linkedin.png" />
+                  <Image src="./icons/icon_linkedin.png" alt="linkedin logo icon" />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_github.png" />
+                  <Image src="./icons/icon_github.png" alt="github logo icon" />
                 </a>
               </div>
             </div>
 
             <div className={styles.profile}>
-              <img
+              <Image
                 src="webpage-images/profile_test.png"
                 alt="name1"
                 className={styles.memberPicture}
@@ -88,19 +89,19 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <img src="./icons/icon_linkedin.png" />
+                  <Image src="./icons/icon_linkedin.png" alt="linkedin logo icon" />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_github.png" />
+                  <Image src="./icons/icon_github.png" alt="github logo icon" />
                 </a>
               </div>
             </div>
 
             <div className={styles.profile}>
-              <img
+              <Image
                 src="webpage-images/profile_test.png"
                 alt="name1"
                 className={styles.memberPicture}
@@ -110,19 +111,19 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <img src="./icons/icon_linkedin.png" />
+                  <Image src="./icons/icon_linkedin.png" alt="linkedin logo icon" />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_github.png" />
+                  <Image src="./icons/icon_github.png" alt="github logo icon" />
                 </a>
               </div>
             </div>
 
             <div className={styles.profile}>
-              <img
+              <Image
                 src="webpage-images/profile_test.png"
                 alt="name1"
                 className={styles.memberPicture}
@@ -132,19 +133,19 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <img src="./icons/icon_linkedin.png" />
+                  <Image src="./icons/icon_linkedin.png" alt="linkedin logo icon" />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_github.png" />
+                  <Image src="./icons/icon_github.png" alt="github logo icon" />
                 </a>
               </div>
             </div>
 
             <div className={styles.profile}>
-              <img
+              <Image
                 src="webpage-images/profile_test.png"
                 alt="name1"
                 className={styles.memberPicture}
@@ -154,13 +155,13 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <img src="./icons/icon_linkedin.png" />
+                  <Image src="./icons/icon_linkedin.png" alt="linkedin logo icon" />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <img src="./icons/icon_github.png" />
+                  <Image src="./icons/icon_github.png" alt="github logo icon" />
                 </a>
               </div>
             </div>

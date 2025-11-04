@@ -9,11 +9,32 @@ interface EnemyState {
   attack: number;
   defense: number;
   image: string;
+  isBoss?: boolean;
 }
 
-interface GameEvent {
-  type: 'combat' | 'item' | 'story' | null;
-  data?: any;
+interface Item {
+  id: string;
+  name: string;
+  type: "weapon" | "armor" | "shield" | "potion";
+  image: string;
+  attack?: number;
+  defense?: number;
+  hpBonus?: number;
+  healAmount?: number;
+  description: string;
+}
+
+export type GameEvent =
+  | { type: "combat"; data: EnemyState }
+  | { type: "item"; data: Item }
+  | { type: "equipment"; data: Item }
+  | { type: "story"; data?: undefined }
+  | { type: null; data?: undefined };
+
+export interface GameStateContext {
+  enemyState: EnemyState | null;
+  playerAttack: number;
+  playerDefense: number;
 }
 
 interface EventPanelProps {

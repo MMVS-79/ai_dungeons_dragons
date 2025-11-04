@@ -120,7 +120,7 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
 
       const edge1 = new THREE.Vector3().subVectors(v2, v1);
       const edge2 = new THREE.Vector3().subVectors(v3, v1);
-      const normal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+      // const normal = new THREE.Vector3().crossVectors(edge1, edge2).normalize(); // Unused Variable
 
       // Assign number to this face (1-20)
       const numberForFace = i + 1;

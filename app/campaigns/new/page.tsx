@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "../../components/Navbar";
 import styles from "./newCampaign.module.css";
 
 type Step = "name" | "stats" | "race" | "class" | "preview";
@@ -158,7 +157,7 @@ export default function NewCampaignPage() {
             <div className={styles.stepContent}>
               <h1 className={styles.stepTitle}>Base Stats</h1>
               <p className={styles.stepDescription}>
-                Set your character's base attributes
+                Set your character&#39;s base attributes
               </p>
 
               <div className={styles.statsContainer}>

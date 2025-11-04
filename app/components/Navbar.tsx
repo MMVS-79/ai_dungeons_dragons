@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import styles from "./Navbar.module.css";
 
@@ -58,7 +59,7 @@ export default function Navbar() {
           onClick={() => setIsCollapsed(false)}
         >
           <div className={styles.collapsedBrand}>
-            <img
+            <Image
               src="/icons/white logo - circle.png"
               alt="Logo"
               className={styles.collapsedLogo}
@@ -67,7 +68,7 @@ export default function Navbar() {
           </div>
           <div className={styles.collapsedCenter}>
             <span className={styles.expandText}>Click to expand navigation bar</span>
-            <img className={styles.Arrow} src="/icons/down_arrow.png" />
+            <Image className={styles.Arrow} src="/icons/down_arrow.png" alt="expand navigation bar arrow" />
           </div>
         </div>
       )}
@@ -77,7 +78,7 @@ export default function Navbar() {
         {/* Brand Section */}
         <div className={styles.brand}>
           <Link href="/" className={styles.logoLink}>
-            <img
+            <Image
               src="/icons/white logo - circle.png"
               alt="Logo"
               className={styles.logo}
@@ -95,7 +96,7 @@ export default function Navbar() {
             About Us
           </Link>
           <Link href="/login" className={`${styles.button} ${styles.login}`}>
-            <img
+            <Image
               src="/icons/Login icon.png"
               alt="Logo"
               className={styles.loginIcon}
@@ -117,7 +118,7 @@ export default function Navbar() {
             className={styles.collapseStrip}
             onClick={() => setIsCollapsed(true)}
           >
-            <img className={styles.Arrow} src="/icons/up_arrow.png" />
+            <Image className={styles.Arrow} src="/icons/up_arrow.png" alt="collapse navigation bar arrow" />
           </div>
         )}
 
@@ -135,19 +136,19 @@ export default function Navbar() {
           >
             Play Campaign
           </Link>
-          <a
+          <Link
             href="/#about-us"
             className={styles.mobileButton}
             onClick={() => setMenuOpen(false)}
           >
             About Us
-          </a>
+          </Link>
           <Link
             href="/login"
             className={`${styles.mobileButton} ${styles.login}`}
             onClick={() => setMenuOpen(false)}
           >
-            <img
+            <Image
               src="/icons/Login icon.png"
               alt="Logo"
               className={styles.loginIcon}
