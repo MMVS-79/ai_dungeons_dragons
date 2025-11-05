@@ -6,10 +6,10 @@ on:
 
 jobs:
   handle-vercel-failure:
-    # 🔑 FIX: Explicitly grant the GITHUB_TOKEN permissions to write to issues (for PR comments).
+    # Explicitly grant the GITHUB_TOKEN permissions to write to issues (for PR comments).
     permissions:
       issues: write 
-      pull-requests: write # Include pull-requests just in case the PR finding uses it.
+      pull-requests: write 
       
     if: |
       github.event.deployment_status.state == 'failure' ||
@@ -112,18 +112,19 @@ jobs:
           fi
 
           if echo "$LOG_BODY" | jq -e . >/dev/null 2>&1; then
+            # 💡 CHANGE: Extract ALL log text payloads (removed log filtering)
             ERROR_LOGS=$(echo "$LOG_BODY" | jq -r '
               if type == "array" then 
-                .[] | select(.payload.text? | strings | test("Error|error|Failed|failed|ERR|Exception|BUILD_ERROR|npm ERR|ERROR")) | .payload.text 
+                .[] | .payload.text? | strings # Extract ALL text content
               else 
                 empty 
-              end' 2>/dev/null | head -50)
+              end' 2>/dev/null)
           else
             ERROR_LOGS=""
           fi
 
           if [ -z "$ERROR_LOGS" ]; then
-            ERROR_LOGS="Deployment failed but no specific error logs were captured via the API. Please check the Vercel dashboard for details."
+            ERROR_LOGS="Deployment failed but log parsing returned an empty result. This may be due to an issue with Vercel's API or log format."
           fi
 
           echo "$ERROR_LOGS" > error_logs.txt
@@ -200,6 +201,7 @@ jobs:
 
             // --- Failure Logic ---
             if (state === 'failure') {
+              // Reads the full log from the file
               const errorLogs = fs.existsSync('error_logs.txt')
                 ? fs.readFileSync('error_logs.txt', 'utf8')
                 : 'Could not retrieve error logs.';
@@ -211,7 +213,7 @@ jobs:
                 `**Deployment:** [View on Vercel](${deploymentUrl})`,
                 `**Commit:** \`${commitSha}\``,
                 '',
-                '### Error Snippet:',
+                '### Full Build Log:', // 💡 CHANGE: Updated the heading to reflect the full log
                 '```bash',
                 errorLogs,
                 '```',
