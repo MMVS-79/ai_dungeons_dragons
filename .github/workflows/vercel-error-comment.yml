@@ -6,7 +6,7 @@ on:
 
 jobs:
   handle-vercel-failure:
-    # FIX 1: Explicitly grant the GITHUB_TOKEN permissions to write to issues (for PR comments).
+    # Explicitly grant the GITHUB_TOKEN permissions to write to issues (for PR comments).
     permissions:
       issues: write 
       pull-requests: write 
@@ -114,7 +114,7 @@ jobs:
           if echo "$LOG_BODY" | jq -e . >/dev/null 2>&1; then
             ERROR_LOGS=$(echo "$LOG_BODY" | jq -r '
               if type == "array" then 
-                .[] | .payload.text? | strings # Extract ALL text content
+                .[] | .payload.text? | strings 
               else 
                 empty 
               end' 2>/dev/null)
@@ -126,7 +126,7 @@ jobs:
             ERROR_LOGS="Deployment failed but log parsing returned an empty result. This may be due to an issue with Vercel's API or log format."
           fi
           
-          # 🌟 FIX 2: Use sed to strip ANSI escape codes from the logs
+          # FIX: Use sed to strip ANSI escape codes from the logs
           CLEAN_ERROR_LOGS=$(echo "$ERROR_LOGS" | sed -E 's/\x1b\[[0-9;]*m//g')
 
           # Write the clean logs to the file
@@ -137,13 +137,14 @@ jobs:
         id: find_pr
         uses: actions/github-script@v7
         env:
-          COMMIT_SHA_FULL: ${{ steps.fetch_logs.outputs.commit_sha }} 
+          # 🌟 FIX 3: Fallback to the original event payload SHA if fetch_logs was skipped (on 'success').
+          COMMIT_SHA_FULL: ${{ steps.fetch_logs.outputs.commit_sha || github.event.deployment_status.sha }}
         with:
           script: |
             const sha = process.env.COMMIT_SHA_FULL; 
             
             if (!sha) {
-              console.log('Error: Vercel API failed to retrieve the commit SHA. Skipping PR search.');
+              console.log('Error: Could not retrieve the commit SHA. Skipping PR search.');
               return { pr_number: null, commit_sha: null };
             }
             
@@ -202,7 +203,7 @@ jobs:
               c.user.type === 'Bot' && c.body && c.body.includes(commentHeader)
             );
 
-            // --- Failure Logic ---
+            // --- Failure Logic (Post/Update Comment) ---
             if (state === 'failure') {
               const errorLogs = fs.existsSync('error_logs.txt')
                 ? fs.readFileSync('error_logs.txt', 'utf8')
