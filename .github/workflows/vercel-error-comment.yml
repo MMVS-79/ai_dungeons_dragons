@@ -27,7 +27,8 @@ jobs:
       - name: Get deployment details
         if: steps.check_vercel.outputs.is_vercel == 'true'
         id: get_details
-        env: # 🔑 Now securely using repository secrets
+        env:
+          # VERCEL_PROJECT_ID and VERCEL_TEAM_ID must be set as repository secrets
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
         run: |
@@ -35,43 +36,36 @@ jobs:
           ENV_URL="${{ github.event.deployment_status.environment_url }}"
           DEPLOYMENT_STATE="${{ github.event.deployment_status.state }}"
           
-          # Extract the full deployment URL slug (e.g., ai-dungeons-dragons-qy4pax1m7-manujas-projects-07b19c96)
           DEPLOYMENT_SLUG=$(echo "$ENV_URL" | sed 's|^https://||; s|\.vercel\.app$||; s|/.*$||')
           
-          # Pass variables (read from secrets) as output variables
           echo "deployment_url=$TARGET_URL" >> $GITHUB_OUTPUT
           echo "deployment_state=$DEPLOYMENT_STATE" >> $GITHUB_OUTPUT
           echo "vercel_project_id=$VERCEL_PROJECT_ID" >> $GITHUB_OUTPUT
           echo "vercel_team_id=$VERCEL_TEAM_ID" >> $GITHUB_OUTPUT
-          echo "deployment_slug=$DEPLOYMENT_SLUG.vercel.app" >> $GITHUB_OUTPUT # Append .vercel.app for exact match
+          echo "deployment_slug=$DEPLOYMENT_SLUG.vercel.app" >> $GITHUB_OUTPUT
           
           echo "Vercel Project ID: $VERCEL_PROJECT_ID"
           echo "Vercel Team ID: $VERCEL_TEAM_ID"
-          echo "Full Deployment Slug (for lookup): $DEPLOYMENT_SLUG.vercel.app"
 
-      - name: Fetch Vercel logs (only on failure)
+      - name: Fetch Vercel logs and Commit SHA (only on failure)
         # Only run if it's a Vercel deployment and the state is failure
         if: steps.check_vercel.outputs.is_vercel == 'true' && steps.get_details.outputs.deployment_state == 'failure'
         id: fetch_logs
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          # Mask token
           echo "::add-mask::$VERCEL_TOKEN"
           
           VERCEL_PROJECT_ID="${{ steps.get_details.outputs.vercel_project_id }}"
           VERCEL_TEAM_ID="${{ steps.get_details.outputs.vercel_team_id }}"
-          DEPLOYMENT_SLUG_URL="${{ steps.get_details.outputs.deployment_slug }}" # This includes .vercel.app
+          DEPLOYMENT_SLUG_URL="${{ steps.get_details.outputs.deployment_slug }}"
           
           if [ -z "$VERCEL_PROJECT_ID" ] || [ -z "$VERCEL_TEAM_ID" ]; then
             echo "Vercel IDs are missing. Check repository secrets." > error_logs.txt
             exit 0
           fi
           
-          # --- Step 1: Find the Internal Deployment UID (dpl_...) ---
-          echo "Fetching deployment list for Team ID: $VERCEL_TEAM_ID to find UID..."
-
-          # Use the successful /v6/deployments endpoint
+          # --- Step 1: Find the Internal Deployment UID (dpl_...) AND Commit SHA ---
           API_LIST_URL="https://api.vercel.com/v6/deployments?teamId=$VERCEL_TEAM_ID&limit=5"
 
           LIST_RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -83,25 +77,26 @@ jobs:
           
           if [ "$LIST_HTTP_CODE" != "200" ]; then
             echo "Failed to retrieve deployment list (HTTP $LIST_HTTP_CODE)." > error_logs.txt
-            echo "API returned: $LIST_BODY" >> error_logs.txt
             exit 0
           fi
           
-          # Find the UID (dpl_...) corresponding to the current deployment slug
-          DEPLOYMENT_UID=$(echo "$LIST_BODY" | jq -r --arg slug "$DEPLOYMENT_SLUG_URL" '.deployments[] | select(.url == $slug) | .uid' | head -n 1)
+          # 💡 FIX: Extract both the UID and the Commit SHA from the Vercel API response
+          # This relies on .meta.githubCommitSha being present in the deployment object
+          DEPLOYMENT_INFO=$(echo "$LIST_BODY" | jq -r --arg slug "$DEPLOYMENT_SLUG_URL" '.deployments[] | select(.url == $slug) | "\(.uid) \(.meta.githubCommitSha)"' | head -n 1)
 
-          if [ -z "$DEPLOYMENT_UID" ]; then
-            echo "Could not find internal UID (dpl_...) matching deployment slug '$DEPLOYMENT_SLUG_URL'." > error_logs.txt
-            echo "Deployment may be too old or not in the latest 5 deployments." >> error_logs.txt
+          DEPLOYMENT_UID=$(echo "$DEPLOYMENT_INFO" | cut -d ' ' -f 1)
+          COMMIT_SHA=$(echo "$DEPLOYMENT_INFO" | cut -d ' ' -f 2)
+
+          if [ -z "$DEPLOYMENT_UID" ] || [ -z "$COMMIT_SHA" ]; then
+            echo "Could not find internal UID or COMMIT_SHA matching deployment slug '$DEPLOYMENT_SLUG_URL'. Deployment may be too old." > error_logs.txt
             exit 0
           fi
-
+          
           echo "Found Deployment UID: $DEPLOYMENT_UID"
+          echo "Found Commit SHA: $COMMIT_SHA"
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT # Pass the SHA to the next step
 
           # --- Step 2: Fetch Logs using the Internal UID ---
-          echo "Fetching logs using internal UID: $DEPLOYMENT_UID"
-          
-          # Use the /v2/deployments endpoint with the validated UID and Team ID
           API_LOGS_URL="https://api.vercel.com/v2/deployments/$DEPLOYMENT_UID/events?teamId=$VERCEL_TEAM_ID&type=log&limit=1000000"
 
           LOG_RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -113,11 +108,9 @@ jobs:
           
           if [ "$LOG_HTTP_CODE" != "200" ]; then
             echo "Failed to fetch logs (HTTP $LOG_HTTP_CODE) with UID." > error_logs.txt
-            echo "Raw API Response Body: $LOG_BODY" >> error_logs.txt
             exit 0
           fi
 
-          # Filter and save the logs (using the /events structure filter)
           if echo "$LOG_BODY" | jq -e . >/dev/null 2>&1; then
             ERROR_LOGS=$(echo "$LOG_BODY" | jq -r '
               if type == "array" then 
@@ -139,14 +132,23 @@ jobs:
         if: steps.check_vercel.outputs.is_vercel == 'true'
         id: find_pr
         uses: actions/github-script@v7
+        env: # Pass the verified SHA from the Vercel API step
+          COMMIT_SHA_FULL: ${{ steps.fetch_logs.outputs.commit_sha }} 
         with:
           script: |
-            const deployment = context.payload.deployment_status.deployment;
-            const sha = deployment ? deployment.sha : null;
+            // Use the verified SHA from the Vercel API call
+            const sha = process.env.COMMIT_SHA_FULL; 
             
             if (!sha) {
-              console.log('No SHA found in deployment status.');
-              return { pr_number: null, commit_sha: null };
+              console.log('Error: Vercel API failed to retrieve the commit SHA.');
+              // Fallback to the deployment object for standard events, though this usually fails for Vercel.
+              const deployment = context.payload.deployment_status.deployment;
+              const fallbackSha = deployment ? deployment.sha : null;
+
+              if (!fallbackSha) {
+                return { pr_number: null, commit_sha: null };
+              }
+              sha = fallbackSha;
             }
             
             console.log(`Looking for PRs associated with commit: ${sha}`);
@@ -252,4 +254,5 @@ jobs:
                 comment_id: existing.id
               });
             }
-              
+
+            
