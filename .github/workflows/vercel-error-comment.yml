@@ -33,16 +33,15 @@ jobs:
           TARGET_URL="${{ github.event.deployment_status.target_url }}"
           ENV_URL="${{ github.event.deployment_status.environment_url }}"
           DEPLOYMENT_STATE="${{ github.event.deployment_status.state }}"
-          DEPLOYMENT_ID="" # Initialize variable
+          DEPLOYMENT_ID=""
           
-          # Use a refined regex to capture the entire subdomain (the unique deployment slug)
+          # FIX: Use refined regex to capture the entire subdomain (the unique deployment slug)
           if [[ "$ENV_URL" =~ ^https://(.+)\.vercel\.app ]]; then
             DEPLOYMENT_ID="${BASH_REMATCH[1]}"
           fi
           
           # Fallback extraction (if primary failed or ID is empty)
           if [ -z "$DEPLOYMENT_ID" ]; then
-            # Fallback: try to extract the last path segment from target_url
             DEPLOYMENT_ID=$(echo "$TARGET_URL" | grep -oP '[^/]+$')
           fi
           
@@ -73,12 +72,12 @@ jobs:
             exit 0
           fi
           
-          # Attempt to fetch the error-related lines from the Vercel events API
-          echo "Fetching logs for deployment: $DEPLOYMENT_ID"
+          # 💡 FIX: Using the V2 /builds endpoint, which is more reliable for Hobby accounts.
+          echo "Fetching logs for deployment: $DEPLOYMENT_ID using /builds endpoint"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v2/deployments/$DEPLOYMENT_ID/events")
+            "https://api.vercel.com/v2/deployments/$DEPLOYMENT_ID/builds")
           
           # Extract HTTP status code
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -87,20 +86,21 @@ jobs:
           echo "API Response Code: $HTTP_CODE"
           
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "Failed to fetch logs from Vercel API (HTTP $HTTP_CODE)." > error_logs.txt
-            echo "Please check the Vercel dashboard for error details." >> error_logs.txt
+            echo "Failed to fetch logs from Vercel API (HTTP $HTTP_CODE) at /builds endpoint." > error_logs.txt
+            echo "Please ensure your VERCEL_TOKEN has the necessary permissions." >> error_logs.txt
             exit 0
           fi
 
-          # Check if response is valid JSON and contains data
+          # 💡 UPDATED LOGIC for the /builds response structure.
+          # Extract all log messages from the last build and filter for error-related keywords.
           if echo "$BODY" | jq -e . >/dev/null 2>&1; then
-            # Filter the last 50 log lines that contain error keywords.
             ERROR_LOGS=$(echo "$BODY" | jq -r '
-              if type == "array" then 
-                .[] | select(.payload.text? | strings | test("Error|error|Failed|failed|ERR|Exception|BUILD_ERROR|npm ERR|ERROR")) | .payload.text 
-              else 
-                empty 
-              end' 2>/dev/null | head -50)
+              # Take the logs array from the LAST build object in the list
+              .[-1].logs? | 
+              .[] | 
+              # Select logs with error keywords
+              select(.text? | strings | test("Error|error|Failed|failed|ERR|Exception|BUILD_ERROR|npm ERR|ERROR")) | 
+              .text' 2>/dev/null | head -50)
           else
             ERROR_LOGS=""
           fi
@@ -117,12 +117,12 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Use a safe check for the commit SHA from the deployment status event
+            // FIX: Safely access the commit SHA to prevent 'Cannot read properties of undefined (reading 'sha')'
             const deployment = context.payload.deployment_status.deployment;
             const sha = deployment ? deployment.sha : null;
             
             if (!sha) {
-              console.log('No SHA found in deployment status. This often happens on certain Vercel events.');
+              console.log('No SHA found in deployment status.');
               // Always return a valid JSON object structure
               return { pr_number: null, commit_sha: null };
             }
@@ -239,3 +239,4 @@ jobs:
               });
               console.log(`Deleted old failure comment after successful deployment.`);
             }
+              
