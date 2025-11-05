@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./campaign.module.css";
 
-interface Campaign {
+interface Campaign {adasd
   id: number;
   name: string;
 }
