@@ -132,13 +132,15 @@ jobs:
           # Write the clean logs to the file
           echo "$CLEAN_ERROR_LOGS" > error_logs.txt
           
-      # 🌟 NEW FIX: Determine the Commit SHA robustly, regardless of whether fetch_logs was skipped
+      # 🌟 CRITICAL FIX: Determine the Commit SHA robustly using the reliable deployment SHA, 
+      # regardless of whether fetch_logs was skipped.
       - name: Determine Commit SHA for PR Lookup
         if: steps.check_vercel.outputs.is_vercel == 'true'
         id: determine_sha
         run: |
           VERCEL_SHA="${{ steps.fetch_logs.outputs.commit_sha }}"
-          EVENT_SHA="${{ github.event.deployment_status.sha }}"
+          # Use the deployment object SHA as the reliable fallback
+          EVENT_SHA="${{ github.event.deployment.sha }}" 
           
           # Check if VERCEL_SHA is not empty (it will be empty if fetch_logs was skipped)
           if [ ! -z "$VERCEL_SHA" ]; then
