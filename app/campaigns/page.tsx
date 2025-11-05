@@ -9,7 +9,7 @@ interface Campaign {
   name: string;
 }
 
-export default function CampaignsPage() {;;sfsdf
+export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [nextId, setNextId] = useState(1);
 
