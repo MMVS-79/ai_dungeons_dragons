@@ -30,17 +30,19 @@ jobs:
         if: steps.check_vercel.outputs.is_vercel == 'true'
         id: get_details
         run: |
-          # Extract Vercel deployment ID from the target_url
           TARGET_URL="${{ github.event.deployment_status.target_url }}"
           ENV_URL="${{ github.event.deployment_status.environment_url }}"
           DEPLOYMENT_STATE="${{ github.event.deployment_status.state }}"
+          DEPLOYMENT_ID="" # Initialize variable
           
-          # Try to extract deployment ID from environment URL (more reliable)
-          # Format: https://deployment-id-project-hash.vercel.app
-          if [[ "$ENV_URL" =~ ^https://([a-z0-9]+)-.*\.vercel\.app ]]; then
+          # Use a refined regex to capture the entire subdomain (the unique deployment slug)
+          if [[ "$ENV_URL" =~ ^https://(.+)\.vercel\.app ]]; then
             DEPLOYMENT_ID="${BASH_REMATCH[1]}"
-          else
-            # Fallback: try to extract from target_url
+          fi
+          
+          # Fallback extraction (if primary failed or ID is empty)
+          if [ -z "$DEPLOYMENT_ID" ]; then
+            # Fallback: try to extract the last path segment from target_url
             DEPLOYMENT_ID=$(echo "$TARGET_URL" | grep -oP '[^/]+$')
           fi
           
