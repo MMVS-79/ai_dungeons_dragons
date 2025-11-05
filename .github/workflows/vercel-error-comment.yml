@@ -31,8 +31,6 @@ jobs:
         id: get_details
         run: |
           # Extract Vercel deployment ID from the target_url
-          # Vercel URLs are typically: https://vercel.com/{team}/{project}/{deployment-id}
-          # or the deployment ID is in the environment_url: https://{deployment-id}-{project}.vercel.app
           TARGET_URL="${{ github.event.deployment_status.target_url }}"
           ENV_URL="${{ github.event.deployment_status.environment_url }}"
           DEPLOYMENT_STATE="${{ github.event.deployment_status.state }}"
@@ -74,7 +72,6 @@ jobs:
           fi
           
           # Attempt to fetch the error-related lines from the Vercel events API
-          # This requires the VERCEL_TOKEN to have correct permissions.
           echo "Fetching logs for deployment: $DEPLOYMENT_ID"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -118,11 +115,13 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Use the explicit path to the commit SHA from the deployment status event
-            const sha = context.payload.deployment_status.deployment.sha;
+            // Use a safe check for the commit SHA from the deployment status event
+            const deployment = context.payload.deployment_status.deployment;
+            const sha = deployment ? deployment.sha : null;
             
             if (!sha) {
-              console.log('No SHA found in deployment status');
+              console.log('No SHA found in deployment status. This often happens on certain Vercel events.');
+              // Always return a valid JSON object structure
               return { pr_number: null, commit_sha: null };
             }
             
