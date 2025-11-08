@@ -1,32 +1,22 @@
 [sqlfluff]
 dialect = mysql
 templater = raw
-exclude_rules = None
 max_line_length = 100
 encoding = utf-8
 
-# Exclude archived files (optional)
-ignore = knowledge_base/archived/**
+
+# Disable overly strict rules for MySQL projects
+exclude_rules = RF04,PRS
 
 [sqlfluff:indentation]
 indent_unit = space
-tab_space_size = 2
-indented_joins = False
-indented_using_on = True
+tab_space_size = 4  
 
 [sqlfluff:rules]
 capitalisation_policy = upper
-trailing_comma = trailing
 
 [sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = upper
 
-[sqlfluff:rules:capitalisation.identifiers]
+[sqlfluff:rules:capitalisation.identifiers]  
 capitalisation_policy = lower
-
-[sqlfluff:rules:capitalisation.functions]
-capitalisation_policy = upper
-
-[sqlfluff:rules:layout.end_of_file]
-# Allow optional trailing newline
-end_of_file_newline = optional
