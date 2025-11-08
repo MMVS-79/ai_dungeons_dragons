@@ -5,26 +5,23 @@ on:
     paths:
       - '**.sql'
       - '.sqlfluff'
-  push:
-    branches-ignore:
-      - main
-      - master
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  sqlfluff:
+  sqlfluff-fix:
     runs-on: ubuntu-latest
-    name: SQLFluff Check
+    name: Auto-format SQL Files
     
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -34,31 +31,18 @@ jobs:
       - name: Install SQLFluff
         run: pip install sqlfluff==3.2.0
       
-      # Only auto-fix if not already formatted by bot
-      - name: Check if last commit was by bot
-        id: bot-check
-        run: |
-          LAST_AUTHOR=$(git log -1 --pretty=format:'%an')
-          if [[ "$LAST_AUTHOR" == "github-actions[bot]" ]]; then
-            echo "skip_fix=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_fix=false" >> $GITHUB_OUTPUT
-          fi
-      
       - name: Run SQLFluff fix
-        if: steps.bot-check.outputs.skip_fix == 'false'
         run: |
           sqlfluff fix . --dialect mysql
         continue-on-error: true
       
       - name: Check for changes
-        if: steps.bot-check.outputs.skip_fix == 'false'
         id: git-check
         run: |
           git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
       
       - name: Commit and push changes
-        if: steps.bot-check.outputs.skip_fix == 'false' && steps.git-check.outputs.changes == 'true'
+        if: steps.git-check.outputs.changes == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -67,7 +51,7 @@ jobs:
           git push
       
       - name: Comment on PR
-        if: steps.bot-check.outputs.skip_fix == 'false' && steps.git-check.outputs.changes == 'true'
+        if: steps.git-check.outputs.changes == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -75,14 +59,29 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✨ SQL files have been auto-formatted by SQLFluff! The linter will now verify the changes.'
+              body: '✨ SQL files have been auto-formatted by SQLFluff!'
             })
-      
-      # Always run lint check (after fix if changes were made)
+
+  sqlfluff-lint:
+    runs-on: ubuntu-latest
+    name: Lint SQL Files
+    needs: sqlfluff-fix
+    if: always()
+    
+    steps:
       - name: Checkout latest code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install SQLFluff
+        run: pip install sqlfluff==3.2.0
       
       - name: Lint SQL files
         run: |
