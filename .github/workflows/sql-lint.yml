@@ -32,7 +32,7 @@ jobs:
       
       - name: Run SQLFluff fix
         run: |
-          sqlfluff fix . --dialect postgres || true
+          sqlfluff fix . --dialect mysql
         continue-on-error: true
       
       - name: Check for changes
@@ -83,6 +83,5 @@ jobs:
       
       - name: Lint SQL files
         run: |
-          sqlfluff lint . --dialect postgres --format github-annotation
-
-          
+          sqlfluff lint . --dialect mysql --format github-annotation
+    
