@@ -1,0 +1,90 @@
+name: SQL Auto-Format
+
+on:
+  pull_request:
+    paths:
+      - '**.sql'
+      - '.sqlfluff'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sqlfluff-fix:
+    runs-on: ubuntu-latest
+    name: Auto-format SQL Files
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install SQLFluff
+        run: pip install sqlfluff==3.2.0
+      
+      - name: Run SQLFluff fix
+        run: |
+          sqlfluff fix . --dialect mysql --exclude-rules RF04
+        continue-on-error: true
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: auto-format SQL files with SQLFluff"
+          git push
+      
+      - name: Comment on PR
+        if: steps.git-check.outputs.changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✨ SQL files have been auto-formatted by SQLFluff!'
+            })
+
+  sqlfluff-lint:
+    runs-on: ubuntu-latest
+    name: Lint SQL Files
+    needs: sqlfluff-fix
+    if: always()
+    
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install SQLFluff
+        run: pip install sqlfluff==3.2.0
+      
+      - name: Lint SQL files
+        run: |
+          sqlfluff lint . --dialect mysql --format github-annotation --exclude-rules RF04
+
+          
