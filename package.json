@@ -8,7 +8,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest"
+    "test": "jest",
+    "lint:sql": "sqlfluff lint",
+    "format:sql": "sqlfluff fix"
   },
   "dependencies": {
     "@google/genai": "^1.22.0",
