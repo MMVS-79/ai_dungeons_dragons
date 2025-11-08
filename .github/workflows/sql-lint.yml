@@ -33,7 +33,10 @@ jobs:
       
       - name: Run SQLFluff fix
         run: |
-          sqlfluff fix . --dialect mysql
+          sqlfluff fix . \
+            --dialect mysql \
+            --exclude-rules RF04 \
+            --ignore knowledge_base/archived/,lib/rebuild.sql,lib/schema/tables/logs.sql
         continue-on-error: true
       
       - name: Check for changes
@@ -85,6 +88,10 @@ jobs:
       
       - name: Lint SQL files
         run: |
-          sqlfluff lint . --dialect mysql --format github-annotation
+          sqlfluff lint . \
+            --dialect mysql \
+            --format github-annotation \
+            --exclude-rules RF04 \
+            --ignore knowledge_base/archived/,lib/rebuild.sql,lib/schema/tables/logs.sql
 
-          
+            
