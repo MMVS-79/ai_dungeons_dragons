@@ -13,11 +13,11 @@ USE dnd_game;
 
 -- Create dragon table
 CREATE TABLE dragon (
-  id int PRIMARY KEY AUTO_INCREMENT,
-  name varchar(100) NOT NULL,
-  hp int NOT NULL,
-  max_hp int NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id int PRIMARY KEY AUTO_INCREMENT,
+    name varchar(100) NOT NULL,
+    hp int NOT NULL,
+    max_hp int NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert demo dragon with full HP
@@ -26,13 +26,13 @@ VALUES ('Ancient Red Dragon', 100, 100);
 
 -- Verify the reset worked
 SELECT
-  id,
-  name,
-  hp,
-  max_hp,
-  created_at
+    id,
+    name,
+    hp,
+    max_hp,
+    created_at
 FROM
-  dragon;
+    dragon;
 
 -- Show confirmation message
 SELECT 'Database reset complete! Dragon HP restored to 100/100' AS status;
