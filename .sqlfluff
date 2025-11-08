@@ -4,11 +4,8 @@ templater = raw
 max_line_length = 100
 encoding = utf-8
 
-# Exclude files that SQLFluff can't parse
-ignore = 
-    knowledge_base/archived/**,
-    lib/rebuild.sql,
-    lib/schema/tables/logs.sql
+# Exclude files that SQLFluff can't parse (comma-separated, no line breaks)
+ignore = knowledge_base/archived/**,lib/rebuild.sql,lib/schema/tables/logs.sql
 
 # Disable overly strict rules for MySQL projects
 exclude_rules = RF04
@@ -25,3 +22,4 @@ capitalisation_policy = upper
 
 [sqlfluff:rules:capitalisation.identifiers]  
 capitalisation_policy = lower
+
