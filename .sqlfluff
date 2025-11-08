@@ -1,0 +1,33 @@
+[sqlfluff]
+# Set the SQL dialect (postgres, mysql, sqlite, bigquery, snowflake, etc.)
+dialect = mysql
+templater = raw
+exclude_rules = None
+max_line_length = 100
+
+# File encoding
+encoding = utf-8
+
+[sqlfluff:indentation]
+# Use spaces for indentation
+indent_unit = space
+tab_space_size = 2
+indented_joins = False
+indented_using_on = True
+template_blocks_indent = True
+
+[sqlfluff:rules]
+# Capitalize keywords
+capitalisation_policy = upper
+
+# Consistent trailing commas
+trailing_comma = trailing
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.identifiers]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+capitalisation_policy = upper
