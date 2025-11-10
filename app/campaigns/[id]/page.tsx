@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import styles from "./interface.module.css";
 import CharacterPanel from "./components/characterPanel/characterPanel";
@@ -205,6 +205,7 @@ const generateLLMResponse = (
 };
 
 export default function CampaignPage() {
+  const params = useParams();
   const router = useRouter();
 
   // Centralized game state
@@ -271,7 +272,6 @@ export default function CampaignPage() {
       choices: ["Continue Forward", "Search Area"]
     }
   ]);
-
   const [diceRolling, setDiceRolling] = useState(false);
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
@@ -290,7 +290,6 @@ export default function CampaignPage() {
   const handleChatAction = async (choice: string) => {
     // Prevent input spam OR if game has ended
     if (actionLocked || showGameOver || showVictory) return;
-
     setActionLocked(true);
 
     try {
@@ -355,7 +354,6 @@ export default function CampaignPage() {
           | "weapon"
           | "armor"
           | "shield";
-
         const oldEquipment = playerState.equipped[equipmentSlot];
 
         setPlayerState((prev) => {
