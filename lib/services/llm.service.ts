@@ -290,9 +290,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
   }
 
   /**
-   * Step 1: Generate only the event TYPE (not full description)
+   * Generate only the event TYPE (called by game.service.ts)
    * This is called first to determine what kind of event will occur
-   * LLM returns just the type, then makes more calls
+   * LLM returns just the type, user accepts/rejects, then Event_type.ts handles execution
    */
   async generateEventType(context: LLMGameContext): Promise<EventTypeString> {
     try {
@@ -315,8 +315,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
   }
 
   /**
-   * Step 2: Generate event description
+   * Generate event description (called by Event_type.ts and combat handler)
    * Called after user accepts the event
+   * Returns narrative text describing what happened
    */
   async generateDescription(
     eventType: EventTypeString,
@@ -350,8 +351,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
   }
 
   /**
-   * Step 3: Request stat modification from LLM
+   * Request stat modification from LLM (called by Event_type.ts)
    * Returns which stat to modify and base value (before dice roll)
+   * Used for Environmental and Combat events
    */
   async requestStatBoost(
     context: LLMGameContext,
@@ -482,57 +484,204 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
    * Request item drop from LLM (called by Event_type.ts and post-combat rewards)
    * Used for Item_Drop event type and post-combat rewards
    *
-   * TODO: Implement full item generation logic
-   * REQUIREMENTS:
-   * - Build prompt with game context (character stats, recent items)
-   * - Define schema for item response: { itemType, itemName, itemStats, rarity? }
-   * - Call Gemini API with item generation prompt
-   * - Validate and return structured item data
-   * - Handle fallback if API fails
-   *
    * @param context - Optional game context for contextual items
    * @returns Item details from LLM
    */
-  public async RequestItemDrop(_context?: LLMGameContext): Promise<{
+  public async RequestItemDrop(context?: LLMGameContext): Promise<{
     itemType: string;
     itemName: string;
     itemStats: Record<string, number>;
   }> {
-    // TODO: Implement actual LLM call for item generation
-    console.log("[LLM_Service] RequestItemDrop() called - PLACEHOLDER");
+    try {
+      const prompt = this.buildItemDropPrompt(context);
 
-    return {
-      itemType: "potion",
-      itemName: "Health Potion",
-      itemStats: { healAmount: 20 }
-    };
+      // Schema for item generation
+      const schema = {
+        type: "object",
+        properties: {
+          itemType: {
+            type: "string",
+            enum: ["weapon", "armor", "shield", "potion"]
+          },
+          itemName: { type: "string" },
+          itemStats: {
+            type: "object",
+            additionalProperties: { type: "number" }
+          }
+        },
+        required: ["itemType", "itemName", "itemStats"]
+      };
+
+      const response = await this.callGemini(prompt, schema);
+      const parsed = JSON.parse(response);
+
+      if (!parsed.itemType || !parsed.itemName || !parsed.itemStats) {
+        console.error("Invalid item drop response:", parsed);
+        return {
+          itemType: "potion",
+          itemName: "Health Potion",
+          itemStats: { healAmount: 20 }
+        };
+      }
+
+      return {
+        itemType: parsed.itemType,
+        itemName: parsed.itemName,
+        itemStats: parsed.itemStats
+      };
+    } catch (error) {
+      console.error("Failed to generate item drop:", error);
+      return {
+        itemType: "potion",
+        itemName: "Health Potion",
+        itemStats: { healAmount: 20 }
+      };
+    }
   }
 
   /**
-   * Request bonus stat on critical success (called by Game_Engine)
+   * Request bonus stat on critical success (called by Event_type.ts)
    * Used when player rolls 16-20 and deserves extra reward
-   *
-   * TODO: Implement bonus stat generation logic
-   * REQUIREMENTS:
-   * - Build prompt considering character's current stats and balance
-   * - Define schema: { statType: 'health'|'attack'|'defense', value: number }
-   * - Value range: 2-10 (bonus should be meaningful but balanced)
-   * - Call Gemini API with bonus stat prompt
-   * - Return structured stat bonus
    *
    * @param context - Optional game context for balanced bonuses
    * @returns Bonus stat type and value
    */
-  public async bonusStatRequest(_context?: LLMGameContext): Promise<{
+  public async bonusStatRequest(context?: LLMGameContext): Promise<{
     statType: "health" | "attack" | "defense";
     value: number;
   }> {
-    // TODO: Implement actual LLM call for bonus stat
-    console.log("[LLM_Service] bonusStatRequest() called - PLACEHOLDER");
+    try {
+      const prompt = this.buildBonusStatPrompt(context);
 
-    return {
-      statType: "health",
-      value: 5
-    };
+      // Schema for bonus stat
+      const schema = {
+        type: "object",
+        properties: {
+          statType: {
+            type: "string",
+            enum: ["health", "attack", "defense"]
+          },
+          value: {
+            type: "number",
+            minimum: 2,
+            maximum: 10
+          }
+        },
+        required: ["statType", "value"]
+      };
+
+      const response = await this.callGemini(prompt, schema);
+      const parsed = JSON.parse(response);
+
+      if (!parsed.statType || parsed.value === undefined) {
+        console.error("Invalid bonus stat response:", parsed);
+        return { statType: "health", value: 5 };
+      }
+
+      // Clamp value to 2-10 range
+      const clampedValue = Math.min(Math.max(parsed.value, 2), 10);
+
+      return {
+        statType: parsed.statType as "health" | "attack" | "defense",
+        value: clampedValue
+      };
+    } catch (error) {
+      console.error("Failed to generate bonus stat:", error);
+      return { statType: "health", value: 5 };
+    }
+  }
+
+  /**
+   * Build prompt for item drop generation
+   */
+  private buildItemDropPrompt(context?: LLMGameContext): string {
+    if (!context) {
+      return `You are a D&D dungeon master distributing loot.
+
+Generate ONE balanced item for an adventurer.
+
+Item Types:
+- weapon: Increases attack (example stats: { "attack": 5-15 })
+- armor: Increases defense (example stats: { "defense": 3-12 })
+- shield: Increases defense (example stats: { "defense": 2-8 })
+- potion: Heals character (example stats: { "healAmount": 10-30 })
+
+Requirements:
+- Give the item a creative, fantasy-appropriate name
+- Stats should be balanced (not overpowered)
+- Consider typical D&D naming conventions
+
+Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "itemStats": {}}`;
+    }
+
+    const { character } = context;
+    const healthPercentage = Math.round(
+      (character.health / character.maxHealth) * 100
+    );
+
+    return `You are a D&D dungeon master distributing loot.
+
+Character: ${character.name}
+Current Stats:
+- Health: ${character.health}/${character.maxHealth} (${healthPercentage}%)
+- Attack: ${character.attack}
+- Defense: ${character.defense}
+
+Generate ONE item appropriate for this character's level and situation.
+
+Item Types:
+- weapon: Increases attack (balanced for current attack ${character.attack})
+- armor: Increases defense (balanced for current defense ${character.defense})
+- shield: Increases defense (smaller bonus than armor)
+- potion: Heals character (consider current health ${healthPercentage}%)
+
+Requirements:
+- Give the item a creative, fantasy-appropriate name
+- Stats should be balanced - don't give +50 attack if they have 10 attack!
+- Scale rewards to character level (estimate from stats)
+- If health is low (< 50%), slightly favor potions
+
+Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "itemStats": {}}
+
+Example for weapon: {"itemType": "weapon", "itemName": "Rusty Longsword", "itemStats": {"attack": 7}}
+Example for potion: {"itemType": "potion", "itemName": "Greater Health Potion", "itemStats": {"healAmount": 25}}`;
+  }
+
+  /**
+   * Build prompt for bonus stat generation
+   */
+  private buildBonusStatPrompt(context?: LLMGameContext): string {
+    if (!context) {
+      return `You are a D&D dungeon master rewarding exceptional performance.
+
+The player achieved a CRITICAL SUCCESS (rolled 16-20)!
+Grant them a bonus stat increase.
+
+Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
+    }
+
+    const { character } = context;
+    const healthPercentage = Math.round(
+      (character.health / character.maxHealth) * 100
+    );
+
+    return `You are a D&D dungeon master rewarding exceptional performance.
+
+Character: ${character.name}
+Current Stats:
+- Health: ${character.health}/${character.maxHealth} (${healthPercentage}%)
+- Attack: ${character.attack}
+- Defense: ${character.defense}
+
+The player achieved a CRITICAL SUCCESS (rolled 16-20)!
+Grant them a bonus stat increase (2-10 points).
+
+Guidelines:
+- If health is very low (< 30%), strongly favor health
+- If attack or defense are notably weak, consider boosting those
+- Keep bonuses meaningful but balanced (2-10 range)
+- Consider which stat would help them most right now
+
+Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
   }
 }

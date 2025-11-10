@@ -34,13 +34,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "100");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // TODO: Fetch enemies from database
-    // const enemies = await BackendService.getAllEnemies({
-    //   difficulty,
-    //   limit,
-    //   offset
-    // });
-    // const total = await BackendService.getEnemiesCount({ difficulty });
+    // Step 1: Query enemies from database with optional difficulty filter
+    // Step 2: Apply limit and offset for pagination
+    // Step 3: Get total count for pagination
+    // Step 4: Order by difficulty then name
 
     console.log(`[API] GET /api/enemies - difficulty: ${difficulty}, limit: ${limit}, offset: ${offset}`);
 

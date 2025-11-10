@@ -307,9 +307,19 @@ requestStatBoost(context: LLMGameContext, eventType: EventTypeString): Promise<S
 // Returns: { statType: "health"|"attack"|"defense", baseValue: number }
 ```
 
-**Additional Calls** (placeholders):
-- `RequestItemDrop()` - Generate item data
-- `bonusStatRequest()` - Generate bonus stat for critical success
+**Call 4: Request Item Drop** (IMPLEMENTED)
+```typescript
+RequestItemDrop(context?: LLMGameContext): Promise<{ itemType: string, itemName: string, itemStats: Record<string, number> }>
+// Returns: LLM-generated item with type, name, and stats
+// Used for: Item_Drop events and critical success combat rewards
+```
+
+**Call 5: Request Bonus Stat** (IMPLEMENTED)
+```typescript
+bonusStatRequest(context?: LLMGameContext): Promise<{ statType: "health"|"attack"|"defense", value: number }>
+// Returns: Bonus stat for critical success (value: 2-10)
+// Used for: Critical success combat rewards (rolls 16-20)
+```
 
 **Context Building**:
 - Character stats (HP, attack, defense)
@@ -355,9 +365,24 @@ requestStatBoost(context: LLMGameContext, eventType: EventTypeString): Promise<S
 **Items/Inventory**:
 - `getItem(id)` - Fetch item data
 - `getInventory(characterId)` - Get character's inventory
-- `addItemToInventory(characterId, itemId)` - Add item
+- `addItemToInventory(characterId, item)` - Add LLM-generated item (routes to correct table based on itemType)
+  - **Item Routing**:
+    - `weapon` → inserts into `weapons` table, updates character.weapon_id
+    - `armor` → inserts into `armours` table, updates character.armour_id
+    - `shield` → inserts into `shields` table, updates character.shield_id
+    - `potion` → inserts into `items` table, adds to `character_items` join table
 - `removeItemFromInventory(characterId, itemId)` - Remove item
 - `equipItem(characterId, itemId, slot)` - Equip with stat replacement
+
+**Combat Rewards**:
+- `processCombatRewards(campaignId, characterId, rollClassification, context)` - Handle combat victory rewards based on dice roll classification
+  - **Roll Classification**:
+    - `critical_failure` (1-4): No rewards
+    - `regular` (5-15): Calls LLMService.requestStatBoost(), logs event
+    - `critical_success` (16-20): Calls LLMService.RequestItemDrop() + bonusStatRequest(), adds item to inventory, logs event
+  - **Implementation Status**:
+    - IMPLEMENTED: LLM reward generation, event logging, item inventory routing
+    - PENDING: Character stat updates (requires getCharacter implementation)
 
 **Pending Events**:
 - `setPendingEvent(campaignId, eventType)` - Store pending event
@@ -403,7 +428,7 @@ event_type               →    eventType
 **Combat**:
 - Spawns enemy encounter
 - Triggers combat phase
-- Post-combat rewards handled by GameService
+- Post-combat rewards delegated to BackendService.processCombatRewards()
 
 **Item_Drop**:
 - Items found or lost

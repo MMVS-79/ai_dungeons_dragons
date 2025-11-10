@@ -61,10 +61,10 @@ export async function GET(
       );
     }
 
-    // TODO: Fetch campaign and all events
-    // const campaign = await BackendService.getCampaign(campaignId);
-    // const character = await BackendService.getCharacterByCampaign(campaignId);
-    // const events = await BackendService.getAllEvents(campaignId); // No limit
+    // Step 1: Query campaign and character from database
+    // Step 2: Query ALL events for campaign (no pagination limit)
+    // Step 3: Return 404 if campaign not found
+    // Step 4: Format based on requested format (json/text/markdown)
 
     console.log(`[API] GET /api/campaigns/${campaignId}/logs/export - format: ${format}`);
 
@@ -82,11 +82,10 @@ export async function GET(
     }
 
     if (format === "text") {
-      // TODO: Format as plain text
-      // const text = `Campaign: ${campaign.name}\nCharacter: ${character.name}\n\n`;
-      // events.forEach(event => {
-      //   text += `Event ${event.eventNumber} (${event.eventType}):\n${event.message}\n\n`;
-      // });
+      // Step 5: Format as plain text with campaign name, character name
+      // Step 6: Iterate through events and format each with timestamp
+      // Step 7: Set Content-Type: text/plain header
+      // Step 8: Set Content-Disposition for file download
 
       // MOCK DATA - Replace with formatted text
       const mockText = "Campaign Story Export\n\nThis is a placeholder. Implement text formatting.";
@@ -100,11 +99,10 @@ export async function GET(
     }
 
     if (format === "markdown") {
-      // TODO: Format as markdown
-      // const markdown = `# ${campaign.name}\n\n## Character: ${character.name}\n\n`;
-      // events.forEach(event => {
-      //   markdown += `### Event ${event.eventNumber}: ${event.eventType}\n${event.message}\n\n`;
-      // });
+      // Step 9: Format as markdown with headers for campaign and character
+      // Step 10: Use ### headers for each event
+      // Step 11: Set Content-Type: text/markdown header
+      // Step 12: Set Content-Disposition for file download
 
       // MOCK DATA - Replace with formatted markdown
       const mockMarkdown = "# Campaign Story\n\nThis is a placeholder. Implement markdown formatting.";

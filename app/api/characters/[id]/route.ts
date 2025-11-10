@@ -44,13 +44,12 @@ export async function GET(
       );
     }
 
-    // TODO: Fetch character and equipment from database
-    // const character = await BackendService.getCharacter(characterId);
-    // if (!character) return 404
-    // const weapon = character.weaponId ? await BackendService.getItem(character.weaponId) : null;
-    // const armor = character.armorId ? await BackendService.getItem(character.armorId) : null;
-    // const shield = character.shieldId ? await BackendService.getItem(character.shieldId) : null;
-    // const inventory = await BackendService.getInventory(characterId);
+    // Step 1: Query character from database
+    // Step 2: Return 404 if character not found
+    // Step 3: Query equipped weapon if weaponId exists
+    // Step 4: Query equipped armor if armorId exists
+    // Step 5: Query equipped shield if shieldId exists
+    // Step 6: Query character inventory
 
     console.log(`[API] GET /api/characters/${characterId}`);
 
@@ -132,7 +131,6 @@ export async function PUT(
       );
     }
 
-    // TODO: Validate stats
     if (body.currentHealth !== undefined && body.currentHealth < 0) {
       return NextResponse.json(
         { success: false, error: "Health cannot be negative" },
@@ -147,13 +145,8 @@ export async function PUT(
       );
     }
 
-    // TODO: Update character in database
-    // const character = await BackendService.updateCharacter(characterId, {
-    //   currentHealth: body.currentHealth,
-    //   maxHealth: body.maxHealth,
-    //   attack: body.attack,
-    //   defense: body.defense
-    // });
+    // Step 1: Update character record with provided stat changes
+    // Step 2: Return 404 if character not found
 
     console.log(`[API] PUT /api/characters/${characterId}`, body);
 

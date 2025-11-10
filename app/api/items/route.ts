@@ -34,13 +34,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "100");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    // TODO: Fetch items from database
-    // const items = await BackendService.getAllItems({
-    //   type: typeFilter,
-    //   limit,
-    //   offset
-    // });
-    // const total = await BackendService.getItemsCount({ type: typeFilter });
+    // Step 1: Query items from database with optional type filter
+    // Step 2: Apply limit and offset for pagination
+    // Step 3: Get total count for pagination
+    // Step 4: Order by item type then name
 
     console.log(`[API] GET /api/items - type: ${typeFilter}, limit: ${limit}, offset: ${offset}`);
 

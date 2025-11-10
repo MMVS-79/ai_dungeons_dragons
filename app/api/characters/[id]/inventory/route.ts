@@ -3,20 +3,20 @@ import type { Item } from "@/lib/types/game.types";
 
 /**
  * GET /api/characters/[id]/inventory
- * 
+ *
  * TODO: Get character's inventory
- * 
+ *
  * Purpose: Fetch all items in character's inventory for display
- * 
+ *
  * Query Parameters:
  * - type?: "potion" | "weapon" | "armor" | "shield" (optional filter)
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   inventory: Item[];
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract character ID from URL params
  * 2. Get optional type filter from query params
@@ -40,20 +40,18 @@ export async function GET(
       );
     }
 
-    // TODO: Fetch inventory from database
-    // const inventory = await BackendService.getInventory(characterId);
-    // if (typeFilter) {
-    //   inventory = inventory.filter(item => item.type === typeFilter);
-    // }
+    // Step 1: Query character inventory from database
+    // Step 2: Apply type filter if provided
 
-    console.log(`[API] GET /api/characters/${characterId}/inventory - type: ${typeFilter}`);
+    console.log(
+      `[API] GET /api/characters/${characterId}/inventory - type: ${typeFilter}`
+    );
 
     // MOCK DATA - Replace with actual database query
     return NextResponse.json({
       success: true,
       inventory: [] as Item[]
     });
-
   } catch (error) {
     console.error("[API] Get inventory error:", error);
     return NextResponse.json(
@@ -65,22 +63,22 @@ export async function GET(
 
 /**
  * POST /api/characters/[id]/inventory
- * 
+ *
  * TODO: Add item to character's inventory (admin/debug endpoint)
- * 
+ *
  * Purpose: Manually grant items for testing or admin purposes
- * 
+ *
  * Request Body:
  * {
  *   itemId: number;
  * }
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   item: Item;
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract character ID from URL params
  * 2. Parse itemId from request body
@@ -88,7 +86,7 @@ export async function GET(
  * 4. Call BackendService.addItemToInventory(characterId, itemId)
  * 5. Return the added item
  * 6. Return 404 if item not found
- * 
+ *
  * Note: In production, this should require admin authentication
  */
 export async function POST(
@@ -113,12 +111,13 @@ export async function POST(
       );
     }
 
-    // TODO: Add item to inventory
-    // const item = await BackendService.getItem(body.itemId);
-    // if (!item) return 404
-    // await BackendService.addItemToInventory(characterId, body.itemId);
+    // Step 1: Verify item exists in database
+    // Step 2: Return 404 if item not found
+    // Step 3: Add item to character_items join table
 
-    console.log(`[API] POST /api/characters/${characterId}/inventory - itemId: ${body.itemId}`);
+    console.log(
+      `[API] POST /api/characters/${characterId}/inventory - itemId: ${body.itemId}`
+    );
 
     // MOCK DATA - Replace with actual database operations
     return NextResponse.json({
@@ -130,7 +129,6 @@ export async function POST(
         description: "A mock item"
       } as Item
     });
-
   } catch (error) {
     console.error("[API] Add inventory item error:", error);
     return NextResponse.json(
@@ -142,20 +140,20 @@ export async function POST(
 
 /**
  * DELETE /api/characters/[id]/inventory
- * 
+ *
  * TODO: Remove item from character's inventory
- * 
+ *
  * Purpose: Discard items from inventory
- * 
+ *
  * Query Parameters:
  * - itemId: number (required)
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   message: string;
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract character ID from URL params
  * 2. Get itemId from query params
@@ -186,17 +184,18 @@ export async function DELETE(
       );
     }
 
-    // TODO: Remove item from inventory
-    // await BackendService.removeItemFromInventory(characterId, parseInt(itemId));
+    // Step 1: Remove item from character_items join table
+    // Step 2: Return 404 if item not in inventory
 
-    console.log(`[API] DELETE /api/characters/${characterId}/inventory - itemId: ${itemId}`);
+    console.log(
+      `[API] DELETE /api/characters/${characterId}/inventory - itemId: ${itemId}`
+    );
 
     // MOCK DATA - Replace with actual database delete
     return NextResponse.json({
       success: true,
       message: `Item ${itemId} removed from inventory`
     });
-
   } catch (error) {
     console.error("[API] Remove inventory item error:", error);
     return NextResponse.json(
@@ -205,4 +204,3 @@ export async function DELETE(
     );
   }
 }
-

@@ -44,32 +44,16 @@ export async function POST(
       );
     }
 
-    // TODO: Reset campaign to initial state
-    // Begin transaction
-    // const campaign = await BackendService.getCampaign(campaignId);
-    // const character = await BackendService.getCharacterByCampaign(campaignId);
-    // 
-    // Delete all event logs
-    // await BackendService.deleteAllEvents(campaignId);
-    // 
-    // Reset character stats to base (get from races/classes tables)
-    // const baseStats = await BackendService.getBaseStats(character.raceId, character.classId);
-    // await BackendService.updateCharacter(character.id, {
-    //   currentHealth: baseStats.health,
-    //   maxHealth: baseStats.health,
-    //   attack: baseStats.attack,
-    //   defense: baseStats.defense
-    // });
-    // 
-    // Clear inventory
-    // await BackendService.clearInventory(character.id);
-    // 
-    // Reset campaign state
-    // await BackendService.updateCampaign(campaignId, { state: "active" });
-    // await BackendService.setCurrentEnemy(campaignId, null);
-    // await BackendService.clearPendingEvent(campaignId);
-    // 
-    // Commit transaction
+    // Step 1: Begin database transaction
+    // Step 2: Get campaign and character records
+    // Step 3: Delete all event logs for campaign
+    // Step 4: Get base stats from races/classes tables
+    // Step 5: Reset character stats to base values
+    // Step 6: Clear character inventory
+    // Step 7: Set campaign state to "active"
+    // Step 8: Clear current enemy (set to null)
+    // Step 9: Clear pending event (set to null)
+    // Step 10: Commit transaction (rollback on error)
 
     console.log(`[API] POST /api/admin/campaigns/${campaignId}/reset`);
 

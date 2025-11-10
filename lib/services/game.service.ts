@@ -5,7 +5,7 @@
  * and delegates to backend services, LLM service, and utility functions.
  *
  * Responsibilities:
- * 1. Process player actions (continue, attack, flee, use item, etc.)
+ * 1. Process player actions (continue, attack, use item, etc.)
  * 2. Generate events by calling LLM service
  * 3. Orchestrate combat by delegating to combat utilities
  * 4. Apply event effects by calling backend services
@@ -16,20 +16,19 @@
  * - Backend services (database operations)
  * - LLM service (event generation)
  * - Utility functions (dice rolls, stat calculations, event formatting)
+ *
+ * COMBAT SYSTEM NOTE:
+ * - Implementation approach needs team discussion
+ * -Turn-based combat with attack actions or Instant combat
  */
 
 import { LLMService } from "@/lib/services/llm.service";
-// TODO: Uncomment when Event_type, Dice_Roll, Stat_Calc PR merges
+// TODO: Uncomment these imports when Event_type, Dice_Roll, Stat_Calc PR merges
 // import { EventType } from "@/lib/services/Event_type";
 // import { Dice_Roll } from "@/lib/services/dice_roll";
 // import { Stat_Calc, StatType } from "@/lib/services/Stat_calc";
-
-// Temporary type definition until Stat_Calc is available
-type StatType = "VIT" | "ATK" | "DEF";
-
 import type {
   LLMGameContext,
-  LLMEvent,
   EventHistoryEntry,
   EventTypeString
 } from "@/lib/types/llm.types";
@@ -99,14 +98,13 @@ export class GameService {
           return await this.handleExplorationAction(action, gameState);
 
         case "attack":
-          return await this.handleCombatAction(action, gameState, "attack");
-
-        case "flee":
-          return await this.handleCombatAction(action, gameState, "flee");
+          // TODO: Combat implementation needs further discussion - see handleCombatAction
+          return await this.handleCombatAction(action, gameState);
 
         case "use_item":
           return await this.handleUseItem(action, gameState);
 
+        // Both route to handleItemChoice
         case "pickup_item":
         case "reject_item":
           return await this.handleItemChoice(action, gameState);
@@ -114,6 +112,7 @@ export class GameService {
         case "equip_item":
           return await this.handleEquipItem(action, gameState);
 
+        //Both route to handleEventChoice
         case "accept_event":
         case "reject_event":
           return await this.handleEventChoice(action, gameState);
@@ -211,7 +210,7 @@ export class GameService {
 
   /**
    * Handle exploration actions (continue, search)
-   * NEW FLOW: Generate event type only, present to user for Accept/Reject
+   * Generate event type only, present to user for Accept/Reject
    * Effects are NOT applied until user accepts
    */
   private async handleExplorationAction(
@@ -257,163 +256,25 @@ export class GameService {
   }
 
   /**
-   * Handle combat actions (attack, flee)
+   *
+   * TODO: Combat system implementation needs team discussion
+   * Options:
+   * - Turn-based combat with attack actions (this approach) or instant combat resolution
+   *
    * Orchestrates combat by calling dice roll and damage calculation utilities
    */
   private async handleCombatAction(
     action: PlayerAction,
-    gameState: GameState,
-    combatType: "attack" | "flee"
-  ): Promise<GameServiceResponse> {
-    if (!gameState.enemy) {
-      return {
-        success: false,
-        gameState,
-        message: "No enemy to fight",
-        error: "No active enemy"
-      };
-    }
-
-    if (combatType === "flee") {
-      return await this.handleFlee(action, gameState);
-    }
-
-    // Handle attack
-    const combatResult = await this.resolveCombat(
-      gameState.character,
-      gameState.enemy
-    );
-
-    // Generate combat narrative via LLM
-    const combatContext = this.buildCombatContext(gameState, combatResult);
-    const narrativeDescription = await this.llmService.generateDescription(
-      "Combat",
-      combatContext
-    );
-
-    // Save combat event
-    await BackendService.saveEvent(
-      action.campaignId,
-      narrativeDescription,
-      "Combat",
-      {
-        combatResult,
-        characterDamage: combatResult.characterDamage,
-        enemyDamage: combatResult.enemyDamage
-      }
-    );
-
-    // Update character and enemy health via backend
-    await BackendService.updateCharacter(gameState.character.id, {
-      currentHealth: combatResult.characterHealth
-    });
-
-    // Check combat outcome
-    if (combatResult.outcome === "enemy_defeated") {
-      await BackendService.setCurrentEnemy(action.campaignId, null);
-
-      // TODO: Uncomment when handlePostCombatRewards is implemented
-      // await this.handlePostCombatRewards(action.campaignId, gameState);
-
-      gameState.currentPhase = "exploration";
-
-      // Reset descriptive counter after enemy defeat
-      // Allows descriptive events to occur again after combat
-      // TODO: Only reset for boss defeats when enemy.isBoss field is available in database
-      // REQUIRED: Add isBoss boolean field to enemies table and Enemy type
-      // THEN: Change condition to: if (enemy.isBoss) this.resetDescriptiveCount();
-      this.resetDescriptiveCount();
-    } else if (combatResult.outcome === "character_defeated") {
-      await BackendService.updateCampaign(action.campaignId, {
-        state: "game_over"
-      });
-      gameState.currentPhase = "game_over";
-    }
-
-    // Get updated game state
-    const updatedState = await this.getGameState(action.campaignId);
-
-    // Validate state
-    const validation = await this.validateGameState(action.campaignId);
-
-    return {
-      success: true,
-      gameState: updatedState,
-      message: narrativeDescription,
-      combatResult,
-      choices: this.getChoicesForPhase(updatedState.currentPhase)
-    };
-  }
-
-  /**
-   * Handle flee attempt
-   */
-  private async handleFlee(
-    action: PlayerAction,
     gameState: GameState
   ): Promise<GameServiceResponse> {
-    // TODO: Use diceRoll utility when implemented
-    // For now, 50% chance to flee
-    const fleeSuccess = Math.random() > 0.5;
+    console.log("[GameService] handleCombatAction - NOT YET IMPLEMENTED");
 
-    if (fleeSuccess) {
-      // Clear enemy and return to exploration
-      await BackendService.setCurrentEnemy(action.campaignId, null);
-
-      const message = "You successfully fled from combat!";
-      await BackendService.saveEvent(
-        action.campaignId,
-        message,
-        "Descriptive",
-        { action: "flee_success" }
-      );
-
-      const updatedState = await this.getGameState(action.campaignId);
-      updatedState.currentPhase = "exploration";
-
-      return {
-        success: true,
-        gameState: updatedState,
-        message,
-        choices: ["Continue Forward", "Search Area"]
-      };
-    } else {
-      // Failed to flee, enemy gets free attack
-      const message = "You failed to flee! The enemy strikes!";
-
-      // TODO: Use combat utility when implemented
-      const damage = Math.max(
-        0,
-        (gameState.enemy?.attack || 0) - gameState.character.defense
-      );
-      const newHealth = Math.max(0, gameState.character.currentHealth - damage);
-
-      await BackendService.updateCharacter(gameState.character.id, {
-        currentHealth: newHealth
-      });
-
-      await BackendService.saveEvent(action.campaignId, message, "Combat", {
-        action: "flee_failed",
-        damage
-      });
-
-      const updatedState = await this.getGameState(action.campaignId);
-
-      // Check if character died
-      if (newHealth <= 0) {
-        await BackendService.updateCampaign(action.campaignId, {
-          state: "game_over"
-        });
-        updatedState.currentPhase = "game_over";
-      }
-
-      return {
-        success: true,
-        gameState: updatedState,
-        message: `${message} You took ${damage} damage!`,
-        choices: this.getChoicesForPhase(updatedState.currentPhase)
-      };
-    }
+    return {
+      success: false,
+      gameState,
+      message: "Combat system not yet implemented",
+      error: "Combat pending implementation"
+    };
   }
 
   /**
@@ -433,7 +294,6 @@ export class GameService {
       };
     }
 
-    // TODO: Get item from backend and apply effects
     const item = await BackendService.getItem(itemId);
 
     // Apply item effects (basic implementation)
@@ -574,7 +434,7 @@ export class GameService {
    * Handle Accept/Reject event choice
    * Implements the two-phase event system:
    * - User is presented with event preview
-   * - On Accept: Executes multi-call LLM flow (description + stat boost + dice roll)
+   * - On Accept: Delegates to EventType.trigger() which handles all event logic
    * - On Reject: Skips event and generates new one
    */
   private async handleEventChoice(
@@ -600,143 +460,33 @@ export class GameService {
       return this.handleExplorationAction(action, gameState);
     }
 
-    // ACCEPT - Execute multi-call LLM flow
+    // ACCEPT - Trigger EventType handler
     if (action.actionType === "accept_event") {
-      const context = await this.buildLLMContext(gameState);
       const eventType = pendingEvent.eventType as EventTypeString;
 
-      // Step 1: Trigger EventType handler
-      // Increments descriptive counter or executes type-specific logic
-      await this.triggerEventType(eventType);
+      // EventType.trigger() handles everything internally:
+      // - Descriptive: increments counter
+      // - Environmental: calls LLM_Service.RequestStatBoost() → Dice_Roll → Stat_Calc → Backend_Service
+      // - Combat: calls CombatUI.InitializeCombat() → if won: Dice_Roll → RequestStatBoost/ItemDrop → Backend_Service
+      //   NOTE: Combat handling needs team discussion - see COMBAT SYSTEM NOTE in file header
+      // - Item_Drop: calls LLM_Service.RequestItemDrop() → Backend_Service
+      // TODO: Uncomment when EventType is available
+      // await this.triggerEventType(eventType);
 
-      // Step 2: Generate event description via LLM
-      const description = await this.llmService.generateDescription(
-        eventType,
-        context
-      );
-
-      let finalMessage = description;
-      const statChanges = { health: 0, attack: 0, defense: 0 };
-      let diceRoll = 0;
-      let rollClassification:
-        | "critical_failure"
-        | "regular"
-        | "critical_success"
-        | undefined;
-
-      // Step 3: For stat-affecting events, get LLM stat boost + apply three-tier dice formula
-      if (eventType === "Environmental" || eventType === "Combat") {
-        const statBoost = await this.llmService.requestStatBoost(
-          context,
-          eventType
-        );
-
-        // TODO: Uncomment when Dice_Roll is available
-        // Roll dice using Dice_Roll service (d20)
-        // diceRoll = Dice_Roll.roll();
-        // rollClassification = Dice_Roll.classifyRoll(diceRoll);
-        diceRoll = Math.floor(Math.random() * 20) + 1; // Temporary: random d20
-        rollClassification =
-          diceRoll >= 16
-            ? "critical_success"
-            : diceRoll <= 4
-            ? "critical_failure"
-            : "regular";
-
-        // Map stat types: health→VIT, attack→ATK, defense→DEF
-        const statTypeMap: Record<string, StatType> = {
-          health: "VIT",
-          attack: "ATK",
-          defense: "DEF"
-        };
-
-        // TODO: Uncomment when Stat_Calc is available
-        // Apply three-tier dice system via Stat_Calc
-        // 1-4: Critical failure = 0 gain
-        // 5-15: Regular = scaled by formula
-        // 16-20: Critical success = 2× base value
-        // const finalValue = Math.round(
-        //   Stat_Calc.applyRoll(
-        //     diceRoll,
-        //     statTypeMap[statBoost.statType],
-        //     statBoost.baseValue
-        //   )
-        // );
-        // Temporary implementation until Stat_Calc is available:
-        let finalValue: number;
-        if (diceRoll >= 1 && diceRoll <= 4) {
-          finalValue = 0; // Critical failure
-        } else if (diceRoll >= 5 && diceRoll <= 15) {
-          finalValue = Math.round(
-            statBoost.baseValue * (1 + (diceRoll - 10) / 10)
-          ); // Regular
-        } else {
-          finalValue = statBoost.baseValue * 2; // Critical success
-        }
-
-        statChanges[statBoost.statType] = finalValue;
-
-        // Display message with roll classification icons
-        const rollIcon =
-          rollClassification === "critical_failure"
-            ? "💀"
-            : rollClassification === "critical_success"
-            ? "✨"
-            : "🎲";
-        const statSign = finalValue > 0 ? "+" : "";
-        finalMessage += ` [${rollIcon} ${diceRoll}] ${statBoost.statType.toUpperCase()} ${statSign}${finalValue}`;
-
-        // On critical success, apply bonus stat
-        if (rollClassification === "critical_success") {
-          // TODO: Implement bonusStatRequest flow
-          // REQUIREMENTS:
-          // - Call llmService.bonusStatRequest() to get bonus stat type and value
-          // - Add bonus value to statChanges object: statChanges[bonusStat.statType] += bonusStat.value
-          // - Append to finalMessage: ` + BONUS ${bonusStat.statType.toUpperCase()} +${bonusStat.value}!`
-          // - Include in event data for logging
-          console.log(
-            "[GameService] Critical success bonus stat - NOT YET IMPLEMENTED"
-          );
-        }
-      }
-
-      // Step 3.5: Handle Item_Drop events
-      if (eventType === "Item_Drop") {
-        // TODO: Implement Item_Drop event handling
-        // REQUIREMENTS:
-        // - Call llmService.RequestItemDrop() to generate item
-        // - Create item in database via BackendService.createItem()
-        // - Present choice to user: [Pick Up] [Leave It]
-        // - Store itemId in actionData for pickup_item/reject_item handlers
-        console.log("[GameService] Item_Drop event - NOT YET IMPLEMENTED");
-      }
-
-      // Step 4: Apply stat changes to database
-      await this.applyStatChanges(action.campaignId, statChanges);
-
-      // Step 5: Save event to logs
-      await BackendService.saveEvent(
-        action.campaignId,
-        finalMessage,
-        eventType,
-        { statChanges, diceRoll }
-      );
-
-      // Step 6: Clear pending event
+      // Clear pending event
       await BackendService.clearPendingEvent(action.campaignId);
 
-      // Step 7: Check if Combat event spawns enemy
+      // TODO: Phase handling needs discussion based on combat system approach
+      // - Set phase to "combat" for turn-based battles
       if (eventType === "Combat") {
-        const enemy = await BackendService.getRandomEnemy();
-        await BackendService.setCurrentEnemy(action.campaignId, enemy.id);
         gameState.currentPhase = "combat";
       } else {
         gameState.currentPhase = "exploration";
       }
 
-      // Get updated game state
+      // Get updated game state (EventType will have already saved changes to database)
       const updatedState = await this.getGameState(action.campaignId);
-      updatedState.pendingEvent = undefined; // Clear pending event
+      updatedState.pendingEvent = undefined;
 
       // Validate state
       await this.validateGameState(action.campaignId);
@@ -744,7 +494,7 @@ export class GameService {
       return {
         success: true,
         gameState: updatedState,
-        message: finalMessage,
+        message: "Event completed successfully",
         choices: this.getChoicesForPhase(updatedState.currentPhase)
       };
     }
@@ -841,7 +591,7 @@ export class GameService {
   }
 
   /**
-   * Build combat-specific LLM context
+   * Build combat-specific LLM context, to hand over to LLM after combat round.
    */
   private buildCombatContext(
     gameState: GameState,
@@ -872,23 +622,33 @@ export class GameService {
 
   /**
    * Resolve a combat round
+   *
+   * TODO: Combat implementation needs further discussion
+   * This is part of turn-based combat approach
    * Uses Dice_Roll service and applies critical hit range (16-20)
+   *
    * TODO: Post-combat rewards should use Stat_Calc for three-tier system
    */
   private async resolveCombat(
     character: Character,
     enemy: Enemy
   ): Promise<CombatResult> {
-    // Use Dice_Roll service for combat rolls
     // TODO: Uncomment when Dice_Roll is available
     // const diceRoll = Dice_Roll.roll();
-    const diceRoll = Math.floor(Math.random() * 20) + 1; // Temporary: random d20
-    const isCritical = diceRoll >= 16 && diceRoll <= 20; // Critical range per spec
+    // const isCritical = diceRoll >= 16 && diceRoll <= 20;
+
+    // Temporary placeholders until Dice_Roll is available
+    const diceRoll = Math.floor(Math.random() * 20) + 1;
+    const isCritical = diceRoll >= 16 && diceRoll <= 20;
 
     // Basic damage calculation
     // Note: Combat damage uses simple 2× multiplier, not three-tier system
-    let characterDamageToEnemy = Math.max(1, character.attack - enemy.defense);
-    if (isCritical) characterDamageToEnemy *= 2;
+    const characterDamageToEnemy = Math.max(
+      1,
+      character.attack - enemy.defense
+    );
+
+    // if (isCritical) characterDamageToEnemy *= 2;
 
     const enemyDamageToCharacter = Math.max(
       1,
@@ -920,30 +680,6 @@ export class GameService {
   }
 
   /**
-   * Handle post-combat rewards based on dice roll
-   * Called after enemy is defeated to determine loot/stat rewards
-   *
-   * TODO: Implement full post-combat reward system
-   * REQUIREMENTS:
-   * - Roll dice to determine reward tier (critical_failure, regular, critical_success)
-   * - Critical Success (16-20): Call both RequestItemDrop() AND bonusStatRequest()
-   * - Regular (5-15): Call requestStatBoost() with Combat event type
-   * - Critical Failure (1-4): No rewards
-   * - Apply rewards to character using applyStatChanges()
-   * - Save reward event to logs with appropriate message
-   *
-   * @param campaignId - Campaign ID for context
-   * @param gameState - Current game state
-   */
-  private async handlePostCombatRewards(
-    campaignId: number,
-    gameState: GameState
-  ): Promise<void> {
-    // TODO: Implement post-combat reward logic
-    console.log("[GameService] Post-combat rewards - NOT YET IMPLEMENTED");
-  }
-
-  /**
    * Validate if action is allowed in current game state
    */
   private validateAction(
@@ -962,10 +698,7 @@ export class GameService {
     }
 
     // Combat actions only valid in combat
-    if (
-      (action.actionType === "attack" || action.actionType === "flee") &&
-      gameState.currentPhase !== "combat"
-    ) {
+    if (action.actionType === "attack" && gameState.currentPhase !== "combat") {
       errors.push("Not in combat");
     }
 
@@ -990,7 +723,7 @@ export class GameService {
   private getChoicesForPhase(phase: GameState["currentPhase"]): string[] {
     switch (phase) {
       case "combat":
-        return ["Attack", "Flee", "Use Item"];
+        return ["Attack", "Use Item"];
       case "exploration":
         return ["Continue Forward", "Search Area"];
       case "event_choice":
@@ -1054,43 +787,31 @@ export class GameService {
    * - Environmental stat boosts
    * - Combat initialization
    * - Item drop handling
-   *
-   * TODO: Uncomment when EventType is available
    */
   private async triggerEventType(eventType: EventTypeString): Promise<void> {
+    // TODO: Uncomment when EventType is available
     // const eventTypeInstance = new EventType(eventType);
     // await eventTypeInstance.trigger();
-    console.log(
-      `[GameService] EventType.trigger(${eventType}) - Waiting for Event_type PR`
-    );
   }
 
   /**
    * Get current descriptive event counter
    * Used to prevent multiple consecutive descriptive (flavor-only) events
    * Returns number of consecutive descriptive events that have occurred
-   *
-   * TODO: Uncomment when EventType is available
    */
   private getDescriptiveCount(): number {
+    // TODO: Uncomment when EventType is available
     // return EventType.getDescriptiveCount();
-    return 0; // Temporary: always allow descriptive events until EventType is available
+    return 0; // Temporary: allow all descriptive events until EventType is available
   }
 
   /**
    * Reset descriptive event counter
    * Called after significant game events (e.g., boss defeats)
    * to allow descriptive events to occur again
-   *
-   * TODO: Uncomment when EventType is available
    */
   private resetDescriptiveCount(): void {
+    // TODO: Uncomment when EventType is available
     // EventType.resetDescriptiveCount();
-    console.log(
-      "[GameService] EventType.resetDescriptiveCount() - Waiting for Event_type PR"
-    );
-    // TODO: Only reset for boss defeats when enemy.isBoss field is available in database
-    // REQUIRED: Add isBoss boolean field to enemies table and Enemy type
-    // THEN: Change condition to: if (enemy.isBoss) this.resetDescriptiveCount();
   }
 }

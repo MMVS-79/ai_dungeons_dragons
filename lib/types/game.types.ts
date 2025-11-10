@@ -108,7 +108,6 @@ export type ActionType =
   | "continue"          // Continue exploring
   | "search"            // Search for items
   | "attack"            // Attack enemy
-  | "flee"              // Flee from combat
   | "use_item"          // Use item from inventory
   | "pickup_item"       // Pick up item
   | "reject_item"       // Reject item
@@ -131,7 +130,7 @@ export interface PlayerAction {
 // ============================================================================
 
 export interface CombatAction {
-  type: "attack" | "flee" | "use_item";
+  type: "attack" | "use_item";
   itemId?: number;
 }
 
