@@ -1,3 +1,17 @@
+/**
+ * ⚠️ LEGACY ENDPOINT - MARKED FOR REMOVAL ⚠️
+ * ==========================================
+ * This endpoint was created for the initial dragon demo page.
+ * It is NOT part of the main game architecture.
+ * 
+ * TODO: Remove this file and app/dragon-demo/page.tsx after confirming
+ * the main game system (/api/game/action) is fully functional.
+ * 
+ * Status: Only used by demo page, not connected to GameService
+ * Created: Early demo phase
+ * Replacement: /api/game/action handles all game logic
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
