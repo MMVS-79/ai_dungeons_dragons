@@ -9,6 +9,7 @@ import EventPanel from "./components/eventPanel/eventPanel";
 import ChatPanel from "./components/chatPanel/chatPanel";
 import ItemPanel from "./components/itemPanel/itemPanel";
 import DicePanel from "./components/dicePanel/dicePanel";
+import { callGameAPI } from "./api-helper";
 
 
 // Type definitions (might want to put these in a separate types.ts file later)
@@ -405,12 +406,8 @@ export default function CampaignPage() {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 2. Generate LLM response (replace with actual API call)
-      const response = generateLLMResponse(choice, diceResult, {
-        enemyState,
-        playerAttack,
-        playerDefense,
-      })!;
+      // 2. Generate LLM response via API (replaces mock function)
+      const response = await callGameAPI(choice, params.id, diceResult);
 
       // 3. Update game state based on response
       if (response.type === "combat") {
