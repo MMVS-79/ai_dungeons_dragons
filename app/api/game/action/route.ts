@@ -12,7 +12,7 @@ const gameService = new GameService(process.env.GEMINI_API_KEY!);
  * Request body: PlayerAction
  * {
  *   campaignId: number;
- *   actionType: "continue" | "search" | "attack" | "flee" | "use_item" | etc;
+ *   actionType: "continue" | "search" | "attack" | "use_item" | etc;
  *   actionData?: { itemId?: number; targetId?: number };
  * }
  * 
@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
       "continue",
       "search",
       "attack",
-      "flee",
       "use_item",
       "pickup_item",
       "reject_item",

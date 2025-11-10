@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import styles from "./interface.module.css";
 import CharacterPanel from "./components/characterPanel/characterPanel";
@@ -9,8 +9,6 @@ import EventPanel from "./components/eventPanel/eventPanel";
 import ChatPanel from "./components/chatPanel/chatPanel";
 import ItemPanel from "./components/itemPanel/itemPanel";
 import DicePanel from "./components/dicePanel/dicePanel";
-import { callGameAPI } from "./api-helper";
-
 
 // Type definitions (might want to put these in a separate types.ts file later)
 interface Item {
@@ -92,13 +90,13 @@ const generateLLMResponse = (
         message: `You rolled a ${diceRoll}! You strike the ${gameState.enemyState.name} for ${playerDamage} damage! The ${gameState.enemyState.name} retaliates for ${enemyDamage} damage!`,
         playerDamage: enemyDamage,
         enemyDamage: playerDamage,
-        choices: ["Attack", "Use Potion"],
+        choices: ["Attack", "Use Potion"]
       };
     } else if (choice === "Use Potion") {
       return {
         type: "potion_prompt",
         message: "Select a potion from your inventory to use.",
-        choices: ["Attack", "Use Potion"],
+        choices: ["Attack", "Use Potion"]
       };
     }
   } else {
@@ -116,9 +114,9 @@ const generateLLMResponse = (
           attack: 30,
           defense: 15,
           image: "/characters/enemy/boss/dragon.png",
-          isBoss: true,
+          isBoss: true
         },
-        choices: ["Attack", "Use Potion"],
+        choices: ["Attack", "Use Potion"]
       };
     } else if (diceRoll >= 15) {
       return {
@@ -130,9 +128,9 @@ const generateLLMResponse = (
           maxHp: 30,
           attack: 8,
           defense: 3,
-          image: "/characters/enemy/low/goblin.png",
+          image: "/characters/enemy/low/goblin.png"
         },
-        choices: ["Attack", "Use Potion"],
+        choices: ["Attack", "Use Potion"]
       };
     } else if (diceRoll >= 10 && eventRoll < 33) {
       // Found weapon
@@ -146,9 +144,9 @@ const generateLLMResponse = (
           type: "weapon",
           image: "/items/epic_sword.png",
           attack: 10,
-          description: "A sharp steel blade (+10 Attack)",
+          description: "A sharp steel blade (+10 Attack)"
         },
-        choices: ["Pick Up", "Leave It"],
+        choices: ["Pick Up", "Leave It"]
       };
     } else if (diceRoll >= 10 && eventRoll < 66) {
       // Found armor
@@ -162,9 +160,9 @@ const generateLLMResponse = (
           type: "armor",
           image: "/items/rare_armour.png",
           hpBonus: 30,
-          description: "Sturdy iron protection (+30 Max HP)",
+          description: "Sturdy iron protection (+30 Max HP)"
         },
-        choices: ["Pick Up", "Leave It"],
+        choices: ["Pick Up", "Leave It"]
       };
     } else if (diceRoll >= 10) {
       // Found shield
@@ -178,9 +176,9 @@ const generateLLMResponse = (
           type: "shield",
           image: "/items/epic_shield.png",
           defense: 10,
-          description: "A reliable shield (+10 Defense)",
+          description: "A reliable shield (+10 Defense)"
         },
-        choices: ["Pick Up", "Leave It"],
+        choices: ["Pick Up", "Leave It"]
       };
     } else if (diceRoll >= 1) {
       return {
@@ -192,22 +190,21 @@ const generateLLMResponse = (
           type: "potion",
           image: "/items/red_potion.png",
           healAmount: 20,
-          description: "Restores 20 HP",
+          description: "Restores 20 HP"
         },
-        choices: ["Continue Forward", "Search Area"],
+        choices: ["Continue Forward", "Search Area"]
       };
     } else {
       return {
         type: "story",
         message: `You rolled a ${diceRoll}. You carefully navigate through the dark corridor. Nothing happens... yet.`,
-        choices: ["Continue Forward", "Search Area"],
+        choices: ["Continue Forward", "Search Area"]
       };
     }
   }
 };
 
 export default function CampaignPage() {
-  const params = useParams();
   const router = useRouter();
 
   // Centralized game state
@@ -225,7 +222,7 @@ export default function CampaignPage() {
         type: "potion",
         image: "/items/red_potion.png",
         healAmount: 20,
-        description: "Restores 20 HP",
+        description: "Restores 20 HP"
       },
       {
         id: "potion2",
@@ -233,8 +230,8 @@ export default function CampaignPage() {
         type: "potion",
         image: "/items/red_potion.png",
         healAmount: 20,
-        description: "Restores 20 HP",
-      },
+        description: "Restores 20 HP"
+      }
     ],
     equipped: {
       weapon: {
@@ -243,15 +240,15 @@ export default function CampaignPage() {
         type: "weapon",
         image: "/items/rare_sword.png",
         attack: 5,
-        description: "+5 Attack",
+        description: "+5 Attack"
       },
-      armor:  {
+      armor: {
         id: `armor1`,
         name: "Leather Armor",
         type: "armor",
         image: "/items/common_armour.png",
         hpBonus: 15,
-        description: "Sturdy leather protection (+15 Max HP)",
+        description: "Sturdy leather protection (+15 Max HP)"
       },
       shield: {
         id: `shield1`,
@@ -259,9 +256,9 @@ export default function CampaignPage() {
         type: "shield",
         image: "/items/rare_shield.png",
         defense: 4,
-        description: "A reliable shield (+4 Defense)",
-      },
-    },
+        description: "A reliable shield (+4 Defense)"
+      }
+    }
   });
 
   const [enemyState, setEnemyState] = useState<EnemyState | null>(null);
@@ -271,9 +268,10 @@ export default function CampaignPage() {
     {
       id: "1",
       text: "You stand at the entrance of an ancient dungeon. The air is thick with mystery. What do you do?",
-      choices: ["Continue Forward", "Search Area"],
-    },
+      choices: ["Continue Forward", "Search Area"]
+    }
   ]);
+
   const [diceRolling, setDiceRolling] = useState(false);
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
@@ -284,15 +282,15 @@ export default function CampaignPage() {
   const playerAttack =
     playerState.baseAttack + (playerState.equipped.weapon?.attack || 0);
   const playerDefense =
-    playerState.baseDefense +
-    (playerState.equipped.shield?.defense || 0);
-  const playerMaxHp = 
+    playerState.baseDefense + (playerState.equipped.shield?.defense || 0);
+  const playerMaxHp =
     playerState.maxHp + (playerState.equipped.armor?.hpBonus || 0);
 
   // Main action handler
   const handleChatAction = async (choice: string) => {
     // Prevent input spam OR if game has ended
     if (actionLocked || showGameOver || showVictory) return;
+
     setActionLocked(true);
 
     try {
@@ -311,8 +309,8 @@ export default function CampaignPage() {
               {
                 id: Date.now().toString(),
                 text: `You already have a ${equipmentSlot} equipped. Would you like to replace it?`,
-                choices: ["Replace Equipment", "Leave It"],
-              },
+                choices: ["Replace Equipment", "Leave It"]
+              }
             ]);
             return;
           } else {
@@ -321,8 +319,8 @@ export default function CampaignPage() {
               ...prev,
               equipped: {
                 ...prev.equipped,
-                [equipmentSlot]: pendingEquipment,
-              },
+                [equipmentSlot]: pendingEquipment
+              }
             }));
 
             setMessages((prev) => [
@@ -330,8 +328,8 @@ export default function CampaignPage() {
               {
                 id: Date.now().toString(),
                 text: `You equipped the ${pendingEquipment.name}!`,
-                choices: ["Continue Forward", "Search Area"],
-              },
+                choices: ["Continue Forward", "Search Area"]
+              }
             ]);
           }
         } else {
@@ -340,8 +338,8 @@ export default function CampaignPage() {
             {
               id: Date.now().toString(),
               text: `You decided to leave the ${pendingEquipment.name} behind.`,
-              choices: ["Continue Forward", "Search Area"],
-            },
+              choices: ["Continue Forward", "Search Area"]
+            }
           ]);
         }
 
@@ -357,24 +355,25 @@ export default function CampaignPage() {
           | "weapon"
           | "armor"
           | "shield";
+
         const oldEquipment = playerState.equipped[equipmentSlot];
 
         setPlayerState((prev) => {
           const newState = { ...prev };
-          
+
           // If replacing armor, adjust HP to not exceed new max
           if (equipmentSlot === "armor") {
             const newHpBonus = pendingEquipment.hpBonus || 0;
             const newMaxHp = prev.maxHp + newHpBonus;
-            
+
             newState.hp = Math.min(prev.hp, newMaxHp);
           }
-          
+
           newState.equipped = {
             ...prev.equipped,
-            [equipmentSlot]: pendingEquipment,
+            [equipmentSlot]: pendingEquipment
           };
-          
+
           return newState;
         });
 
@@ -383,8 +382,8 @@ export default function CampaignPage() {
           {
             id: Date.now().toString(),
             text: `You replaced your ${oldEquipment?.name} with the ${pendingEquipment.name}!`,
-            choices: ["Continue Forward", "Search Area"],
-          },
+            choices: ["Continue Forward", "Search Area"]
+          }
         ]);
 
         setPendingEquipment(null);
@@ -406,8 +405,12 @@ export default function CampaignPage() {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 2. Generate LLM response via API (replaces mock function)
-      const response = await callGameAPI(choice, params.id, diceResult);
+      // 2. Generate LLM response (replace with actual API call)
+      const response = generateLLMResponse(choice, diceResult, {
+        enemyState,
+        playerAttack,
+        playerDefense
+      })!;
 
       // 3. Update game state based on response
       if (response.type === "combat") {
@@ -420,14 +423,20 @@ export default function CampaignPage() {
           response.playerDamage !== undefined
         ) {
           // Combat damage
-          const newEnemyHp = Math.max(0, (enemyState?.hp || 0) - response.enemyDamage);
-          const newPlayerHp = Math.max(0, playerState.hp - response.playerDamage);
-          
+          const newEnemyHp = Math.max(
+            0,
+            (enemyState?.hp || 0) - response.enemyDamage
+          );
+          const newPlayerHp = Math.max(
+            0,
+            playerState.hp - response.playerDamage
+          );
+
           // Check game end conditions IMMEDIATELY
           const playerDied = newPlayerHp <= 0;
           const enemyDefeated = enemyState && newEnemyHp <= 0;
           const wasBoss = enemyDefeated && enemyState?.isBoss === true;
-                  
+
           // Set game end states immediately to block further actions
           if (playerDied) {
             setShowGameOver(true);
@@ -441,14 +450,14 @@ export default function CampaignPage() {
             prev
               ? {
                   ...prev,
-                  hp: newEnemyHp,
+                  hp: newEnemyHp
                 }
               : null
           );
 
           setPlayerState((prev) => ({
             ...prev,
-            hp: newPlayerHp,
+            hp: newPlayerHp
           }));
 
           // Show messages with delay (for dramatic effect)
@@ -463,33 +472,39 @@ export default function CampaignPage() {
                 {
                   id: Date.now().toString(),
                   text: `Victory! The ${enemyState.name} has been defeated!`,
-                  choices: ["Continue Forward", "Search Area"],
-                },
+                  choices: ["Continue Forward", "Search Area"]
+                }
               ]);
             }, 1500);
           }
         }
-      } else if (response.type === "item" && response.item as Item) {
+      } else if (response.type === "item" && (response.item as Item)) {
         if (playerState.inventory.length < 10) {
           setPlayerState((prev) => ({
             ...prev,
-            inventory: [...prev.inventory, response.item as Item],
+            inventory: [...prev.inventory, response.item as Item]
           }));
-          setCurrentEvent({ type: "item", data: response.item as Item});
+          setCurrentEvent({ type: "item", data: response.item as Item });
         } else {
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now().toString(),
               text: "Your inventory is full! You cannot pick up the item.",
-              choices: ["Continue Forward", "Search Area"],
-            },
+              choices: ["Continue Forward", "Search Area"]
+            }
           ]);
           return;
         }
-      } else if (response.type === "equipment" && response.equipment as Item) {
+      } else if (
+        response.type === "equipment" &&
+        (response.equipment as Item)
+      ) {
         setPendingEquipment(response.equipment as Item);
-        setCurrentEvent({ type: "equipment", data: response.equipment as Item});
+        setCurrentEvent({
+          type: "equipment",
+          data: response.equipment as Item
+        });
       } else if (response.type === "story") {
         setCurrentEvent({ type: "story" });
       }
@@ -500,8 +515,8 @@ export default function CampaignPage() {
         {
           id: Date.now().toString(),
           text: response.message,
-          choices: response.choices,
-        },
+          choices: response.choices
+        }
       ]);
     } finally {
       // --- Ensure it always unlocks ---
@@ -514,7 +529,7 @@ export default function CampaignPage() {
       setPlayerState((prev) => ({
         ...prev,
         hp: Math.min(prev.hp + (item.healAmount || 0), playerMaxHp),
-        inventory: prev.inventory.filter((i) => i.id !== item.id),
+        inventory: prev.inventory.filter((i) => i.id !== item.id)
       }));
 
       setMessages((prev) => [
@@ -524,8 +539,8 @@ export default function CampaignPage() {
           text: `You used ${item.name} and restored ${item.healAmount} HP!`,
           choices: enemyState
             ? ["Attack", "Use Potion"]
-            : ["Continue Forward", "Search Area"],
-        },
+            : ["Continue Forward", "Search Area"]
+        }
       ]);
     }
   };
@@ -533,12 +548,12 @@ export default function CampaignPage() {
   const handleEquipItem = (item: Item, slot: string) => {
     setPlayerState((prev) => {
       const newState = { ...prev };
-      
+
       // If equipping armor, HP stays the same (new maxHp just increases)
       // Equip new item
       newState.equipped = {
         ...newState.equipped,
-        [slot]: item,
+        [slot]: item
       };
       newState.inventory = newState.inventory.filter((i) => i.id !== item.id);
 
@@ -549,31 +564,32 @@ export default function CampaignPage() {
   const handleDropEquipment = (slot: string) => {
     setPlayerState((prev) => {
       const newState = { ...prev };
-      
+
       // If unequipping armor, cap HP to new maxHp
       if (slot === "armor" && prev.equipped.armor) {
         const newMaxHp = prev.maxHp;
         newState.hp = Math.min(prev.hp, newMaxHp);
       }
-      
+
       newState.equipped = {
         ...prev.equipped,
-        [slot]: undefined,
+        [slot]: undefined
       };
-      
+
       return newState;
     });
 
     setMessages((prev) => {
-      const lastChoices = prev.length > 0 ? prev[prev.length - 1].choices : undefined;
-    
+      const lastChoices =
+        prev.length > 0 ? prev[prev.length - 1].choices : undefined;
+
       return [
         ...prev,
         {
           id: Date.now().toString(),
           text: `You unequipped your ${slot}.`,
-          choices: lastChoices,
-        },
+          choices: lastChoices
+        }
       ];
     });
   };
@@ -608,14 +624,20 @@ export default function CampaignPage() {
           <ChatPanel
             messages={messages}
             onAction={handleChatAction}
-            disabled={diceRolling || showGameOver || showVictory}  // Add game end conditions
+            disabled={diceRolling || showGameOver || showVictory} // Add game end conditions
           />
         </div>
 
         {/* Right Column */}
         <div className={styles.rightColumn}>
-          <EventPanel currentEvent={currentEvent} enemyState={enemyState} />
-          <DicePanel isRolling={diceRolling} lastResult={lastDiceResult} />
+          <EventPanel
+            currentEvent={currentEvent}
+            enemyState={enemyState}
+          />
+          <DicePanel
+            isRolling={diceRolling}
+            lastResult={lastDiceResult}
+          />
         </div>
       </div>
 
@@ -629,8 +651,10 @@ export default function CampaignPage() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
             <h1 className={styles.modalTitle}>You Died!</h1>
-            <p className={styles.modalText}>Your adventure has come to an end...</p>
-            <button 
+            <p className={styles.modalText}>
+              Your adventure has come to an end...
+            </p>
+            <button
               className={styles.modalButton}
               onClick={handleReturnToCampaigns}
             >
@@ -646,16 +670,18 @@ export default function CampaignPage() {
           <div className={styles.modalContent}>
             <h1 className={styles.modalTitle}>You Beat The Boss!</h1>
             <div className={styles.victoryImage}>
-              <Image 
-                src="/other/victory.png" 
-                alt="Victory" 
+              <Image
+                src="/other/victory.png"
+                alt="Victory"
                 className={styles.victoryImg}
                 width={512}
                 height={512}
               />
             </div>
-            <p className={styles.modalText}>Congratulations, brave adventurer!</p>
-            <button 
+            <p className={styles.modalText}>
+              Congratulations, brave adventurer!
+            </p>
+            <button
               className={styles.modalButton}
               onClick={handleReturnToCampaigns}
             >
