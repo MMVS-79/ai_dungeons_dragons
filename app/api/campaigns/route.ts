@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get("accountId");
 
-    // TODO: Validate accountId
     if (!accountId) {
       return NextResponse.json(
         { success: false, error: "Missing accountId parameter" },
@@ -41,10 +40,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Get campaigns from database
-    // const campaigns = await BackendService.getCampaignsByAccount(parseInt(accountId));
-    // Apply filters (status, limit, offset)
-    // Order by updated_at DESC to show most recent first
+    // Step 1: Query campaigns table WHERE account_id matches
+    // Step 2: Apply optional filters (status, limit, offset)
+    // Step 3: Order by updated_at DESC to show most recent first
+    // Step 4: Return campaigns array with total count
 
     console.log(`[API] GET /api/campaigns - accountId: ${accountId}`);
 
@@ -104,7 +103,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // TODO: Validate request body
     if (!body.accountId || !body.campaignName || !body.character?.name) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
@@ -112,26 +110,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Create campaign and character in database
-    // Begin transaction
-    // const campaign = await BackendService.createCampaign({
-    //   accountId: body.accountId,
-    //   name: body.campaignName,
-    //   description: body.campaignDescription,
-    //   state: "active"
-    // });
-    // const character = await BackendService.createCharacter({
-    //   campaignId: campaign.id,
-    //   name: body.character.name,
-    //   raceId: body.character.raceId,
-    //   classId: body.character.classId,
-    //   // Get base stats from races/classes tables
-    //   currentHealth: baseStats.health,
-    //   maxHealth: baseStats.health,
-    //   attack: baseStats.attack,
-    //   defense: baseStats.defense
-    // });
-    // Commit transaction
+    // Step 1: Begin database transaction
+    // Step 2: Insert campaign record to campaigns table
+    // Step 3: Get base stats from races/classes tables
+    // Step 4: Insert character record to characters table with campaign_id
+    // Step 5: Commit transaction (rollback on error)
 
     console.log(`[API] POST /api/campaigns - Creating: ${body.campaignName}`);
 

@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Campaign, Character, GameEvent, Enemy } from "@/lib/types/game.types";
+import type {
+  Campaign,
+  Character,
+  GameEvent,
+  Enemy
+} from "@/lib/types/game.types";
 
 /**
  * GET /api/campaigns/[id]
- * 
+ *
  * TODO: Get full campaign details with character and recent events
- * 
+ *
  * Purpose: Load all data needed for the campaign page
- * 
+ *
  * Response:
  * {
  *   success: boolean;
@@ -17,7 +22,7 @@ import type { Campaign, Character, GameEvent, Enemy } from "@/lib/types/game.typ
  *   currentEnemy?: Enemy;
  *   inventory: Item[];
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract campaign ID from URL params
  * 2. Call BackendService.getCampaign(id)
@@ -42,13 +47,12 @@ export async function GET(
       );
     }
 
-    // TODO: Fetch campaign data from database
-    // const campaign = await BackendService.getCampaign(campaignId);
-    // if (!campaign) return 404
-    // const character = await BackendService.getCharacterByCampaign(campaignId);
-    // const recentEvents = await BackendService.getRecentEvents(campaignId, 10);
-    // const currentEnemy = await BackendService.getCurrentEnemy(campaignId);
-    // const inventory = await BackendService.getInventory(character.id);
+    // Step 1: Query campaign from database
+    // Step 2: Return 404 if campaign not found
+    // Step 3: Query character for campaign
+    // Step 4: Query recent events (limit 10)
+    // Step 5: Query current enemy (may be null)
+    // Step 6: Query character inventory
 
     console.log(`[API] GET /api/campaigns/${campaignId}`);
 
@@ -80,7 +84,6 @@ export async function GET(
       currentEnemy: null,
       inventory: []
     });
-
   } catch (error) {
     console.error("[API] Get campaign error:", error);
     return NextResponse.json(
@@ -92,24 +95,24 @@ export async function GET(
 
 /**
  * PUT /api/campaigns/[id]
- * 
+ *
  * TODO: Update campaign details
- * 
+ *
  * Purpose: Allow users to rename campaign, update description, or change state
- * 
+ *
  * Request Body:
  * {
  *   name?: string;
  *   description?: string;
  *   state?: "active" | "completed" | "abandoned";
  * }
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   campaign: Campaign;
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract campaign ID from URL params
  * 2. Parse request body
@@ -133,7 +136,6 @@ export async function PUT(
       );
     }
 
-    // TODO: Validate at least one field to update
     if (!body.name && !body.description && !body.state) {
       return NextResponse.json(
         { success: false, error: "No fields to update" },
@@ -141,12 +143,8 @@ export async function PUT(
       );
     }
 
-    // TODO: Update campaign in database
-    // const campaign = await BackendService.updateCampaign(campaignId, {
-    //   name: body.name,
-    //   description: body.description,
-    //   state: body.state
-    // });
+    // Step 1: Update campaign record with provided fields
+    // Step 2: Return 404 if campaign not found
 
     console.log(`[API] PUT /api/campaigns/${campaignId}`, body);
 
@@ -163,7 +161,6 @@ export async function PUT(
         updatedAt: new Date()
       } as Campaign
     });
-
   } catch (error) {
     console.error("[API] Update campaign error:", error);
     return NextResponse.json(
@@ -175,17 +172,17 @@ export async function PUT(
 
 /**
  * DELETE /api/campaigns/[id]
- * 
+ *
  * TODO: Delete campaign and all associated data
- * 
+ *
  * Purpose: Remove campaign permanently (with cascade to character, logs, inventory)
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   message: string;
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract campaign ID from URL params
  * 2. Start database transaction
@@ -196,7 +193,7 @@ export async function PUT(
  * 7. Commit transaction
  * 8. Return success message
  * 9. Rollback on error
- * 
+ *
  * Note: Consider soft delete (state="deleted") instead of hard delete for data recovery
  */
 export async function DELETE(
@@ -213,17 +210,13 @@ export async function DELETE(
       );
     }
 
-    // TODO: Delete campaign and cascade data
-    // Begin transaction
-    // const character = await BackendService.getCharacterByCampaign(campaignId);
-    // await BackendService.deleteInventory(character.id);
-    // await BackendService.deleteEventLogs(campaignId);
-    // await BackendService.deleteCharacter(character.id);
-    // await BackendService.deleteCampaign(campaignId);
-    // Commit transaction
-    
-    // OR use soft delete:
-    // await BackendService.updateCampaign(campaignId, { state: "deleted" });
+    // Step 1: Begin database transaction
+    // Step 2: Get character for campaign
+    // Step 3: Delete inventory records
+    // Step 4: Delete event logs
+    // Step 5: Delete character record
+    // Step 6: Delete campaign record (or soft delete via state="deleted")
+    // Step 7: Commit transaction (rollback on error)
 
     console.log(`[API] DELETE /api/campaigns/${campaignId}`);
 
@@ -232,7 +225,6 @@ export async function DELETE(
       success: true,
       message: `Campaign ${campaignId} deleted successfully`
     });
-
   } catch (error) {
     console.error("[API] Delete campaign error:", error);
     return NextResponse.json(
@@ -241,4 +233,3 @@ export async function DELETE(
     );
   }
 }
-

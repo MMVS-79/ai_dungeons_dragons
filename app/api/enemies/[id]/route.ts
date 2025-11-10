@@ -34,9 +34,8 @@ export async function GET(
       );
     }
 
-    // TODO: Fetch enemy from database
-    // const enemy = await BackendService.getEnemy(enemyId);
-    // if (!enemy) return 404
+    // Step 1: Query enemy from database
+    // Step 2: Return 404 if enemy not found
 
     console.log(`[API] GET /api/enemies/${enemyId}`);
 

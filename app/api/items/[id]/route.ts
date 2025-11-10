@@ -34,9 +34,8 @@ export async function GET(
       );
     }
 
-    // TODO: Fetch item from database
-    // const item = await BackendService.getItem(itemId);
-    // if (!item) return 404
+    // Step 1: Query item from database
+    // Step 2: Return 404 if item not found
 
     console.log(`[API] GET /api/items/${itemId}`);
 

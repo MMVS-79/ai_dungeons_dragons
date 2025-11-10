@@ -40,16 +40,15 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Fetch statistics from database
-    // const totalUsers = await BackendService.countUsers();
-    // const totalCampaigns = await BackendService.countCampaigns();
-    // const activeCampaigns = await BackendService.countCampaigns({ state: "active" });
-    // const completedCampaigns = await BackendService.countCampaigns({ state: "completed" });
-    // const totalEvents = await BackendService.countEvents();
-    // const totalCharacters = await BackendService.countCharacters();
-    // const averageEventsPerCampaign = totalEvents / totalCampaigns || 0;
-    // const mostPopularRace = await BackendService.getMostPopularRace();
-    // const mostPopularClass = await BackendService.getMostPopularClass();
+    // Step 1: Query total users from accounts table
+    // Step 2: Query total campaigns (all states)
+    // Step 3: Query active campaigns (state="active")
+    // Step 4: Query completed campaigns (state="completed")
+    // Step 5: Query total events from logs table
+    // Step 6: Query total characters
+    // Step 7: Calculate average events per campaign
+    // Step 8: Query most popular race (GROUP BY race_id)
+    // Step 9: Query most popular class (GROUP BY class_id)
 
     console.log(`[API] GET /api/admin/stats`);
 
