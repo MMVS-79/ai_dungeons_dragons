@@ -31,7 +31,7 @@ export default function LoginPage() {
           alt="Logo"
           className={styles.logo}
         />
-        <h1 className={styles.title}>Dumbgeons & Dragons</h1>
+        <h1 className={styles.title}>DumbgeonsAI</h1>
         <p className={styles.subtitle}>Sign in to start your adventure</p>
 
         <button onClick={handleGoogleSignIn} className={styles.googleButton}>
