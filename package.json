@@ -13,6 +13,7 @@
     "format:sql": "sqlfluff fix"
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
     "@google/genai": "^1.22.0",
     "dotenv": "^17.2.3",
     "mysql2": "^3.15.2",
