@@ -2,19 +2,16 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-// TEMPORARY: Hard-code for testing (REMOVE BEFORE COMMITTING!)
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "487437135541-ntj9ha0akcp3vq5kc7mccob59vk0tf5t.apps.googleusercontent.com";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "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";
-const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || "w4x5k+9J9fPq7G3kT+0wC4YFJxM/7H9qvN5l6TQYbUg=";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
 
-
-
-// Debug: Check if env vars are loaded
-console.log("Environment check:");
-console.log("GOOGLE_CLIENT_ID exists:", !!GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-client-id-here");
-console.log("GOOGLE_CLIENT_SECRET exists:", !!GOOGLE_CLIENT_SECRET && GOOGLE_CLIENT_SECRET !== "your-client-secret-here");
-console.log("NEXTAUTH_SECRET exists:", !!NEXTAUTH_SECRET);
-console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL || "http://localhost:3000");
+// Fail early with a helpful message if required env is missing
+if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !NEXTAUTH_SECRET) {
+  throw new Error(
+    "Missing required NEXTAUTH env vars. Ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and NEXTAUTH_SECRET are set."
+  );
+}
 
 const handler = NextAuth({
   providers: [
@@ -23,26 +20,31 @@ const handler = NextAuth({
       clientSecret: GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
+          prompt: "consent",        // shows consent screen (useful for refresh tokens)
+          access_type: "offline",   // request refresh token
+          response_type: "code",
+        },
+      },
     }),
   ],
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
+    error: "/login",
   },
+
   callbacks: {
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
+      // token.sub should be the user id from provider (string). Add it to session safely.
+      if (session.user && token.sub) {
+        // If using TS, augment Session type to include `user.id`.
+        (session.user as any).id = token.sub;
       }
       return session;
     },
+    // Optionally add `jwt` callback if you need to persist custom token claims
   },
-  debug: true,
+
+  debug: process.env.NODE_ENV !== "production",
   secret: NEXTAUTH_SECRET,
 });
 

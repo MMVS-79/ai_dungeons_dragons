@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dumbgeons & Dragons",
+  title: "DumbgeonsAI",
   description: "The best D&D experience",
   icons: {
     icon: "/icons/black logo - circle.png"
