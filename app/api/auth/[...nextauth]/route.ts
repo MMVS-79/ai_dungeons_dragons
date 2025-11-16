@@ -32,12 +32,12 @@ const handler = NextAuth({
     error: "/login",
   },
 
-  callbacks: {
+callbacks: {
     async session({ session, token }) {
-      // token.sub should be the user id from provider (string). Add it to session safely.
+      // session.user is now guaranteed to have an 'id' property due to type augmentation.
       if (session.user && token.sub) {
-        // If using TS, augment Session type to include `user.id`.
-        (session.user as any).id = token.sub;
+        // Fix: Use the properly typed session object
+        session.user.id = token.sub; 
       }
       return session;
     },
