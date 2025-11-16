@@ -1,0 +1,97 @@
+/* app/login/login.module.css */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: radial-gradient(
+    ellipse 150% 150% at 50% -70%,
+    rgba(255, 255, 255, 0.1),
+    #0a0a0a 95%
+  );
+}
+
+.loginCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 50px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid white;
+  border-radius: 20px;
+  max-width: 450px;
+  width: 100%;
+  backdrop-filter: blur(10px);
+}
+
+.logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.googleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 24px;
+  background: white;
+  color: #333;
+  border: none;
+  border-radius: 25px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.googleButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
+.googleIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.terms {
+  margin-top: 30px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  max-width: 300px;
+}
+
+@media (max-width: 768px) {
+  .loginCard {
+    padding: 40px 30px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+}
