@@ -341,7 +341,7 @@ html {
   }
 }
 
-/* Add these styles to your Navbar.module.css */
+/* Logged in information */
 
 .userInfo {
   display: flex;
