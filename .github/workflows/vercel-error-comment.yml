@@ -1,0 +1,277 @@
+name: Vercel Deployment Failure Comment
+
+on:
+  # This event is triggered by Vercel's GitHub integration when a deployment status changes.
+  deployment_status:
+
+jobs:
+  handle-vercel-failure:
+    # Explicitly grant the GITHUB_TOKEN permissions to write to issues (for PR comments).
+    permissions:
+      issues: write 
+      pull-requests: write 
+      
+    if: |
+      github.event.deployment_status.state == 'failure' ||
+      github.event.deployment_status.state == 'success'
+    
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if deployment is from Vercel
+        id: check_vercel
+        run: |
+          URL="${{ github.event.deployment_status.environment_url }}"
+          if [[ "$URL" == *"vercel.app"* ]]; then
+            echo "is_vercel=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_vercel=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get deployment details
+        if: steps.check_vercel.outputs.is_vercel == 'true'
+        id: get_details
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          TARGET_URL="${{ github.event.deployment_status.target_url }}"
+          ENV_URL="${{ github.event.deployment_status.environment_url }}"
+          DEPLOYMENT_STATE="${{ github.event.deployment_status.state }}"
+          
+          DEPLOYMENT_SLUG=$(echo "$ENV_URL" | sed 's|^https://||; s|\.vercel\.app$||; s|/.*$||')
+          
+          echo "deployment_url=$TARGET_URL" >> $GITHUB_OUTPUT
+          echo "deployment_state=$DEPLOYMENT_STATE" >> $GITHUB_OUTPUT
+          echo "vercel_project_id=$VERCEL_PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "vercel_team_id=$VERCEL_TEAM_ID" >> $GITHUB_OUTPUT
+          echo "deployment_slug=$DEPLOYMENT_SLUG.vercel.app" >> $GITHUB_OUTPUT
+          
+          echo "Vercel Project ID: $VERCEL_PROJECT_ID"
+          echo "Vercel Team ID: $VERCEL_TEAM_ID"
+
+      - name: Fetch Vercel logs and Commit SHA (only on failure)
+        if: steps.check_vercel.outputs.is_vercel == 'true' && steps.get_details.outputs.deployment_state == 'failure'
+        id: fetch_logs
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          echo "::add-mask::$VERCEL_TOKEN"
+          
+          VERCEL_PROJECT_ID="${{ steps.get_details.outputs.vercel_project_id }}"
+          VERCEL_TEAM_ID="${{ steps.get_details.outputs.vercel_team_id }}"
+          DEPLOYMENT_SLUG_URL="${{ steps.get_details.outputs.deployment_slug }}"
+          
+          if [ -z "$VERCEL_PROJECT_ID" ] || [ -z "$VERCEL_TEAM_ID" ]; then
+            echo "Vercel IDs are missing. Check repository secrets." > error_logs.txt
+            exit 0
+          fi
+          
+          # --- Step 1: Find the Internal Deployment UID (dpl_...) AND Commit SHA ---
+          API_LIST_URL="https://api.vercel.com/v6/deployments?teamId=$VERCEL_TEAM_ID&limit=5"
+
+          LIST_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "$API_LIST_URL")
+          
+          LIST_HTTP_CODE=$(echo "$LIST_RESPONSE" | tail -n1)
+          LIST_BODY=$(echo "$LIST_RESPONSE" | sed '$d')
+          
+          if [ "$LIST_HTTP_CODE" != "200" ]; then
+            echo "Failed to retrieve deployment list (HTTP $LIST_HTTP_CODE)." > error_logs.txt
+            exit 0
+          fi
+          
+          DEPLOYMENT_INFO=$(echo "$LIST_BODY" | jq -r --arg slug "$DEPLOYMENT_SLUG_URL" '.deployments[] | select(.url == $slug) | "\(.uid) \(.meta.githubCommitSha)"' | head -n 1)
+
+          DEPLOYMENT_UID=$(echo "$DEPLOYMENT_INFO" | cut -d ' ' -f 1)
+          COMMIT_SHA=$(echo "$DEPLOYMENT_INFO" | cut -d ' ' -f 2)
+
+          if [ -z "$DEPLOYMENT_UID" ] || [ -z "$COMMIT_SHA" ]; then
+            echo "Could not find internal UID or COMMIT_SHA matching deployment slug '$DEPLOYMENT_SLUG_URL'. Deployment may be too old." > error_logs.txt
+            exit 0
+          fi
+          
+          echo "Found Deployment UID: $DEPLOYMENT_UID"
+          echo "Found Commit SHA: $COMMIT_SHA"
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+
+          # --- Step 2: Fetch Logs using the Internal UID ---
+          API_LOGS_URL="https://api.vercel.com/v2/deployments/$DEPLOYMENT_UID/events?teamId=$VERCEL_TEAM_ID&type=log&limit=1000000"
+
+          LOG_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "$API_LOGS_URL")
+          
+          LOG_HTTP_CODE=$(echo "$LOG_RESPONSE" | tail -n1)
+          LOG_BODY=$(echo "$LOG_RESPONSE" | sed '$d')
+          
+          if [ "$LOG_HTTP_CODE" != "200" ]; then
+            echo "Failed to fetch logs (HTTP $LOG_HTTP_CODE) with UID." > error_logs.txt
+            exit 0
+          fi
+
+          if echo "$LOG_BODY" | jq -e . >/dev/null 2>&1; then
+            ERROR_LOGS=$(echo "$LOG_BODY" | jq -r '
+              if type == "array" then 
+                .[] | .payload.text? | strings 
+              else 
+                empty 
+              end' 2>/dev/null)
+          else
+            ERROR_LOGS=""
+          fi
+
+          if [ -z "$ERROR_LOGS" ]; then
+            ERROR_LOGS="Deployment failed but log parsing returned an empty result. This may be due to an issue with Vercel's API or log format."
+          fi
+          
+          # FIX: Use sed to strip ANSI escape codes from the logs
+          CLEAN_ERROR_LOGS=$(echo "$ERROR_LOGS" | sed -E 's/\x1b\[[0-9;]*m//g')
+
+          # Write the clean logs to the file
+          echo "$CLEAN_ERROR_LOGS" > error_logs.txt
+          
+      # 🌟 CRITICAL FIX: Determine the Commit SHA robustly using the reliable deployment SHA, 
+      # regardless of whether fetch_logs was skipped.
+      - name: Determine Commit SHA for PR Lookup
+        if: steps.check_vercel.outputs.is_vercel == 'true'
+        id: determine_sha
+        run: |
+          VERCEL_SHA="${{ steps.fetch_logs.outputs.commit_sha }}"
+          # Use the deployment object SHA as the reliable fallback
+          EVENT_SHA="${{ github.event.deployment.sha }}" 
+          
+          # Check if VERCEL_SHA is not empty (it will be empty if fetch_logs was skipped)
+          if [ ! -z "$VERCEL_SHA" ]; then
+            echo "commit_sha_for_pr=$VERCEL_SHA" >> $GITHUB_OUTPUT
+            echo "Determined SHA from Vercel logs: $VERCEL_SHA"
+          else
+            echo "commit_sha_for_pr=$EVENT_SHA" >> $GITHUB_OUTPUT
+            echo "Determined SHA from GitHub event: $EVENT_SHA"
+          fi
+
+
+      - name: Find PR number associated with the commit
+        if: steps.check_vercel.outputs.is_vercel == 'true'
+        id: find_pr
+        uses: actions/github-script@v7
+        env:
+          # Use the output from the new determine_sha step
+          COMMIT_SHA_FULL: ${{ steps.determine_sha.outputs.commit_sha_for_pr }}
+        with:
+          script: |
+            const sha = process.env.COMMIT_SHA_FULL; 
+            
+            if (!sha || sha.length !== 40) { // Check for empty or invalid SHA length
+              console.log('Error: Could not retrieve a valid 40-character commit SHA. Skipping PR search.');
+              return { pr_number: null, commit_sha: null };
+            }
+            
+            console.log(`Looking for PRs associated with commit: ${sha}`);
+            
+            try {
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: sha
+              });
+              
+              if (prs.length > 0) {
+                console.log(`Found PR #${prs[0].number}`);
+                return { 
+                  pr_number: prs[0].number,
+                  commit_sha: sha.substring(0, 7)
+                };
+              }
+              
+              console.log('No PRs found for this commit');
+              return { pr_number: null, commit_sha: sha.substring(0, 7) };
+            } catch (error) {
+              console.log(`Error finding PR: ${error.message}`);
+              return { pr_number: null, commit_sha: sha.substring(0, 7) };
+            }
+
+      - name: Post or delete PR comment
+        if: steps.check_vercel.outputs.is_vercel == 'true' && fromJSON(steps.find_pr.outputs.result).pr_number != null
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ fromJSON(steps.find_pr.outputs.result).pr_number }}
+          DEPLOYMENT_STATE: ${{ steps.get_details.outputs.deployment_state }}
+          DEPLOYMENT_URL: ${{ steps.get_details.outputs.deployment_url }}
+          COMMIT_SHA: ${{ fromJSON(steps.find_pr.outputs.result).commit_sha }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            const prNumber = parseInt(process.env.PR_NUMBER);
+            const deploymentUrl = process.env.DEPLOYMENT_URL;
+            const commitSha = process.env.COMMIT_SHA || 'unknown';
+            const state = process.env.DEPLOYMENT_STATE;
+            
+            const commentHeader = '## 🚨 Vercel Deployment Failed';
+            const commentFooter = '<sub>This comment was automatically posted by GitHub Actions.</sub>';
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body && c.body.includes(commentHeader)
+            );
+
+            // --- Failure Logic (Post/Update Comment) ---
+            if (state === 'failure') {
+              const errorLogs = fs.existsSync('error_logs.txt')
+                ? fs.readFileSync('error_logs.txt', 'utf8')
+                : 'Could not retrieve error logs.';
+
+              const body = [
+                commentHeader,
+                '',
+                `**Status:** ❌ **Failure**`,
+                `**Deployment:** [View on Vercel](${deploymentUrl})`,
+                `**Commit:** \`${commitSha}\``,
+                '',
+                '### Full Build Log:',
+                '```bash',
+                errorLogs,
+                '```',
+                '',
+                '---',
+                commentFooter
+              ].join('\n');
+
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body
+                });
+                console.log(`Updated existing failure comment (#${existing.id}) on PR #${prNumber}`);
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body
+                });
+                console.log(`Posted new failure comment on PR #${prNumber}`);
+              }
+              return;
+            }
+
+            // --- Success Logic (Delete Comment) ---
+            if (state === 'success' && existing) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id
+              });
+              console.log(`Deleted old failure comment after successful deployment.`);
+            }
+              
