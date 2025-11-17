@@ -1,5 +1,5 @@
 // Event_type.ts
-import { LLM_Service } from './llm_service';
+import { LLM_Service } from './llm.service';
 import { Dice_Roll } from './dice_roll';
 import { CombatUI } from './CombatUI';
 
@@ -33,6 +33,7 @@ export class EventType {
         }
     }
 
+
     // ---------- Event Handlers ----------
 
     private handleDescriptive() {
@@ -49,3 +50,7 @@ export class EventType {
         const result = await CombatUI.InitializeCombat();
         if (result === 'Won Combat') {
             const rollValue = Dice_Roll.roll(); // placehold_
+        }
+
+    }
+}
