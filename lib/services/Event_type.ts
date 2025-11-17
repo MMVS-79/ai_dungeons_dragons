@@ -1,5 +1,5 @@
 // Event_type.ts
-import { LLM_Service } from './llm.service';
+import { LLMService } from './llm.service';
 import { Dice_Roll } from './dice_roll';
 import { CombatUI } from './CombatUI';
 
