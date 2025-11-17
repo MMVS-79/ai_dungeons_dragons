@@ -43,14 +43,18 @@ export class EventType {
     }
 
     private handleEnvironmental() {
-        LLM_Service.RequestStatBoost();
+        LLMService.RequestStatBoost();
     }
 
     private async handleCombat() {
         const result = await CombatUI.InitializeCombat();
         if (result === 'Won Combat') {
-            const rollValue = Dice_Roll.roll(); // placehold_
+            const rollValue = Dice_Roll.roll(); 
         }
 
     }
+    private handleItemDrop() {
+        LLMService.RequestItemDrop();
+    }
+    
 }
