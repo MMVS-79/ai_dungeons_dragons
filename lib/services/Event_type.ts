@@ -1,5 +1,5 @@
 // Event_type.ts
-import { LLM_Service } from './llm.service';
+import { LLMService } from './llm.service';
 import { Dice_Roll } from './dice_roll';
 import { CombatUI } from './CombatUI';
 
@@ -43,14 +43,18 @@ export class EventType {
     }
 
     private handleEnvironmental() {
-        LLM_Service.RequestStatBoost();
+        LLMService.RequestStatBoost();
     }
 
     private async handleCombat() {
         const result = await CombatUI.InitializeCombat();
         if (result === 'Won Combat') {
-            const rollValue = Dice_Roll.roll(); // placehold_
+            const rollValue = Dice_Roll.roll(); 
         }
 
     }
+    private handleItemDrop() {
+        LLMService.RequestItemDrop();
+    }
+    
 }
