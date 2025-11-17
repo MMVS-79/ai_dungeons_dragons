@@ -43,7 +43,7 @@ export class EventType {
     }
 
     private handleEnvironmental() {
-        LLMService.RequestStatBoost();
+        LLMService.requestStatBoost();
     }
 
     private async handleCombat() {
@@ -54,7 +54,7 @@ export class EventType {
 
     }
     private handleItemDrop() {
-        LLMService.RequestItemDrop();
+        LLMService.getRandomItem();
     }
     
 }
