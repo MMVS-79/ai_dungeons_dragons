@@ -11,12 +11,12 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       const result = await signIn("google", {
-        callbackUrl: "/Campaigns",
+        callbackUrl: "/campaigns",
         redirect: false,
       });
 
       if (result?.ok) {
-        router.push("/Campaigns");
+        router.push("/campaigns");
       }
     } catch (error) {
       console.error("Sign in error:", error);
