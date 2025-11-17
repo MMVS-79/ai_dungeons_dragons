@@ -37,7 +37,7 @@ import type { LLMGameContext } from "@/lib/types/llm.types";
 // Initialize LLM service for combat rewards (item drops and bonus stats)
 const llmService = new LLMService({
   apiKey: process.env.GEMINI_API_KEY || "",
-  model: "gemini-2.0-flash-lite",
+  model: "gemini-2.5-flash-lite",
   temperature: 0.8
 });
 

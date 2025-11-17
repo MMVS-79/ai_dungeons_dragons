@@ -84,7 +84,7 @@ export class LLMService {
 
   constructor(config: LLMServiceConfig) {
     this.ai = new GoogleGenAI({ apiKey: config.apiKey });
-    this.model = config.model || "gemini-2.0-flash-lite";
+    this.model = config.model || "gemini-2.5-flash-lite";
     this.temperature = config.temperature ?? 0.8;
     this.maxOutputTokens = config.maxOutputTokens ?? 500;
     this.thinkingBudget = config.thinkingBudget ?? 0;
