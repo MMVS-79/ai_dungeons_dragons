@@ -4,9 +4,9 @@ import type { Character } from "@/lib/types/game.types";
 /**
  * PUT /api/characters/[id]
  * 
- * TODO: Update character stats (admin/debug endpoint)
+ * TODO: Update character stats
  * 
- * Purpose: Manually adjust character stats for testing or admin purposes
+ * Purpose: Adjust character attributes such as health, attack, defense
  * 
  * Request Body:
  * {
@@ -30,7 +30,6 @@ import type { Character } from "@/lib/types/game.types";
  * 5. Return updated character
  * 6. Return 404 if character not found
  * 
- * Note: In production, this should require admin authentication
  */
 export async function PUT(
   request: NextRequest,

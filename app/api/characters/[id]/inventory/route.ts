@@ -4,9 +4,9 @@ import type { Item } from "@/lib/types/game.types";
 /**
  * POST /api/characters/[id]/inventory
  *
- * TODO: Add item to character's inventory (admin/debug endpoint)
+ * TODO: Add item to character's inventory
  *
- * Purpose: Manually grant items for testing or admin purposes
+ * Purpose: Equip or acquire new items
  *
  * Request Body:
  * {
@@ -27,8 +27,6 @@ import type { Item } from "@/lib/types/game.types";
  * 5. Call BackendService.getInventory(characterId) to get updated list
  * 6. Return the updated inventory
  * 7. Return 404 if item not found
- *
- * Note: In production, this should require admin authentication
  */
 export async function POST(
   request: NextRequest,
