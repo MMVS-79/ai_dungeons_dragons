@@ -513,8 +513,9 @@ export class GameService {
 
   /**
    * Get current game state from backend services
+   * Public method for syncing game state to database
    */
-  private async getGameState(campaignId: number): Promise<GameState> {
+  public async getGameState(campaignId: number): Promise<GameState> {
     const campaign = await BackendService.getCampaign(campaignId);
     const character = await BackendService.getCharacterByCampaign(campaignId);
     const enemy = await BackendService.getCurrentEnemy(campaignId);

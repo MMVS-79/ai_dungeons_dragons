@@ -11,22 +11,20 @@ import type { Campaign, Character } from "@/lib/types/game.types";
  * Query Parameters:
  * - accountId: number (required until auth is implemented)
  * - status?: "active" | "completed" | "abandoned" (optional filter)
- * - limit?: number (optional, default 50)
- * - offset?: number (optional, default 0)
  *
  * Response:
  * {
  *   success: boolean;
  *   campaigns: Campaign[];
- *   total: number;
  * }
  *
  * Implementation Steps:
  * 1. Get accountId from query params (or from auth session when implemented)
  * 2. Call BackendService function to query campaigns table WHERE account_id = ?
- * 3. Apply optional filters (status, limit, offset)
- * 4. Return array of campaigns with total count
- * 5. Handle error if no campaigns found (return empty array, not error)
+ * 3. Apply optional status filter if provided
+ * 4. Order by updated_at DESC to show most recent first
+ * 5. Return array of campaigns
+ * 6. Handle error if no campaigns found (return empty array, not error)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -41,17 +39,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 1: Query campaigns table WHERE account_id matches
-    // Step 2: Apply optional filters (status, limit, offset)
+    // Step 2: Apply optional status filter if provided
     // Step 3: Order by updated_at DESC to show most recent first
-    // Step 4: Return campaigns array with total count
+    // Step 4: Return campaigns array
 
     console.log(`[API] GET /api/campaigns - accountId: ${accountId}`);
 
     // MOCK DATA - Replace with actual database query
     return NextResponse.json({
       success: true,
-      campaigns: [],
-      total: 0
+      campaigns: []
     });
   } catch (error) {
     console.error("[API] List campaigns error:", error);

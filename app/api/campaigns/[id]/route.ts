@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import type {
-  Campaign,
-  Character,
-  GameEvent,
-  Enemy
-} from "@/lib/types/game.types";
+import type { Campaign, Character, GameEvent } from "@/lib/types/game.types";
+import { GameService } from "@/lib/services/game.service";
+import * as BackendService from "@/lib/services/backend.service";
 
 /**
  * GET /api/campaigns/[id]
@@ -19,7 +16,6 @@ import type {
  *   campaign: Campaign;
  *   character: Character;
  *   recentEvents: GameEvent[];
- *   currentEnemy?: Enemy;
  *   inventory: Item[];
  * }
  *
@@ -28,10 +24,9 @@ import type {
  * 2. Call BackendService.getCampaign(id)
  * 3. Call BackendService.getCharacterByCampaign(id)
  * 4. Call BackendService.getRecentEvents(id, limit=10)
- * 5. Call BackendService.getCurrentEnemy(id) - may be null
- * 6. Call BackendService.getInventory(character.id)
- * 7. Return all data in single response
- * 8. Return 404 if campaign not found
+ * 5. Call BackendService.getInventory(character.id)
+ * 6. Return all data in single response
+ * 7. Return 404 if campaign not found
  */
 export async function GET(
   request: NextRequest,
@@ -51,8 +46,7 @@ export async function GET(
     // Step 2: Return 404 if campaign not found
     // Step 3: Query character for campaign
     // Step 4: Query recent events (limit 10)
-    // Step 5: Query current enemy (may be null)
-    // Step 6: Query character inventory
+    // Step 5: Query character inventory
 
     console.log(`[API] GET /api/campaigns/${campaignId}`);
 
@@ -81,7 +75,6 @@ export async function GET(
         spritePath: "/characters/player/warrior.png"
       } as Character,
       recentEvents: [] as GameEvent[],
-      currentEnemy: null,
       inventory: []
     });
   } catch (error) {
@@ -96,29 +89,27 @@ export async function GET(
 /**
  * PUT /api/campaigns/[id]
  *
- * TODO: Update campaign details
+ * TODO: Sync database with backend game state
  *
- * Purpose: Allow users to rename campaign, update description, or change state
+ * Purpose: Update database to match current backend game state
+ * This endpoint syncs campaign state, character stats, and other game state
+ * from the backend services to ensure database consistency.
  *
- * Request Body:
- * {
- *   name?: string;
- *   description?: string;
- *   state?: "active" | "completed" | "abandoned";
- * }
+ * Request Body: None (only campaign ID from URL)
  *
  * Response:
  * {
  *   success: boolean;
  *   campaign: Campaign;
+ *   character: Character;
  * }
  *
  * Implementation Steps:
  * 1. Extract campaign ID from URL params
- * 2. Parse request body
- * 3. Validate at least one field is provided
- * 4. Call BackendService.updateCampaign(id, updates)
- * 5. Return updated campaign
+ * 2. Call GameService.getGameState(campaignId) to get current state
+ * 3. Update campaign record with state from gameState.campaign (preserve createdAt)
+ * 4. Update character record with stats from gameState.character
+ * 5. Return updated campaign and character
  * 6. Return 404 if campaign not found
  */
 export async function PUT(
@@ -127,7 +118,6 @@ export async function PUT(
 ) {
   try {
     const campaignId = parseInt(params.id);
-    const body = await request.json();
 
     if (isNaN(campaignId)) {
       return NextResponse.json(
@@ -136,35 +126,60 @@ export async function PUT(
       );
     }
 
-    if (!body.name && !body.description && !body.state) {
-      return NextResponse.json(
-        { success: false, error: "No fields to update" },
-        { status: 400 }
-      );
-    }
+    // Step 1: Initialize GameService
+    // Step 2: Get current game state
+    // Step 3: Get existing campaign to preserve createdAt
+    // Step 4: Update campaign record (preserve createdAt, update updatedAt)
+    // Step 5: Update character record with current stats
+    // Step 6: Return 404 if campaign not found
 
-    // Step 1: Update campaign record with provided fields
-    // Step 2: Return 404 if campaign not found
+    console.log(
+      `[API] PUT /api/campaigns/${campaignId} - Syncing database with game state`
+    );
 
-    console.log(`[API] PUT /api/campaigns/${campaignId}`, body);
+    // Initialize GameService
+    const gameService = new GameService(process.env.GEMINI_API_KEY || "");
 
-    // MOCK DATA - Replace with actual database update
+    // Get current game state from GameService
+    const gameState = await gameService.getGameState(campaignId);
+
+    // Get existing campaign to preserve createdAt
+    const existingCampaign = await BackendService.getCampaign(campaignId);
+
+    // Update campaign record (preserve createdAt, never update it)
+    const updatedCampaign = await BackendService.updateCampaign(campaignId, {
+      state: gameState.campaign.state,
+      description: gameState.campaign.description,
+      updatedAt: new Date()
+      // Note: createdAt is preserved automatically by updateCampaign
+    });
+
+    // Update character stats
+    const updatedCharacter = await BackendService.updateCharacter(
+      gameState.character.id,
+      {
+        currentHealth: gameState.character.currentHealth,
+        maxHealth: gameState.character.maxHealth,
+        attack: gameState.character.attack,
+        defense: gameState.character.defense,
+        weaponId: gameState.character.weaponId,
+        armorId: gameState.character.armorId,
+        shieldId: gameState.character.shieldId
+      }
+    );
+
     return NextResponse.json({
       success: true,
       campaign: {
-        id: campaignId,
-        accountId: 1,
-        name: body.name || "Mock Campaign",
-        description: body.description || "",
-        state: body.state || "active",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } as Campaign
+        ...updatedCampaign,
+        createdAt: existingCampaign.createdAt // Ensure createdAt is preserved
+      },
+      character: updatedCharacter
     });
   } catch (error) {
-    console.error("[API] Update campaign error:", error);
+    console.error("[API] Sync campaign error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to update campaign" },
+      { success: false, error: "Failed to sync campaign state" },
       { status: 500 }
     );
   }

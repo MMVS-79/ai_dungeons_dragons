@@ -4,15 +4,14 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 
 ## Status Legend
 
-- ✅ **IMPLEMENTED** - Fully functional with database integration
-- 📝 **TODO** - Created with stub/mock data, needs implementation
-- ⚠️ **LEGACY** - Marked for removal
+- **IMPLEMENTED** - Fully functional with database integration
+- **TODO** - Created with stub/mock data, needs implementation
 
 ---
 
 ## Core Game Endpoint
 
-### `/api/game/action` ✅
+### `/api/game/action`
 
 **Status**: FULLY IMPLEMENTED - Main game loop endpoint
 
@@ -27,7 +26,7 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 
 ---
 
-## Campaign Endpoints 📝
+## Campaign Endpoints
 
 ### `/api/campaigns`
 
@@ -36,8 +35,8 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 **Methods**:
 
 - `GET` - List all campaigns for user
-  - Query params: `accountId`, `status?`, `limit?`, `offset?`
-  - Returns: `{ campaigns: Campaign[], total: number }`
+  - Query params: `accountId`, `status?`
+  - Returns: `{ campaigns: Campaign[] }`
   
 - `POST` - Create new campaign with character
   - Body: `{ accountId, campaignName, campaignDescription?, character: { name, raceId, classId } }`
@@ -54,11 +53,11 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 **Methods**:
 
 - `GET` - Get full campaign details
-  - Returns: `{ campaign, character, recentEvents, currentEnemy?, inventory }`
+  - Returns: `{ campaign, character, recentEvents, inventory }`
   
-- `PUT` - Update campaign details
-  - Body: `{ name?, description?, state? }`
-  - Returns: `{ campaign: Campaign }`
+- `PUT` - Sync database with current game state
+  - No body required (only campaign ID from URL)
+  - Returns: `{ campaign: Campaign, character: Character }`
   
 - `DELETE` - Delete campaign and all associated data
   - Returns: `{ message: string }`
@@ -67,45 +66,14 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 
 ---
 
-### `/api/campaigns/[id]/logs`
-
-**Purpose**: Get paginated event history
-
-**Methods**:
-
-- `GET` - Fetch event logs with pagination
-  - Query params: `limit?`, `offset?`, `eventType?`, `startEventNumber?`, `endEventNumber?`
-  - Returns: `{ events: GameEvent[], total: number, hasMore: boolean }`
-
-**File**: `app/api/campaigns/[id]/logs/route.ts`
-
----
-
-### `/api/campaigns/[id]/logs/export`
-
-**Purpose**: Export campaign story
-
-**Methods**:
-
-- `GET` - Export as JSON, text, or markdown
-  - Query params: `format?` ("json" | "text" | "markdown")
-  - Returns: Formatted campaign story
-
-**File**: `app/api/campaigns/[id]/logs/export/route.ts`
-
----
-
-## Character Endpoints 📝
+## Character Endpoints
 
 ### `/api/characters/[id]`
 
-**Purpose**: Get or update character details
+**Purpose**: Update character details
 
 **Methods**:
 
-- `GET` - Get character with equipment and inventory
-  - Returns: `{ character, equippedItems: { weapon?, armor?, shield? }, inventory }`
-  
 - `PUT` - Update character stats (admin/debug)
   - Body: `{ currentHealth?, maxHealth?, attack?, defense? }`
   - Returns: `{ character: Character }`
@@ -120,66 +88,19 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 
 **Methods**:
 
-- `GET` - Get inventory items
-  - Query params: `type?` (filter by item type)
-  - Returns: `{ inventory: Item[] }`
-  
 - `POST` - Add item to inventory (admin/debug)
   - Body: `{ itemId: number }`
-  - Returns: `{ item: Item }`
+  - Returns: `{ inventory: Item[] }`
   
 - `DELETE` - Remove item from inventory
   - Query params: `itemId` (required)
-  - Returns: `{ message: string }`
+  - Returns: `{ inventory: Item[] }`
 
 **File**: `app/api/characters/[id]/inventory/route.ts`
 
 ---
 
-## Item Catalog Endpoints 📝
-
-### `/api/items`
-
-**Purpose**: Browse item catalog
-
-**Methods**:
-
-- `GET` - List all items
-  - Query params: `type?`, `limit?`, `offset?`
-  - Returns: `{ items: Item[], total: number }`
-
-**File**: `app/api/items/route.ts`
-
----
-
-### `/api/items/[id]`
-
-**Purpose**: Get specific item details
-
-**Methods**:
-
-- `GET` - Fetch item by ID
-  - Returns: `{ item: Item }`
-
-**File**: `app/api/items/[id]/route.ts`
-
----
-
-## Enemy Catalog Endpoints 📝
-
-### `/api/enemies`
-
-**Purpose**: Browse enemy catalog
-
-**Methods**:
-
-- `GET` - List all enemies
-  - Query params: `difficulty?`, `limit?`, `offset?`
-  - Returns: `{ enemies: Enemy[], total: number }`
-
-**File**: `app/api/enemies/route.ts`
-
----
+## Enemy Catalog Endpoints
 
 ### `/api/enemies/[id]`
 
@@ -191,57 +112,6 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
   - Returns: `{ enemy: Enemy }`
 
 **File**: `app/api/enemies/[id]/route.ts`
-
----
-
-## Admin Endpoints 📝
-
-### `/api/admin/campaigns/[id]/reset`
-
-**Purpose**: Reset campaign to initial state (testing/debug)
-
-**Methods**:
-
-- `POST` - Reset campaign and character
-  - Returns: `{ message: string }`
-
-**Note**: Requires admin authentication in production
-
-**File**: `app/api/admin/campaigns/[id]/reset/route.ts`
-
----
-
-### `/api/admin/stats`
-
-**Purpose**: Get system-wide statistics
-
-**Methods**:
-
-- `GET` - Fetch dashboard statistics
-  - Returns: `{ stats: { totalUsers, totalCampaigns, activeCampaigns, ... } }`
-
-**Note**: Requires admin authentication in production
-
-**File**: `app/api/admin/stats/route.ts`
-
----
-
-## Legacy Endpoints ⚠️
-
-### `/api/dragon` ⚠️ MARKED FOR REMOVAL
-
-**Purpose**: Legacy dragon demo endpoint
-
-**Methods**:
-
-- `GET` - Get dragon stats
-- `POST` - Attack dragon
-
-**Status**: Only used by demo page, not part of main architecture
-
-**Action Required**: Remove after confirming main game system works
-
-**File**: `app/api/dragon/route.ts`
 
 ---
 
@@ -257,17 +127,12 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 ### Phase 2: Enhanced Features
 
 5. `PUT /api/campaigns/[id]` - Update campaigns
-6. `GET /api/campaigns/[id]/logs` - Event history
-7. `GET /api/characters/[id]` - Character sheet
-8. `GET /api/characters/[id]/inventory` - Inventory view
+6. `PUT /api/characters/[id]` - Character updates
+7. `POST/DELETE /api/characters/[id]/inventory` - Inventory management
 
 ### Phase 3: Admin & Polish
 
-9. `GET /api/items` - Item browsing
-10. `GET /api/enemies` - Enemy browsing
-11. `POST /api/admin/campaigns/[id]/reset` - Campaign reset
-12. `GET /api/admin/stats` - Admin dashboard
-13. `GET /api/campaigns/[id]/logs/export` - Story export
+8. `GET /api/enemies/[id]` - Enemy details
 
 ---
 
@@ -300,10 +165,6 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 
 - `saveEvent(campaignId, message, type, data?)` - Log game event (STUB exists)
 - `getRecentEvents(campaignId, limit)` - Get recent events (STUB exists)
-- `getEventLogs(campaignId, options)` - Paginated event history
-- `getEventLogsCount(campaignId, filters?)` - Count for pagination
-- `getAllEvents(campaignId)` - Get all events (for export)
-- `deleteAllEvents(campaignId)` - Delete all events (for reset)
 
 **Inventory & Items:**
 
@@ -313,16 +174,10 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 - `clearInventory(characterId)` - Clear all items
 - `getItem(id)` - Get item details (STUB exists)
 - `equipItem(characterId, itemId, slot)` - Equip with stat calculation (STEPS ONLY)
-- `getAllItems(filters?)` - List all items
-- `getItemsCount(filters?)` - Count for pagination
-- `createItem(data)` - Create LLM-generated item
 
 **Enemy Functions:**
 
 - `getEnemy(id)` - Get enemy details (STUB exists)
-- `getRandomEnemy(difficulty?)` - Get random enemy (STUB exists)
-- `getAllEnemies(filters?)` - List all enemies
-- `getEnemiesCount(filters?)` - Count for pagination
 
 **State Management:**
 
@@ -345,22 +200,8 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 3. **Phase 3**: Complete special implementations
    - `equipItem()` - Implement stat replacement logic (steps exist)
    - `addItemToInventory()` - Add SQL queries to existing routing logic
-   - `createItem()` - For LLM-generated items
 
 4. **Phase 4**: Replace mock data in API endpoints with BackendService calls
 
 5. **Phase 5**: Add authentication
    - User authentication for all endpoints
-   - Admin authentication for admin endpoints
-
-6. **Phase 6**: Remove `/api/dragon` legacy endpoint after verification
-
----
-
-## Summary
-
-**Total Endpoints Created**: 16
-
-- ✅ **Implemented**: 1 (`/api/game/action`)
-- 📝 **TODO Stubs**: 14 (all campaign, character, item, enemy, admin endpoints)
-- ⚠️ **Legacy**: 1 (`/api/dragon`)
