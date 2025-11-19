@@ -23,10 +23,9 @@
  */
 
 import { LLMService } from "@/lib/services/llm.service";
-// TODO: Uncomment these imports when Event_type, Dice_Roll, Stat_Calc PR merges
-// import { EventType } from "@/lib/services/Event_type";
-// import { Dice_Roll } from "@/lib/services/dice_roll";
-// import { Stat_Calc, StatType } from "@/lib/services/Stat_calc";
+import { EventType } from "@/lib/services/Event_type";
+import { Dice_Roll } from "@/lib/services/dice_roll";
+import { Stat_Calc, StatType } from "@/lib/services/Stat_calc";
 import type {
   LLMGameContext,
   EventHistoryEntry,
@@ -339,7 +338,7 @@ export class GameService {
     const itemId = action.actionData?.itemId;
 
     if (action.actionType === "pickup_item" && itemId) {
-      await BackendService.addItemToInventory(gameState.character.id, itemId);
+      await BackendService.assignItemToCharacter(gameState.character.id, itemId);
       const item = await BackendService.getItem(itemId);
 
       const message = `You picked up ${item.name}!`;
@@ -470,8 +469,7 @@ export class GameService {
       // - Combat: calls CombatUI.InitializeCombat() → if won: Dice_Roll → RequestStatBoost/ItemDrop → Backend_Service
       //   NOTE: Combat handling needs team discussion - see COMBAT SYSTEM NOTE in file header
       // - Item_Drop: calls LLM_Service.RequestItemDrop() → Backend_Service
-      // TODO: Uncomment when EventType is available
-      // await this.triggerEventType(eventType);
+      await this.triggerEventType(eventType);
 
       // Clear pending event
       await BackendService.clearPendingEvent(action.campaignId);
@@ -790,9 +788,8 @@ export class GameService {
    * - Item drop handling
    */
   private async triggerEventType(eventType: EventTypeString): Promise<void> {
-    // TODO: Uncomment when EventType is available
-    // const eventTypeInstance = new EventType(eventType);
-    // await eventTypeInstance.trigger();
+    const eventTypeInstance = new EventType(eventType);
+    await eventTypeInstance.trigger();
   }
 
   /**
@@ -801,9 +798,7 @@ export class GameService {
    * Returns number of consecutive descriptive events that have occurred
    */
   private getDescriptiveCount(): number {
-    // TODO: Uncomment when EventType is available
-    // return EventType.getDescriptiveCount();
-    return 0; // Temporary: allow all descriptive events until EventType is available
+    return EventType.getDescriptiveCount();
   }
 
   /**
@@ -812,7 +807,6 @@ export class GameService {
    * to allow descriptive events to occur again
    */
   private resetDescriptiveCount(): void {
-    // TODO: Uncomment when EventType is available
-    // EventType.resetDescriptiveCount();
+    EventType.resetDescriptiveCount();
   }
 }

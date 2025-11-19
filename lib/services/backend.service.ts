@@ -555,6 +555,26 @@ export async function removeItemFromInventory(
 }
 
 /**
+ * Assign an existing item to a character (e.g. picking up a dropped item)
+ * 
+ * TODO: Implement database insert
+ * 
+ * Implementation:
+ * 1. Check item type (weapon/armor/shield/item)
+ * 2. If equipment: UPDATE characters SET weapon_id/armor_id/shield_id = ? WHERE id = ?
+ * 3. If consumable: INSERT INTO character_items (character_id, item_id) VALUES (?, ?)
+ * 
+ * @param characterId - Character ID
+ * @param itemId - ID of the item to assign
+ */
+export async function assignItemToCharacter(
+  characterId: number,
+  itemId: number
+): Promise<void> {
+  console.log(`[PLACEHOLDER] assignItemToCharacter(${characterId}, ${itemId})`);
+}
+
+/**
  * Get item by ID
  *
  * TODO: Implement database query

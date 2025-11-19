@@ -8,6 +8,14 @@ export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item
 export class EventType {
     private static descriptiveCount: number = 0;
 
+    public static getDescriptiveCount(): number {
+        return EventType.descriptiveCount;
+    }
+
+    public static resetDescriptiveCount(): void {
+        EventType.descriptiveCount = 0;
+    }
+
     constructor(private eventType: EventTypeString) {}
 
     public async trigger(): Promise<void> {
