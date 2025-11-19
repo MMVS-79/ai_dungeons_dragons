@@ -2,6 +2,7 @@
 import { LLMService } from './llm.service';
 import { Dice_Roll } from './dice_roll';
 // import { CombatUI } from './CombatUI';
+import type { LLMGameContext, StatBoostResponse } from '@/lib/types/llm.types';
 
 export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
 
@@ -18,22 +19,26 @@ export class EventType {
 
     constructor(private eventType: EventTypeString) {}
 
-    public async trigger(): Promise<void> {
+    /**
+     * Main entry for triggering the event
+     * Pass the current game context for LLM interactions
+     */
+    public async trigger(context: LLMGameContext): Promise<void> {
         switch (this.eventType) {
             case 'Descriptive':
                 this.handleDescriptive();
                 break;
 
             case 'Environmental':
-                this.handleEnvironmental();
+                await this.handleEnvironmental(context);
                 break;
 
             case 'Combat':
-                await this.handleCombat();
+                await this.handleCombat(context);
                 break;
 
             case 'Item_Drop':
-                this.handleItemDrop();
+                await this.handleItemDrop(context);
                 break;
 
             default:
@@ -41,28 +46,42 @@ export class EventType {
         }
     }
 
-
     // ---------- Event Handlers ----------
 
     private handleDescriptive() {
         EventType.descriptiveCount++;
-        // Game_Engine can access via EventType.getDescriptiveCount()
         console.log(`Descriptive event triggered. Count: ${EventType.descriptiveCount}`);
     }
 
-    private handleEnvironmental() {
-        LLMService.requestStatBoost();
+    private async handleEnvironmental(context: LLMGameContext) {
+        const llm = new LLMService({ apiKey: process.env.GEMINI_API_KEY! });
+
+        // Request stat modification for Environmental event
+        const statBoost: StatBoostResponse = await llm.requestStatBoost(context, this.eventType);
+        console.log("Environmental stat boost:", statBoost);
+
+        // You can apply the stat boost to the character here if needed
+        // e.g., context.character[statBoost.statType] += statBoost.baseValue;
     }
 
-    private async handleCombat() {
-        const result = await CombatUI.InitializeCombat();
-        if (result === 'Won Combat') {
-            const rollValue = Dice_Roll.roll(); 
-        }
+    private async handleCombat(context: LLMGameContext) {
+        // Example placeholder for combat logic
+        // const result = await CombatUI.InitializeCombat();
+        // if (result === 'Won Combat') {
+        //     const rollValue = Dice_Roll.roll(); 
+        //     console.log("Combat roll:", rollValue);
+        // }
 
+        console.log("Combat handler triggered (needs implementation).");
     }
-    private handleItemDrop() {
-        LLMService.getRandomItem();
+
+    private async handleItemDrop(context?: LLMGameContext) {
+        const llm = new LLMService({ apiKey: process.env.GEMINI_API_KEY! });
+
+        const item = await llm.RequestItemDrop(context);
+        console.log("Item dropped:", item);
+
+        // You can add the item to the character's inventory here
+        // e.g., context.character.inventory.push(item);
     }
-    
 }
