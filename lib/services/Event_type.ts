@@ -1,7 +1,7 @@
 // Event_type.ts
 import { LLMService } from './llm.service';
 import { Dice_Roll } from './dice_roll';
-import { CombatUI } from './CombatUI';
+// import { CombatUI } from './CombatUI';
 
 export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
 
