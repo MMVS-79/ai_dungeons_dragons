@@ -198,7 +198,7 @@ export default function CampaignPage() {
               {
                 id: generateMessageId(),
                 text: `You equipped the ${pendingEquipment.name}!`,
-                choices: ["Continue Forward", "Search Area"],
+                choices: ["Continue Forward"],
               },
             ]);
           }
@@ -208,7 +208,7 @@ export default function CampaignPage() {
             {
               id: generateMessageId(),
               text: `You decided to leave the ${pendingEquipment.name} behind.`,
-              choices: ["Continue Forward", "Search Area"],
+              choices: ["Continue Forward"],
             },
           ]);
         }
@@ -249,7 +249,7 @@ export default function CampaignPage() {
           {
             id: generateMessageId(),
             text: `You replaced your ${oldEquipment?.name} with the ${pendingEquipment.name}!`,
-            choices: ["Continue Forward", "Search Area"],
+            choices: ["Continue Forward"],
           },
         ]);
 
@@ -471,7 +471,7 @@ export default function CampaignPage() {
           id: generateMessageId(),
           text: `You used ${item.name} and restored ${item.healAmount} HP!`,
           choices: enemyState
-            ? ["Attack", "Use Potion"]
+            ? ["Attack", "Flee"]
             : ["Continue Forward"],
         },
       ]);
@@ -625,7 +625,6 @@ function mapChoiceToAction(choice: string): string {
     "Continue Forward": "continue",
     Attack: "attack",
     Flee: "flee",
-    "Use Potion": "use_item",
     "Pick Up": "pickup_item",
     "Leave It": "reject_item",
     Accept: "accept_event",
