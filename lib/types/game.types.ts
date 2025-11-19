@@ -45,32 +45,26 @@ export interface Shield extends Equipment {
 }
 
 // ============================================================================
-// CHARACTER & ENEMY TYPES
+// UNIT TYPES
 // ============================================================================
 
-export interface Character {
+export interface Unit {
   id: number;
   name: string;
-  currentHealth: number;
-  maxHealth: number;
+  vitality: number;
   attack: number;
   defense: number;
   spritePath?: string;
-  raceId: number;
-  classId: number;
-  campaignId: number;
-  weaponId?: number;
-  armorId?: number;
-  shieldId?: number;
 }
 
-export interface Enemy {
-  id: number;
-  name: string;
-  health: number;
-  attack: number;
-  defense: number;
-  spritePath?: string;
+export interface Character extends Unit {
+  campaignId: number;
+  currentHealth: number;
+  race: Unit;
+  class: Unit;
+  weapon?: Weapon;
+  armor?: Armor;
+  shield?: Shield;
 }
 
 // ============================================================================
@@ -90,7 +84,7 @@ export interface Campaign {
 export interface GameState {
   campaign: Campaign;
   character: Character;
-  enemy: Enemy | null;
+  enemy: Unit | null;
   recentEvents: GameEvent[];
   currentPhase: GamePhase;
   pendingEvent?: {
