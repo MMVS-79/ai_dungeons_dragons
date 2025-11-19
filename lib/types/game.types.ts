@@ -18,20 +18,30 @@
 export interface Item {
   id: number;
   name: string;
-  type: "weapon" | "armor" | "shield" | "potion";
+  health: number;
   image?: string;
-  attack?: number;
-  defense?: number;
-  hpBonus?: number;
-  healAmount?: number;
+  description?: string;
+}
+
+interface Equipment {
+  id: number;
+  name: string;
+  health: number;
+  image?: string;
   description?: string;
   rarity?: number;
 }
 
-export interface Equipment {
-  weapon?: Item;
-  armor?: Item;
-  shield?: Item;
+export interface Weapon extends Equipment {
+  attack: number;
+}
+
+export interface Armor extends Equipment {
+  vitality: number;
+}
+
+export interface Shield extends Equipment {
+  defense: number;
 }
 
 // ============================================================================

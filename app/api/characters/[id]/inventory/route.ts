@@ -66,7 +66,7 @@ export async function POST(
         {
           id: body.itemId,
           name: "Mock Item",
-          type: "potion",
+          health: 10,
           description: "A mock item"
         }
       ] as Item[]
