@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS armours;
 CREATE TABLE armours (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    health INT NOT NULL,
+    vitality INT NOT NULL,
     rarity INT NOT NULL UNIQUE,
     description TEXT,
     sprite_path VARCHAR(255),

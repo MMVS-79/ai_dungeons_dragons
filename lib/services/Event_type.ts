@@ -8,6 +8,14 @@ export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item
 export class EventType {
     private static descriptiveCount: number = 0;
 
+    public static getDescriptiveCount(): number {
+        return EventType.descriptiveCount;
+    }
+
+    public static resetDescriptiveCount(): void {
+        EventType.descriptiveCount = 0;
+    }
+
     constructor(private eventType: EventTypeString) {}
 
     public async trigger(): Promise<void> {
@@ -43,14 +51,18 @@ export class EventType {
     }
 
     private handleEnvironmental() {
-        LLM_Service.RequestStatBoost();
+        LLMService.requestStatBoost();
     }
 
     private async handleCombat() {
         const result = await CombatUI.InitializeCombat();
         if (result === 'Won Combat') {
-            const rollValue = Dice_Roll.roll(); // placehold_
+            const rollValue = Dice_Roll.roll(); 
         }
 
     }
+    private handleItemDrop() {
+        LLMService.getRandomItem();
+    }
+    
 }

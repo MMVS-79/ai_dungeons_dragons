@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS enemies;
 CREATE TABLE enemies (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    health INT NOT NULL,
+    vitality INT NOT NULL,
     attack INT NOT NULL,
     defense INT NOT NULL,
     is_boss BOOLEAN NOT NULL,
