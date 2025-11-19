@@ -53,7 +53,7 @@ function parseEventData(data: any): Record<string, unknown> | undefined {
 // Initialize LLM service for combat rewards (item drops and bonus stats)
 const llmService = new LLMService({
   apiKey: process.env.GEMINI_API_KEY || "",
-  model: "gemini-2.0-flash-lite",
+  model: "gemini-flash-lite-latest",
   temperature: 0.8
 });
 

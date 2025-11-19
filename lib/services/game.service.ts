@@ -59,7 +59,7 @@ export class GameService {
     // Initialize LLM service for event generation
     this.llmService = new LLMService({
       apiKey: llmApiKey,
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       temperature: 0.8,
     });
   }
@@ -81,6 +81,17 @@ export class GameService {
     try {
       // 1. Get current game state from backend
       const gameState = await this.getGameState(action.campaignId);
+
+      // Block actions if game is over
+      if (gameState.campaign.state === "game_over") {
+        return {
+          success: false,
+          gameState,
+          message: "This campaign has ended. Please start a new campaign.",
+          error: "Campaign is in game_over state",
+          choices: [],
+        };
+      }
 
       // 2. Validate action is allowed in current game phase
       const validation = this.validateAction(action, gameState);
@@ -222,14 +233,23 @@ export class GameService {
     // Build LLM context
     const context = await this.buildLLMContext(gameState);
 
+    // Add logging to verify history is passed
+    console.log(
+      "[GameService] Recent events being sent to LLM:",
+      gameState.recentEvents
+        .slice(0, 5)
+        .map((e) => `${e.eventType}: ${e.message.substring(0, 50)}...`)
+    );
+
     // Generate event type from LLM
     let eventType = await this.llmService.generateEventType(context);
+    console.log("[GameService] LLM generated event type:", eventType);
 
-    // Check descriptive counter to avoid too many boring events
+    // ✅ FIX #7: Check descriptive counter BEFORE accepting
     let attempts = 0;
     while (
       eventType === "Descriptive" &&
-      EventType.getDescriptiveCount() > 1 && // Use EventType static method
+      EventType.getDescriptiveCount() >= 2 && // Changed from >1 to >=2
       attempts < 3
     ) {
       console.log(
@@ -283,22 +303,21 @@ export class GameService {
     const character = gameState.character;
     const enemy = gameState.enemy;
 
+    const diceRoll = action.actionData?.diceRoll || Dice_Roll.roll();
+    const rollClassification = Dice_Roll.classifyRoll(diceRoll);
+
     // Handle FLEE action
     if (action.actionType === "flee") {
-      // Roll dice for flee attempt
-      const fleeRoll = Dice_Roll.roll();
-
-      if (fleeRoll > 10) {
-        // SUCCESS: Escaped!
+      if (diceRoll > 10) {
         await BackendService.setCurrentEnemy(action.campaignId, null);
 
-        const message = `You rolled ${fleeRoll}! You successfully fled from the ${enemy.name}! 🏃`;
+        const message = `You rolled ${diceRoll}! You successfully fled from the ${enemy.name}! 🏃`;
 
-        await BackendService.saveEvent(action.campaignId, message, "Combat", {
-          action: "flee",
-          success: true,
-          diceRoll: fleeRoll,
-        });
+        // await BackendService.saveEvent(action.campaignId, message, "Combat", {
+        //   action: "flee",
+        //   success: true,
+        //   diceRoll: diceRoll,
+        // });
 
         const updatedState = await this.getGameState(action.campaignId);
         updatedState.currentPhase = "exploration";
@@ -307,32 +326,30 @@ export class GameService {
           success: true,
           gameState: updatedState,
           message,
-          choices: ["Continue Forward", "Search Area"],
+          choices: ["Continue Forward"],
         };
       } else {
-        // FAILURE: Can't escape, enemy attacks!
+        // Failed flee - enemy attacks
         const enemyDamage = Math.max(1, enemy.attack - character.defense);
         const newCharacterHealth = Math.max(
           0,
           character.currentHealth - enemyDamage
         );
 
-        // Update character HP
         await BackendService.updateCharacter(character.id, {
           currentHealth: newCharacterHealth,
         });
 
-        const message = `You rolled ${fleeRoll}! Failed to flee! The ${enemy.name} strikes you for ${enemyDamage} damage! 💥`;
+        const message = `You rolled ${diceRoll}! Failed to flee! The ${enemy.name} strikes you for ${enemyDamage} damage! 💥`;
 
-        await BackendService.saveEvent(action.campaignId, message, "Combat", {
-          action: "flee",
-          success: false,
-          diceRoll: fleeRoll,
-          damageDealt: 0,
-          damageTaken: enemyDamage,
-        });
+        // await BackendService.saveEvent(action.campaignId, message, "Combat", {
+        //   action: "flee",
+        //   success: false,
+        //   diceRoll: diceRoll,
+        //   damageDealt: 0,
+        //   damageTaken: enemyDamage,
+        // });
 
-        // Check if character died
         if (newCharacterHealth <= 0) {
           await BackendService.updateCampaign(action.campaignId, {
             state: "game_over",
@@ -363,34 +380,32 @@ export class GameService {
 
     // Handle ATTACK action
     if (action.actionType === "attack") {
-      // Roll dice for attack
-      const attackRoll = Dice_Roll.roll();
-      const rollClassification = Dice_Roll.classifyRoll(attackRoll);
-
-      // Calculate damage dealt to enemy
+      // Simple damage calculation WITHOUT adding dice roll to damage
+      // Dice roll only affects CRIT modifier, not base damage
       let characterDamageToEnemy = Math.max(
         1,
         character.attack - enemy.defense
       );
 
-      // Apply critical hit multiplier
+      // Apply critical modifiers based on dice roll
       if (rollClassification === "critical_success") {
-        characterDamageToEnemy *= 2; // Double damage on crit
+        characterDamageToEnemy *= 2; // Double damage on crit (16-20)
       } else if (rollClassification === "critical_failure") {
-        characterDamageToEnemy = 0; // Miss on critical failure
+        characterDamageToEnemy = 0; // Miss on critical failure (1-4)
       }
+      // Regular rolls (5-15): Use base damage as-is
 
-      // Calculate damage taken from enemy (enemy always attacks back unless dead)
+      // Enemy damage (unaffected by dice roll)
       const enemyDamageToCharacter = Math.max(
         1,
         enemy.attack - character.defense
       );
 
-      // Apply damage to enemy
+      // Apply damage
       const newEnemyHealth = Math.max(0, enemy.health - characterDamageToEnemy);
 
-      // Build combat message
-      let combatMessage = `You rolled ${attackRoll}! `;
+      // Build message
+      let combatMessage = `You rolled ${diceRoll}! `;
 
       if (rollClassification === "critical_success") {
         combatMessage += `⚡ CRITICAL HIT! You strike the ${enemy.name} for ${characterDamageToEnemy} damage! `;
@@ -400,12 +415,10 @@ export class GameService {
         combatMessage += `You hit the ${enemy.name} for ${characterDamageToEnemy} damage! `;
       }
 
-      // Check if enemy is defeated
+      // Check if enemy defeated
       if (newEnemyHealth <= 0) {
-        // ENEMY DEFEATED!
         combatMessage += `The ${enemy.name} has been defeated! 🎉`;
 
-        // Clear current enemy
         await BackendService.setCurrentEnemy(action.campaignId, null);
 
         // Process combat rewards
@@ -425,20 +438,20 @@ export class GameService {
           }
         );
 
-        // Save combat event
-        await BackendService.saveEvent(
-          action.campaignId,
-          combatMessage,
-          "Combat",
-          {
-            action: "attack",
-            victory: true,
-            diceRoll: attackRoll,
-            classification: rollClassification,
-            damageDealt: characterDamageToEnemy,
-            damageTaken: 0,
-          }
-        );
+        // // Save combat event
+        // await BackendService.saveEvent(
+        //   action.campaignId,
+        //   combatMessage,
+        //   "Combat",
+        //   {
+        //     action: "attack",
+        //     victory: true,
+        //     diceRoll: diceRoll,
+        //     classification: rollClassification,
+        //     damageDealt: characterDamageToEnemy,
+        //     damageTaken: 0,
+        //   }
+        // );
 
         // Reset descriptive counter after combat
         EventType.resetDescriptiveCount();
@@ -450,43 +463,38 @@ export class GameService {
           success: true,
           gameState: updatedState,
           message: combatMessage,
-          choices: ["Continue Forward", "Search Area"],
+          choices: ["Continue Forward"],
         };
       }
 
-      // Enemy still alive - it attacks back
+      // Enemy still alive - counterattack
       combatMessage += `The ${enemy.name} strikes back for ${enemyDamageToCharacter} damage! ⚔️`;
 
-      // Apply damage to character
       const newCharacterHealth = Math.max(
         0,
         character.currentHealth - enemyDamageToCharacter
       );
 
-      // Update character HP
+      // Update Character HP
       await BackendService.updateCharacter(character.id, {
         currentHealth: newCharacterHealth,
       });
 
-      // Update enemy HP (via setCurrentEnemy with updated data)
-      // Note: We need to update the in-memory enemy state
-      // For now, we'll rely on frontend to track enemy HP changes
-
-      // Save combat event
-      await BackendService.saveEvent(
-        action.campaignId,
-        combatMessage,
-        "Combat",
-        {
-          action: "attack",
-          victory: false,
-          diceRoll: attackRoll,
-          classification: rollClassification,
-          damageDealt: characterDamageToEnemy,
-          damageTaken: enemyDamageToCharacter,
-          enemyHealthRemaining: newEnemyHealth,
-        }
-      );
+      // // Save combat event
+      // await BackendService.saveEvent(
+      //   action.campaignId,
+      //   combatMessage,
+      //   "Combat",
+      //   {
+      //     action: "attack",
+      //     victory: false,
+      //     diceRoll: diceRoll,
+      //     classification: rollClassification,
+      //     damageDealt: characterDamageToEnemy,
+      //     damageTaken: enemyDamageToCharacter,
+      //     enemyHealthRemaining: newEnemyHealth,
+      //   }
+      // );
 
       // Check if character died
       if (newCharacterHealth <= 0) {
@@ -512,19 +520,34 @@ export class GameService {
         enemyDamage: characterDamageToEnemy,
         characterHealth: newCharacterHealth,
         enemyHealth: newEnemyHealth,
-        diceRoll: attackRoll,
+        diceRoll: diceRoll,
         isCritical: rollClassification === "critical_success",
         outcome: "ongoing",
         narrative: combatMessage,
       };
 
-      // Get updated game state (but enemy HP won't reflect in DB)
       const updatedState = await this.getGameState(action.campaignId);
       updatedState.currentPhase = "combat";
 
-      // IMPORTANT: Update enemy health in game state for frontend
+      // Update enemy health in state
       if (updatedState.enemy) {
         updatedState.enemy.health = newEnemyHealth;
+      }
+
+      if (newEnemyHealth <= 0 || newCharacterHealth <= 0) {
+        await BackendService.saveEvent(
+          action.campaignId,
+          combatMessage,
+          "Combat",
+          {
+            action: "attack",
+            victory: newEnemyHealth <= 0,
+            diceRoll: diceRoll,
+            classification: rollClassification,
+            damageDealt: characterDamageToEnemy,
+            damageTaken: enemyDamageToCharacter,
+          }
+        );
       }
 
       return {
@@ -536,7 +559,6 @@ export class GameService {
       };
     }
 
-    // Unknown combat action
     return {
       success: false,
       gameState,
@@ -623,7 +645,7 @@ export class GameService {
         success: true,
         gameState: updatedState,
         message,
-        choices: ["Continue Forward", "Search Area"],
+        choices: ["Continue Forward"],
       };
     } else {
       const message = "You left the item behind.";
@@ -641,7 +663,7 @@ export class GameService {
         success: true,
         gameState: updatedState,
         message,
-        choices: ["Continue Forward", "Search Area"],
+        choices: ["Continue Forward"],
       };
     }
   }
@@ -723,7 +745,52 @@ export class GameService {
     // REJECT - Clear pending event and generate new one
     if (action.actionType === "reject_event") {
       await BackendService.clearPendingEvent(action.campaignId);
-      return this.handleExplorationAction(action, gameState);
+
+      // Track rejections to prevent combat bias
+      const rejectedType = pendingEvent.eventType;
+
+      // Build context with rejection info
+      const context = await this.buildLLMContext(gameState);
+
+      // Add rejection guidance to context
+      let newEventType = await this.llmService.generateEventType(context);
+
+      // Prevent immediate Combat after rejecting Descriptive
+      if (rejectedType === "Descriptive" && newEventType === "Combat") {
+        console.log(
+          "[GameService] Preventing combat spam after Descriptive rejection"
+        );
+        // Force Environmental or Item_Drop instead
+        newEventType = Math.random() < 0.5 ? "Environmental" : "Item_Drop";
+      }
+
+      // Check descriptive counter
+      let attempts = 0;
+      while (
+        newEventType === "Descriptive" &&
+        EventType.getDescriptiveCount() >= 2 &&
+        attempts < 3
+      ) {
+        console.log(
+          `[GameService] Too many Descriptive events, regenerating...`
+        );
+        newEventType = await this.llmService.generateEventType(context);
+        attempts++;
+      }
+
+      await BackendService.setPendingEvent(action.campaignId, newEventType);
+
+      const displayMessage = this.getEventPreviewMessage(newEventType);
+      const updatedState = await this.getGameState(action.campaignId);
+      updatedState.pendingEvent = { eventType: newEventType, displayMessage };
+      updatedState.currentPhase = "event_choice";
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message: displayMessage,
+        choices: ["Accept", "Reject"],
+      };
     }
 
     // ACCEPT - Process the event with full utility integration
@@ -768,54 +835,77 @@ export class GameService {
             eventType
           );
 
-          // Step 3: Roll dice using Dice_Roll utility
-          const diceRoll = Dice_Roll.roll();
-          const rollClassification = Dice_Roll.classifyRoll(diceRoll);
+          // Use dice roll from action data (frontend sends it)
+          const envDiceRoll = action.actionData?.diceRoll || Dice_Roll.roll();
+          const envRollClassification = Dice_Roll.classifyRoll(envDiceRoll);
 
-          // Step 4: Apply dice roll modifier using Stat_Calc utility
-          const finalValue = Stat_Calc.applyRollFlexible(
-            diceRoll,
-            statBoost.statType, // Can be "health", "attack", or "defense"
+          // Apply Stat_Calc formula to get final value
+          const finalValue = Stat_Calc.applyRoll(
+            envDiceRoll,
+            statBoost.statType.toUpperCase() as StatType,
             statBoost.baseValue
           );
 
-          // Step 5: Update character stats
+          console.log(
+            `[GameService] Environmental: Roll ${envDiceRoll} (${envRollClassification}) on base ${statBoost.baseValue} ${statBoost.statType} → final ${finalValue}`
+          );
+
+          // Actually UPDATE character stats in database
           if (statBoost.statType === "health") {
+            // Calculate new health (cap at maxHealth)
             const newHealth = Math.min(
               gameState.character.maxHealth,
               gameState.character.currentHealth + finalValue
             );
+
             await BackendService.updateCharacter(gameState.character.id, {
               currentHealth: newHealth,
             });
+
+            console.log(
+              `[GameService] Updated character health: ${gameState.character.currentHealth} → ${newHealth}`
+            );
           } else if (statBoost.statType === "attack") {
             const newAttack = gameState.character.attack + finalValue;
+
             await BackendService.updateCharacter(gameState.character.id, {
               attack: newAttack,
             });
+
+            console.log(
+              `[GameService] Updated character attack: ${gameState.character.attack} → ${newAttack}`
+            );
           } else if (statBoost.statType === "defense") {
             const newDefense = gameState.character.defense + finalValue;
+
             await BackendService.updateCharacter(gameState.character.id, {
               defense: newDefense,
             });
+
+            console.log(
+              `[GameService] Updated character defense: ${gameState.character.defense} → ${newDefense}`
+            );
           }
 
-          // Step 6: Trigger EventType to reset descriptive counter
+          // Trigger EventType to reset descriptive counter
           await eventTypeHandler.trigger();
 
-          // Step 7: Build message with roll details
+          // Build message with roll details
           const rollEmoji =
-            rollClassification === "critical_success"
+            envRollClassification === "critical_success"
               ? "🎲✨ CRITICAL! "
-              : rollClassification === "critical_failure"
+              : envRollClassification === "critical_failure"
               ? "🎲💀 FAILURE! "
               : "🎲 ";
-          message = `${envDescription}\n\n${rollEmoji}Rolled ${diceRoll}: ${
+
+          message = `${envDescription}\n\n${rollEmoji}Rolled ${envDiceRoll}: ${
             finalValue > 0 ? "+" : ""
-          }${finalValue} ${statBoost.statType}`;
+          }${finalValue} ${statBoost.statType}!`;
 
           console.log(
-            `[GameService] Environmental event: Roll ${diceRoll} (${rollClassification}) → ${finalValue} ${statBoost.statType}`
+            `[GameService] Environmental event processed: ${
+              statBoost.statType
+            } ${finalValue > 0 ? "+" : ""}${finalValue}`
           );
           break;
 
@@ -1129,19 +1219,19 @@ export class GameService {
   private getChoicesForPhase(phase: GameState["currentPhase"]): string[] {
     switch (phase) {
       case "combat":
-        return ["Attack", "Use Item"];
+        return ["Attack", "Flee"];
       case "exploration":
-        return ["Continue Forward", "Search Area"];
+        return ["Continue Forward"];
       case "event_choice":
         return ["Accept", "Reject"];
       case "item_choice":
         return ["Pick Up", "Leave It"];
       case "game_over":
-        return ["Start New Game"];
+        return [];
       case "victory":
-        return ["View Stats", "Start New Game"];
+        return [];
       default:
-        return ["Continue"];
+        return ["Continue Forward"];
     }
   }
 

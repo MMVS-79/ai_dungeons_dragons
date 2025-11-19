@@ -69,143 +69,6 @@ interface Message {
   choices?: string[];
 }
 
-// // Mock LLM response generator (replace this with your actual LLM API call later)
-// const generateLLMResponse = (
-//   choice: string,
-//   diceRoll: number,
-//   gameState: GameStateContext
-// ) => {
-//   if (gameState.enemyState && gameState.enemyState.hp > 0) {
-//     // In combat
-//     if (choice === "Attack") {
-//       const playerDamage = Math.max(
-//         1,
-//         gameState.playerAttack - gameState.enemyState.defense + (diceRoll - 10)
-//       );
-//       const enemyDamage = Math.max(
-//         1,
-//         gameState.enemyState.attack - gameState.playerDefense
-//       );
-
-//       return {
-//         type: "combat",
-//         message: `You rolled a ${diceRoll}! You strike the ${gameState.enemyState.name} for ${playerDamage} damage! The ${gameState.enemyState.name} retaliates for ${enemyDamage} damage!`,
-//         playerDamage: enemyDamage,
-//         enemyDamage: playerDamage,
-//         choices: ["Attack", "Use Potion"]
-//       };
-//     } else if (choice === "Use Potion") {
-//       return {
-//         type: "potion_prompt",
-//         message: "Select a potion from your inventory to use.",
-//         choices: ["Attack", "Use Potion"]
-//       };
-//     }
-//   } else {
-//     // Exploring
-//     const eventRoll = Math.random() * 100;
-
-//     if (diceRoll >= 20) {
-//       return {
-//         type: "combat",
-//         message: `You rolled a ${diceRoll}! A Red Dragon crashed down from the sky!`,
-//         enemy: {
-//           name: "Red Dragon",
-//           hp: 100,
-//           maxHp: 100,
-//           attack: 30,
-//           defense: 15,
-//           image: "/characters/enemy/boss/dragon.png",
-//           isBoss: true
-//         },
-//         choices: ["Attack", "Use Potion"]
-//       };
-//     } else if (diceRoll >= 15) {
-//       return {
-//         type: "combat",
-//         message: `You rolled a ${diceRoll}! A Goblin Warrior jumps out from the shadows!`,
-//         enemy: {
-//           name: "Goblin Warrior",
-//           hp: 30,
-//           maxHp: 30,
-//           attack: 8,
-//           defense: 3,
-//           image: "/characters/enemy/low/goblin.png"
-//         },
-//         choices: ["Attack", "Use Potion"]
-//       };
-//     } else if (diceRoll >= 10 && eventRoll < 33) {
-//       // Found weapon
-//       return {
-//         type: "equipment",
-//         equipmentType: "weapon",
-//         message: `You rolled a ${diceRoll}! You discovered a gleaming Steel Blade in an old chest!`,
-//         equipment: {
-//           id: `weapon_${Date.now()}`,
-//           name: "Steel Blade",
-//           type: "weapon",
-//           image: "/items/epic_sword.png",
-//           attack: 10,
-//           description: "A sharp steel blade (+10 Attack)"
-//         },
-//         choices: ["Pick Up", "Leave It"]
-//       };
-//     } else if (diceRoll >= 10 && eventRoll < 66) {
-//       // Found armour
-//       return {
-//         type: "equipment",
-//         equipmentType: "armour",
-//         message: `You rolled a ${diceRoll}! You found a suit of Leather Armour hanging on the wall!`,
-//         equipment: {
-//           id: `armour_${Date.now()}`,
-//           name: "Leather Armour",
-//           type: "armour",
-//           image: "/items/rare_armour.png",
-//           hpBonus: 30,
-//           description: "Sturdy iron protection (+30 Max HP)"
-//         },
-//         choices: ["Pick Up", "Leave It"]
-//       };
-//     } else if (diceRoll >= 10) {
-//       // Found shield
-//       return {
-//         type: "equipment",
-//         equipmentType: "shield",
-//         message: `You rolled a ${diceRoll}! A Knight's Shield lies against the wall!`,
-//         equipment: {
-//           id: `shield_${Date.now()}`,
-//           name: "Knight's Shield",
-//           type: "shield",
-//           image: "/items/epic_shield.png",
-//           defense: 10,
-//           description: "A reliable shield (+10 Defense)"
-//         },
-//         choices: ["Pick Up", "Leave It"]
-//       };
-//     } else if (diceRoll >= 1) {
-//       return {
-//         type: "item",
-//         message: `You rolled a ${diceRoll}! You found a Health Potion hidden in the ruins!`,
-//         item: {
-//           id: `potion_${Date.now()}`,
-//           name: "Health Potion",
-//           type: "potion",
-//           image: "/items/red_potion.png",
-//           healAmount: 20,
-//           description: "Restores 20 HP"
-//         },
-//         choices: ["Continue Forward", "Search Area"]
-//       };
-//     } else {
-//       return {
-//         type: "story",
-//         message: `You rolled a ${diceRoll}. You carefully navigate through the dark corridor. Nothing happens... yet.`,
-//         choices: ["Continue Forward", "Search Area"]
-//       };
-//     }
-//   }
-// };
-
 export default function CampaignPage() {
   const params = useParams();
   const router = useRouter();
@@ -396,22 +259,41 @@ export default function CampaignPage() {
         return;
       }
 
-      // Trigger dice roll
-      setDiceRolling(true);
-      setLastDiceResult(null);
+      // Determine if dice roll is needed WITHOUT gameState
+      const actionType = mapChoiceToAction(choice);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Actions that ALWAYS need dice:
+      const alwaysNeedDice = ["attack", "flee"];
 
-      const diceResult = Math.floor(Math.random() * 20) + 1;
-      setLastDiceResult(diceResult);
-      setDiceRolling(false);
+      // 'accept_event' needs dice for Environmental events
+      // 'continue'/'search' need dice for exploration
+      // But we don't know the phase yet, so we'll roll conservatively
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Simple rule: Roll dice for these actions
+      const actionsNeedingDice = [
+        "attack",
+        "flee",
+        "accept_event",
+        "continue",
+        "search",
+      ];
+      const needsDiceRoll = actionsNeedingDice.includes(actionType);
 
-      // 🔥 API CALL (when you're ready to connect)
-      // Uncomment this section and remove the mock generateLLMResponse call
+      let diceResult = 0;
+
+      if (needsDiceRoll) {
+        // Trigger dice roll animation
+        setDiceRolling(true);
+        setLastDiceResult(null);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        diceResult = Math.floor(Math.random() * 20) + 1;
+        setLastDiceResult(diceResult);
+        setDiceRolling(false);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
       console.log(
-        `[Frontend] Calling API: ${choice} -> ${mapChoiceToAction(choice)}`
+        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`
       );
 
       const response = await fetch("/api/game/action", {
@@ -419,8 +301,8 @@ export default function CampaignPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           campaignId: Number(params.id),
-          actionType: mapChoiceToAction(choice),
-          actionData: { diceRoll: diceResult },
+          actionType: actionType,
+          actionData: needsDiceRoll ? { diceRoll: diceResult } : {},
         }),
       });
 
@@ -429,8 +311,9 @@ export default function CampaignPage() {
       }
 
       const result = await response.json();
+      console.log(`[Frontend] API response:`, result);
 
-      // 🔍 DEBUG: Log the full response
+      // DEBUG: Log the full response
       console.log("=== API RESPONSE DEBUG ===");
       console.log("Success:", result.success);
       console.log("Message:", result.message);
@@ -440,118 +323,124 @@ export default function CampaignPage() {
       console.log("Pending Event:", result.gameState.pendingEvent);
       console.log("========================");
 
-      if (result.success) {
-        // Update character stats
-        if (result.gameState.character) {
-          setPlayerState((prev) => ({
-            ...prev,
-            hp: result.gameState.character.currentHealth,
-            maxHp: result.gameState.character.maxHealth,
-            baseAttack: result.gameState.character.attack,
-            baseDefense: result.gameState.character.defense,
-          }));
-        }
+      if (!result.success) {
+        console.error("[Frontend] API returned error:", result.error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateMessageId(),
+            text: `Error: ${result.error || "Unknown error"}`,
+            choices: ["Continue Forward"],
+          },
+        ]);
+        setActionLocked(false);
+        return;
+      }
 
-        // ============================================================================
-        // 2. HANDLE ENEMY STATE (Combat Phase)
-        // ============================================================================
-        if (result.gameState.enemy) {
-          console.log(
-            "[Frontend] Enemy detected:",
-            result.gameState.enemy.name
+      // ============================================================================
+      // UPDATE CHARACTER STATS
+      // ============================================================================
+      if (result.gameState.character) {
+        setPlayerState((prev) => ({
+          ...prev,
+          name: result.gameState.character.name || prev.name,
+          hp: result.gameState.character.currentHealth,
+          maxHp: result.gameState.character.maxHealth,
+          baseAttack: result.gameState.character.attack,
+          baseDefense: result.gameState.character.defense,
+        }));
+      }
+
+      // ============================================================================
+      // HANDLE COMBAT RESULT (if present)
+      // ============================================================================
+      if (result.combatResult) {
+        console.log("[Frontend] Combat result:", result.combatResult);
+
+        // Update enemy HP from combat result
+        if (result.combatResult.enemyHealth !== undefined) {
+          setEnemyState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  hp: result.combatResult.enemyHealth,
+                }
+              : null
           );
+        }
+      }
 
-          // ✅ FIX: Provide default image and validate URL
-          const enemyImagePath =
-            result.gameState.enemy.spritePath ||
-            "/characters/enemy/low/goblin.png";
+      // ============================================================================
+      // HANDLE ENEMY STATE WITH PERSISTENT MAX HP
+      // ============================================================================
+      if (result.gameState.enemy) {
+        console.log("[Frontend] Enemy detected:", result.gameState.enemy.name);
 
-          // Create enemy object with validated image path
+        const enemyImagePath =
+          result.gameState.enemy.spritePath ||
+          "/characters/enemy/low/goblin.png";
+
+        // Check if this is a NEW enemy encounter
+        const isNewEnemy =
+          !enemyState || enemyState.name !== result.gameState.enemy.name;
+
+        if (isNewEnemy) {
+          // NEW ENEMY: Set both hp and maxHp from backend
+          console.log("[Frontend] New enemy spawned");
           const enemyData = {
             name: result.gameState.enemy.name,
             hp: result.gameState.enemy.health,
-            maxHp: result.gameState.enemy.health,
+            maxHp: result.gameState.enemy.health, // Store initial max
             attack: result.gameState.enemy.attack,
             defense: result.gameState.enemy.defense,
             image: enemyImagePath,
           };
 
           setEnemyState(enemyData);
-          setCurrentEvent({
-            type: "combat",
-            data: enemyData,
-          });
-        } else {
-          console.log("[Frontend] No enemy, clearing combat state");
-          setEnemyState(null);
-
-          if (result.gameState.currentPhase !== "event_choice") {
-            setCurrentEvent({ type: null });
-          }
-        }
-
-        // ============================================================================
-        // 3. ADD MESSAGE TO CHAT
-        // ============================================================================
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            text: result.message,
-            choices: result.choices || ["Continue Forward", "Search Area"],
-          },
-        ]);
-
-        // ============================================================================
-        // 4. HANDLE GAME PHASE CHANGES
-        // ============================================================================
-        console.log(`[Frontend] Game phase: ${result.gameState.currentPhase}`);
-
-        // Handle specific phases
-        switch (result.gameState.currentPhase) {
-          case "event_choice":
-            // Event preview phase - show Accept/Reject
-            console.log("[Frontend] Entering event_choice phase");
-            break;
-
-          case "combat":
-            // Combat started - enemy should already be set above
-            console.log("[Frontend] Entering combat phase");
-            break;
-
-          case "exploration":
-            // Back to exploring
-            console.log("[Frontend] Entering exploration phase");
-            break;
-
-          case "game_over":
-            setShowGameOver(true);
-            break;
-
-          case "victory":
-            setShowVictory(true);
-            break;
-        }
-
-        // ============================================================================
-        // 5. CHECK WIN/LOSS CONDITIONS (for mock combat)
-        // ============================================================================
-        // This handles when character HP drops to 0
-        if (result.gameState.character.currentHealth <= 0) {
-          console.log("[Frontend] Character defeated!");
-          setShowGameOver(true);
+          setCurrentEvent({ type: "combat", data: enemyData });
+        } else if (result.combatResult) {
+          // EXISTING ENEMY: Update only current HP, keep maxHp unchanged
+          console.log("[Frontend] Updating enemy HP from combat result");
+          setEnemyState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  hp: result.combatResult.enemyHealth, // Only update current HP
+                  // maxHp stays the same!
+                }
+              : null
+          );
         }
       } else {
-        // API returned success: false
-        console.error("[Frontend] API error:", result.error);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            text: `Error: ${result.error || "Unknown error occurred"}`,
-            choices: ["Continue Forward", "Search Area"],
-          },
-        ]);
+        // No enemy - clear combat
+        console.log("[Frontend] No enemy, clearing combat state");
+        setEnemyState(null);
+        if (result.gameState.currentPhase !== "event_choice") {
+          setCurrentEvent({ type: null });
+        }
+      }
+
+      // ============================================================================
+      // ADD MESSAGE TO CHAT
+      // ============================================================================
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateMessageId(),
+          text: result.message,
+          choices: result.choices || ["Continue Forward"],
+        },
+      ]);
+
+      // ============================================================================
+      // HANDLE GAME PHASE CHANGES
+      // ============================================================================
+      if (result.gameState.currentPhase === "game_over") {
+        setShowGameOver(true);
+      } else if (result.gameState.currentPhase === "victory") {
+        setShowVictory(true);
+      } else if (result.gameState.character.currentHealth <= 0) {
+        setShowGameOver(true);
       }
     } catch (error) {
       console.error("[Frontend] Exception in handleChatAction:", error);
@@ -560,141 +449,13 @@ export default function CampaignPage() {
         {
           id: generateMessageId(),
           text: "An error occurred. Please try again.",
-          choices: ["Continue Forward", "Search Area"],
+          choices: ["Continue Forward"],
         },
       ]);
     } finally {
       setActionLocked(false);
     }
   };
-
-  //       // Add message to chat
-  //       setMessages(prev => [...prev, {
-  //         id: generateMessageId(),
-  //         text: result.message,
-  //         choices: result.choices || ['Continue Forward', 'Search Area']
-  //       }]);
-
-  //       // Update enemy if combat
-  //       if (result.gameState.currentEnemy) {
-  //         setEnemyState(result.gameState.currentEnemy);
-  //       } else {
-  //         setEnemyState(null);
-  //       }
-  //     }
-
-  //     // Mock response (current implementation)
-  //     /*
-  //     const response = generateLLMResponse(choice, diceResult, {
-  //       enemyState,
-  //       playerAttack,
-  //       playerDefense
-  //     })!;
-  //     */
-
-  //     // Update game state based on response
-  //     if (response.type === "combat") {
-  //       if (response.enemy) {
-  //         setEnemyState(response.enemy);
-  //         setCurrentEvent({ type: "combat", data: response.enemy });
-  //       } else if (
-  //         response.enemyDamage !== undefined &&
-  //         response.playerDamage !== undefined
-  //       ) {
-  //         const newEnemyHp = Math.max(
-  //           0,
-  //           (enemyState?.hp || 0) - response.enemyDamage
-  //         );
-  //         const newPlayerHp = Math.max(
-  //           0,
-  //           playerState.hp - response.playerDamage
-  //         );
-
-  //         const playerDied = newPlayerHp <= 0;
-  //         const enemyDefeated = enemyState && newEnemyHp <= 0;
-  //         const wasBoss = enemyDefeated && enemyState?.isBoss === true;
-
-  //         if (playerDied) {
-  //           setShowGameOver(true);
-  //           setActionLocked(true);
-  //         } else if (wasBoss) {
-  //           setShowVictory(true);
-  //           setActionLocked(true);
-  //         }
-
-  //         setEnemyState((prev) =>
-  //           prev
-  //             ? {
-  //                 ...prev,
-  //                 hp: newEnemyHp
-  //               }
-  //             : null
-  //         );
-
-  //         setPlayerState((prev) => ({
-  //           ...prev,
-  //           hp: newPlayerHp
-  //         }));
-
-  //         if (enemyDefeated && !wasBoss) {
-  //           setTimeout(() => {
-  //             setEnemyState(null);
-  //             setCurrentEvent({ type: null });
-  //             setMessages((prev) => [
-  //               ...prev,
-  //               {
-  //                 id: generateMessageId(),
-  //                 text: `Victory! The ${enemyState.name} has been defeated!`,
-  //                 choices: ["Continue Forward", "Search Area"]
-  //               }
-  //             ]);
-  //           }, 1500);
-  //         }
-  //       }
-  //     } else if (response.type === "item" && (response.item as Item)) {
-  //       if (playerState.inventory.length < 10) {
-  //         setPlayerState((prev) => ({
-  //           ...prev,
-  //           inventory: [...prev.inventory, response.item as Item]
-  //         }));
-  //         setCurrentEvent({ type: "item", data: response.item as Item });
-  //       } else {
-  //         setMessages((prev) => [
-  //           ...prev,
-  //           {
-  //             id: generateMessageId(),
-  //             text: "Your inventory is full! You cannot pick up the item.",
-  //             choices: ["Continue Forward", "Search Area"]
-  //           }
-  //         ]);
-  //         return;
-  //       }
-  //     } else if (
-  //       response.type === "equipment" &&
-  //       (response.equipment as Item)
-  //     ) {
-  //       setPendingEquipment(response.equipment as Item);
-  //       setCurrentEvent({
-  //         type: "equipment",
-  //         data: response.equipment as Item
-  //       });
-  //     } else if (response.type === "story") {
-  //       setCurrentEvent({ type: "story" });
-  //     }
-
-  //     // Update chat
-  //     setMessages((prev) => [
-  //       ...prev,
-  //       {
-  //         id: generateMessageId(),
-  //         text: response.message,
-  //         choices: response.choices
-  //       }
-  //     ]);
-  //   } finally {
-  //     setActionLocked(false);
-  //   }
-  // };
 
   const handleItemUse = (item: Item) => {
     if (item.type === "potion") {
@@ -711,7 +472,7 @@ export default function CampaignPage() {
           text: `You used ${item.name} and restored ${item.healAmount} HP!`,
           choices: enemyState
             ? ["Attack", "Use Potion"]
-            : ["Continue Forward", "Search Area"],
+            : ["Continue Forward"],
         },
       ]);
     }
@@ -862,8 +623,8 @@ export default function CampaignPage() {
 function mapChoiceToAction(choice: string): string {
   const mapping: Record<string, string> = {
     "Continue Forward": "continue",
-    "Search Area": "search",
     Attack: "attack",
+    Flee: "flee",
     "Use Potion": "use_item",
     "Pick Up": "pickup_item",
     "Leave It": "reject_item",
@@ -871,5 +632,8 @@ function mapChoiceToAction(choice: string): string {
     Reject: "reject_event",
     "Replace Equipment": "equip_item",
   };
-  return mapping[choice] || "continue";
+
+  const result = mapping[choice] || "continue";
+  console.log(`[Frontend] mapChoiceToAction: "${choice}" -> "${result}"`);
+  return result;
 }

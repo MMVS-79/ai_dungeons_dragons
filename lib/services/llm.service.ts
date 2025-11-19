@@ -19,7 +19,7 @@ import type {
   LLMEvent,
   LLMServiceConfig,
   EventTypeString,
-  StatBoostResponse
+  StatBoostResponse,
 } from "../types/llm.types";
 
 const SCENARIOS = [
@@ -30,7 +30,7 @@ const SCENARIOS = [
   "abandoned tower",
   "underground crypt",
   "mountain pass",
-  "swampy marshland"
+  "swampy marshland",
 ];
 
 const EVENT_TRIGGERS = [
@@ -41,7 +41,7 @@ const EVENT_TRIGGERS = [
   "while checking for traps",
   "during a moment of quiet",
   "as you approach a door",
-  "while examining the area"
+  "while examining the area",
 ];
 
 const FALLBACK_EVENTS: LLMEvent[] = [
@@ -49,30 +49,30 @@ const FALLBACK_EVENTS: LLMEvent[] = [
     event:
       "You notice ancient runes glowing faintly on the walls, their meaning lost to time.",
     type: "Descriptive",
-    effects: { health: 0, attack: 0, defense: 0 }
+    effects: { health: 0, attack: 0, defense: 0 },
   },
   {
     event:
       "A health potion falls from a crumbling shelf. You catch it just in time!",
     type: "Item_Drop",
-    effects: { health: 5, attack: 0, defense: 0 }
+    effects: { health: 5, attack: 0, defense: 0 },
   },
   {
     event:
       "You find an old shield leaning against the wall. It's still sturdy.",
     type: "Item_Drop",
-    effects: { health: 0, attack: 0, defense: 3 }
+    effects: { health: 0, attack: 0, defense: 3 },
   },
   {
     event: "A sudden chill fills the air. You feel weakened by dark magic.",
     type: "Environmental",
-    effects: { health: -5, attack: -2, defense: 0 }
+    effects: { health: -5, attack: -2, defense: 0 },
   },
   {
     event: "You discover a blessed fountain. Its waters restore your vitality!",
     type: "Environmental",
-    effects: { health: 10, attack: 0, defense: 0 }
-  }
+    effects: { health: 10, attack: 0, defense: 0 },
+  },
 ];
 
 export class LLMService {
@@ -84,7 +84,7 @@ export class LLMService {
 
   constructor(config: LLMServiceConfig) {
     this.ai = new GoogleGenAI({ apiKey: config.apiKey });
-    this.model = config.model || "gemini-2.0-flash-lite";
+    this.model = config.model || "gemini-flash-lite-latest";
     this.temperature = config.temperature ?? 0.8;
     this.maxOutputTokens = config.maxOutputTokens ?? 500;
     this.thinkingBudget = config.thinkingBudget ?? 0;
@@ -185,19 +185,19 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
         event: { type: "string" },
         type: {
           type: "string",
-          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"]
+          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"],
         },
         effects: {
           type: "object",
           properties: {
             health: { type: "number" },
             attack: { type: "number" },
-            defense: { type: "number" }
+            defense: { type: "number" },
           },
-          required: ["health", "attack", "defense"]
-        }
+          required: ["health", "attack", "defense"],
+        },
       },
-      required: ["event", "type", "effects"]
+      required: ["event", "type", "effects"],
     };
 
     const response = await this.ai.models.generateContent({
@@ -205,18 +205,18 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
       contents: [
         {
           role: "user",
-          parts: [{ text: prompt }]
-        }
+          parts: [{ text: prompt }],
+        },
       ],
       config: {
         responseMimeType: "application/json",
         responseSchema: schema || defaultSchema,
         thinkingConfig: {
-          thinkingBudget: this.thinkingBudget
+          thinkingBudget: this.thinkingBudget,
         },
         temperature: this.temperature,
-        maxOutputTokens: this.maxOutputTokens
-      }
+        maxOutputTokens: this.maxOutputTokens,
+      },
     });
 
     return response?.text ?? "";
@@ -243,8 +243,8 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
         effects: {
           health: Number(eventData.effects.health) || 0,
           attack: Number(eventData.effects.attack) || 0,
-          defense: Number(eventData.effects.defense) || 0
-        }
+          defense: Number(eventData.effects.defense) || 0,
+        },
       };
     } catch (error) {
       console.error("Failed to parse LLM response:", error);
@@ -330,9 +330,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
       const schema = {
         type: "object",
         properties: {
-          description: { type: "string" }
+          description: { type: "string" },
         },
-        required: ["description"]
+        required: ["description"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -368,11 +368,11 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
         properties: {
           statType: {
             type: "string",
-            enum: ["health", "attack", "defense"]
+            enum: ["health", "attack", "defense"],
           },
-          baseValue: { type: "number" }
+          baseValue: { type: "number" },
         },
-        required: ["statType", "baseValue"]
+        required: ["statType", "baseValue"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -385,7 +385,7 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
 
       return {
         statType: parsed.statType,
-        baseValue: parsed.baseValue
+        baseValue: parsed.baseValue,
       };
     } catch (error) {
       console.error("Failed to request stat boost:", error);
@@ -399,35 +399,70 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
   private buildEventTypePrompt(context: LLMGameContext): string {
     const { character, enemy, recentEvents } = context;
 
+    // Build event history with more detail
     const eventHistory =
       recentEvents.length > 0
         ? recentEvents
-            .map((event, i) => `${i + 1}. ${event.description} [${event.type}]`)
+            .slice(0, 5) // Last 5 events
+            .map((event, i) => {
+              const effectsStr = this.formatEffects(event.effects);
+              return `${5 - i} turns ago: ${event.type}${
+                effectsStr ? ` (${effectsStr})` : ""
+              } - "${event.description.substring(0, 60)}..."`;
+            })
             .join("\n")
-        : "(Adventure just beginning)";
+        : "This is the very beginning of the adventure";
 
-    return `You are a D&D Dungeon Master. Decide what TYPE of event happens next.
+    // Count recent event types for better prompting
+    const recentTypes = recentEvents.slice(0, 5).map((e) => e.type);
+    const combatCount = recentTypes.filter((t) => t === "Combat").length;
+    const descriptiveCount = recentTypes.filter(
+      (t) => t === "Descriptive"
+    ).length;
+    const lastEventType = recentTypes[0] || "none";
+
+    // Build dynamic guidance based on recent events
+    let guidance = "";
+    if (recentEvents.length === 0) {
+      guidance =
+        "- This is the START of the adventure - begin with Descriptive or Environmental\n";
+    } else if (combatCount >= 2) {
+      guidance =
+        "- Too much recent combat - choose Descriptive, Environmental, or Item_Drop\n";
+    } else if (descriptiveCount >= 2) {
+      guidance =
+        "- Too many Descriptive events - choose Environmental, Combat, or Item_Drop\n";
+    } else if (lastEventType === "Descriptive") {
+      guidance =
+        "- Last event was Descriptive - prefer Environmental, Combat, or Item_Drop\n";
+    } else {
+      guidance = "- Vary events naturally - all types are available\n";
+    }
+
+    return `You are a D&D Dungeon Master deciding the NEXT event type.
 
 CURRENT STATE:
 - Character: ${character.name} (HP: ${character.health}/${character.maxHealth}, ATK: ${character.attack}, DEF: ${character.defense})
-- Enemy: ${enemy.name} (HP: ${enemy.health})
+- Current Enemy: ${enemy.name}
 
-RECENT EVENTS:
+RECENT EVENT HISTORY (most recent first):
 ${eventHistory}
 
-EVENT TYPES:
-- Descriptive: Pure story/atmosphere (no mechanical effects)
-- Environmental: Hazards or blessings that affect stats
-- Combat: Enemy encounter or combat scenario
-- Item_Drop: Find or lose items
+EVENT TYPE OPTIONS:
+1. Descriptive: Atmospheric story moments (no game mechanics)
+2. Environmental: Hazards or blessings affecting stats
+3. Combat: Enemy encounters and battles
+4. Item_Drop: Discover or find items
 
-RULES:
-- Avoid multiple consecutive Descriptive events
-- Build tension toward boss encounters
-- Match event intensity to character's current health
-- start out with a few item drop events
+DISTRIBUTION RULES:
+${guidance}- Target distribution: 15% Descriptive, 15% Environmental, 15% Combat, 55% Item_Drop
+- NEVER repeat the same type 3+ times in a row
+- Build narrative continuity from recent events
+- Match intensity to character's health (low HP = easier events)
 
-Return ONLY: {"type": "TYPE_HERE"}`;
+IMPORTANT: Return ONLY the type, nothing else.
+
+Return JSON: {"type": "Descriptive"|"Environmental"|"Combat"|"Item_Drop"}`;
   }
 
   /**
@@ -437,9 +472,47 @@ Return ONLY: {"type": "TYPE_HERE"}`;
     eventType: EventTypeString,
     context: LLMGameContext
   ): string {
-    const { character, scenario, trigger } = context;
+    const { character, scenario, trigger, recentEvents } = context;
     const finalScenario = scenario || this.getRandomItem(SCENARIOS);
     const finalTrigger = trigger || this.getRandomItem(EVENT_TRIGGERS);
+
+    const lastEvent =
+      recentEvents.length > 0
+        ? recentEvents[0].description
+        : "You enter the dungeon for the first time";
+
+    // Different instructions based on event type
+    let typeInstructions = "";
+
+    if (eventType === "Descriptive") {
+      typeInstructions = `
+DESCRIPTIVE EVENT RULES:
+- Pure atmosphere and exploration - NO combat, NO enemies, NO creatures
+- Focus on: environment details, sounds, smells, ancient history, mysterious objects
+- Build tension through setting, not action
+- Examples: "Ancient runes glow faintly...", "You hear distant dripping water..."
+- AVOID: Any mention of creatures, enemies, danger, combat, attacks
+- This is a moment of calm exploration and discovery`;
+    } else if (eventType === "Environmental") {
+      typeInstructions = `
+ENVIRONMENTAL EVENT RULES:
+- Natural hazards or blessings (no creatures)
+- Examples: magical auras, toxic gas, healing springs, cursed ground
+- Affect stats but not through combat
+- Focus on the environment itself causing effects`;
+    } else if (eventType === "Combat") {
+      typeInstructions = `
+COMBAT EVENT RULES:
+- Enemy encounter description
+- Make it dramatic and action-oriented
+- Describe the enemy's appearance and threat level`;
+    } else if (eventType === "Item_Drop") {
+      typeInstructions = `
+ITEM_DROP EVENT RULES:
+- Discovery of equipment or items
+- Focus on finding/losing items, not obtaining them through combat
+- Examples: treasure chest, abandoned weapon, hidden cache`;
+    }
 
     return `You are a D&D Dungeon Master. Generate a vivid description for a ${eventType} event.
 
@@ -447,8 +520,17 @@ CHARACTER: ${character.name} (HP: ${character.health}/${character.maxHealth})
 LOCATION: ${finalScenario}
 CONTEXT: ${finalTrigger}
 
-Generate 1-2 dramatic sentences describing what happens.
-Keep it specific and engaging.
+PREVIOUS EVENT: "${lastEvent}"
+
+${typeInstructions}
+
+CONTINUITY REQUIREMENTS:
+- Build naturally from the previous event
+- Maintain the same general location/setting
+- Create logical narrative flow
+- Example: Forest → deeper forest, Cave → different cave chamber
+
+Generate 1-2 dramatic sentences describing what happens NEXT.
 
 Return JSON: {"description": "your description here"}`;
   }
@@ -496,21 +578,45 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
     try {
       const prompt = this.buildItemDropPrompt(context);
 
-      // Schema for item generation
+      // Define itemStats properties explicitly
       const schema = {
         type: "object",
         properties: {
           itemType: {
             type: "string",
-            enum: ["weapon", "armour", "shield", "potion"]
+            enum: ["weapon", "armor", "shield", "potion"],
           },
-          itemName: { type: "string" },
+          itemName: {
+            type: "string",
+            description: "Name of the item",
+          },
           itemStats: {
             type: "object",
-            additionalProperties: { type: "number" }
-          }
+            description: "Item statistics",
+            // Must define properties for OBJECT type
+            properties: {
+              attack: {
+                type: "number",
+                description: "Attack bonus (for weapons)",
+              },
+              defense: {
+                type: "number",
+                description: "Defense bonus (for shields/armor)",
+              },
+              health: {
+                type: "number",
+                description: "Health bonus (for armor)",
+              },
+              healAmount: {
+                type: "number",
+                description: "Heal amount (for potions)",
+              },
+            },
+            // No 'required' - items can have different stats
+            additionalProperties: false,
+          },
         },
-        required: ["itemType", "itemName", "itemStats"]
+        required: ["itemType", "itemName", "itemStats"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -518,24 +624,26 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
 
       if (!parsed.itemType || !parsed.itemName || !parsed.itemStats) {
         console.error("Invalid item drop response:", parsed);
+        // Fallback to health potion
         return {
           itemType: "potion",
           itemName: "Health Potion",
-          itemStats: { healAmount: 20 }
+          itemStats: { healAmount: 20 },
         };
       }
 
       return {
         itemType: parsed.itemType,
         itemName: parsed.itemName,
-        itemStats: parsed.itemStats
+        itemStats: parsed.itemStats,
       };
     } catch (error) {
       console.error("Failed to generate item drop:", error);
+      // Fallback to health potion
       return {
         itemType: "potion",
         itemName: "Health Potion",
-        itemStats: { healAmount: 20 }
+        itemStats: { healAmount: 20 },
       };
     }
   }
@@ -560,15 +668,15 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           statType: {
             type: "string",
-            enum: ["health", "attack", "defense"]
+            enum: ["health", "attack", "defense"],
           },
           value: {
             type: "number",
             minimum: 2,
-            maximum: 10
-          }
+            maximum: 10,
+          },
         },
-        required: ["statType", "value"]
+        required: ["statType", "value"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -584,7 +692,7 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
 
       return {
         statType: parsed.statType as "health" | "attack" | "defense",
-        value: clampedValue
+        value: clampedValue,
       };
     } catch (error) {
       console.error("Failed to generate bonus stat:", error);
@@ -601,18 +709,26 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
 
 Generate ONE balanced item for an adventurer.
 
-Item Types:
-- weapon: Increases attack (example stats: { "attack": 5-15 })
-- armour: Increases defense (example stats: { "defense": 3-12 })
-- shield: Increases defense (example stats: { "defense": 2-8 })
-- potion: Heals character (example stats: { "healAmount": 10-30 })
+Item Types and Their Stats:
+- weapon: Must have "attack" stat (5-15 attack bonus)
+- armor: Must have "health" stat (10-30 max HP bonus)
+- shield: Must have "defense" stat (3-10 defense bonus)
+- potion: Must have "healAmount" stat (10-30 HP restored)
 
 Requirements:
 - Give the item a creative, fantasy-appropriate name
 - Stats should be balanced (not overpowered)
-- Consider typical D&D naming conventions
+- IMPORTANT: Only include the relevant stat for the item type
+  Example weapon: {"attack": 10}
+  Example armor: {"health": 20}
+  Example shield: {"defense": 5}
+  Example potion: {"healAmount": 15}
 
-Return JSON: {"itemType": "weapon|armour|shield|potion", "itemName": "string", "itemStats": {}}`;
+Return JSON: {
+  "itemType": "weapon|armor|shield|potion",
+  "itemName": "Creative Name Here",
+  "itemStats": { "relevantStat": value }
+}`;
     }
 
     const { character } = context;
@@ -630,22 +746,31 @@ Current Stats:
 
 Generate ONE item appropriate for this character's level and situation.
 
-Item Types:
-- weapon: Increases attack (balanced for current attack ${character.attack})
-- armour: Increases defense (balanced for current defense ${character.defense})
-- shield: Increases defense (smaller bonus than armour)
-- potion: Heals character (consider current health ${healthPercentage}%)
+Item Types and Their Stats:
+- weapon: Must have "attack" stat (balanced for current attack ${character.attack})
+- armor: Must have "health" stat (balanced for current maxHP ${character.maxHealth})
+- shield: Must have "defense" stat (balanced for current defense ${character.defense})
+- potion: Must have "healAmount" stat (consider current health ${healthPercentage}%)
 
 Requirements:
 - Give the item a creative, fantasy-appropriate name
 - Stats should be balanced - don't give +50 attack if they have 10 attack!
 - Scale rewards to character level (estimate from stats)
 - If health is low (< 50%), slightly favor potions
+- IMPORTANT: Only include ONE stat per item:
+  weapon → {"attack": value}
+  armor → {"health": value}
+  shield → {"defense": value}
+  potion → {"healAmount": value}
 
-Return JSON: {"itemType": "weapon|armour|shield|potion", "itemName": "string", "itemStats": {}}
+Return JSON: {
+  "itemType": "weapon|armor|shield|potion",
+  "itemName": "Creative Name Here",
+  "itemStats": { "singleStat": value }
+}
 
-Example for weapon: {"itemType": "weapon", "itemName": "Rusty Longsword", "itemStats": {"attack": 7}}
-Example for potion: {"itemType": "potion", "itemName": "Greater Health Potion", "itemStats": {"healAmount": 25}}`;
+Example weapon: {"itemType":"weapon","itemName":"Steel Blade","itemStats":{"attack":8}}
+Example potion: {"itemType":"potion","itemName":"Greater Health Potion","itemStats":{"healAmount":25}}`;
   }
 
   /**
