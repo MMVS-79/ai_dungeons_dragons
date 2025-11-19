@@ -30,10 +30,11 @@ import type { Item } from "@/lib/types/game.types";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Updated for Next.js 15
 ) {
   try {
-    const characterId = parseInt(params.id);
+    const { id } = await context.params; // Must await
+    const characterId = parseInt(id);
     const body = await request.json();
 
     if (isNaN(characterId)) {
@@ -106,10 +107,11 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Updated for Next.js 15
 ) {
   try {
-    const characterId = parseInt(params.id);
+    const { id } = await context.params; // Must await
+    const characterId = parseInt(id);
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get("itemId");
 
