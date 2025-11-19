@@ -38,9 +38,10 @@ import type {
   CombatResult,
   GameValidation,
   Character,
-  Enemy
+  Unit
 } from "@/lib/types/game.types";
 import * as BackendService from "@/lib/services/backend.service";
+import { HEALTH_PER_VITALITY } from "../contants";
 // TODO: Import utility functions when implemented
 // import { rollD20WithDetails } from "@/lib/utils/diceRoll";
 // import { calculateDamage, applyStatEffects } from "@/lib/utils/statCalc";
@@ -184,7 +185,7 @@ export class GameService {
     }
 
     // Check for invalid states
-    if (gameState.character.currentHealth > gameState.character.maxHealth) {
+    if (gameState.character.currentHealth > gameState.character.vitality * HEALTH_PER_VITALITY) {
       warnings.push("Character health exceeds maximum");
     }
 
@@ -296,10 +297,10 @@ export class GameService {
     const item = await BackendService.getItem(itemId);
 
     // Apply item effects (basic implementation)
-    if (item.healAmount) {
+    if (item.health) {
       const newHealth = Math.min(
-        gameState.character.maxHealth,
-        gameState.character.currentHealth + item.healAmount
+        gameState.character.vitality * HEALTH_PER_VITALITY,
+        gameState.character.currentHealth + item.health
       );
       await BackendService.updateCharacter(gameState.character.id, {
         currentHealth: newHealth
@@ -566,7 +567,7 @@ export class GameService {
     // Use placeholder enemy if none exists
     const enemy = gameState.enemy || {
       name: "Unknown Creature",
-      health: 50,
+      vitality: 10,
       attack: 10,
       defense: 5
     };
@@ -575,13 +576,13 @@ export class GameService {
       character: {
         name: gameState.character.name,
         health: gameState.character.currentHealth,
-        maxHealth: gameState.character.maxHealth,
+        vitality: gameState.character.vitality,
         attack: gameState.character.attack,
         defense: gameState.character.defense
       },
       enemy: {
         name: enemy.name,
-        health: enemy.health,
+        health: enemy.vitality * HEALTH_PER_VITALITY,
         attack: enemy.attack,
         defense: enemy.defense
       },
@@ -602,7 +603,7 @@ export class GameService {
       character: {
         name: gameState.character.name,
         health: combatResult.characterHealth,
-        maxHealth: gameState.character.maxHealth,
+        vitality: gameState.character.vitality,
         attack: gameState.character.attack,
         defense: gameState.character.defense
       },
@@ -629,8 +630,8 @@ export class GameService {
    * TODO: Post-combat rewards should use Stat_Calc for three-tier system
    */
   private async resolveCombat(
-    character: Character,
-    enemy: Enemy
+    character: LLMGameContext["character"],
+    enemy: LLMGameContext["enemy"]
   ): Promise<CombatResult> {
     // TODO: Uncomment when Dice_Roll is available
     // const diceRoll = Dice_Roll.roll();
@@ -658,7 +659,7 @@ export class GameService {
     const newEnemyHealth = Math.max(0, enemy.health - characterDamageToEnemy);
     const newCharacterHealth = Math.max(
       0,
-      character.currentHealth - enemyDamageToCharacter
+      character.health - enemyDamageToCharacter
     );
 
     // Determine outcome
@@ -749,7 +750,7 @@ export class GameService {
 
     const newHealth = Math.max(
       0,
-      Math.min(character.maxHealth, character.currentHealth + changes.health)
+      Math.min(character.vitality * HEALTH_PER_VITALITY, character.currentHealth + changes.health)
     );
     const newAttack = Math.max(0, character.attack + changes.attack);
     const newDefense = Math.max(0, character.defense + changes.defense);

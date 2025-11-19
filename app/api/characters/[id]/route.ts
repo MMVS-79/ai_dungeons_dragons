@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Character } from "@/lib/types/game.types";
+import { HEALTH_PER_VITALITY } from "@/lib/contants";
 
 /**
  * PUT /api/characters/[id]
  * 
  * TODO: Update character stats
  * 
- * Purpose: Adjust character attributes such as health, attack, defense
+ * Purpose: Adjust character attributes such as vitality, attack, defense
  * 
  * Request Body:
  * {
  *   currentHealth?: number;
- *   maxHealth?: number;
+ *   vitality?: number;
  *   attack?: number;
  *   defense?: number;
  * }
@@ -25,7 +26,7 @@ import type { Character } from "@/lib/types/game.types";
  * Implementation Steps:
  * 1. Extract character ID from URL params
  * 2. Parse request body
- * 3. Validate values (no negative stats, currentHealth <= maxHealth)
+ * 3. Validate values (no negative stats, currentHealth <= vitality * HEALTH_PER_VITALITY)
  * 4. Call BackendService.updateCharacter(id, updates)
  * 5. Return updated character
  * 6. Return 404 if character not found
@@ -53,7 +54,7 @@ export async function PUT(
       );
     }
 
-    if (body.maxHealth !== undefined && body.currentHealth > body.maxHealth) {
+    if (body.vitality !== undefined && body.currentHealth > body.vitality * HEALTH_PER_VITALITY) {
       return NextResponse.json(
         { success: false, error: "Current health cannot exceed max health" },
         { status: 400 }
@@ -72,11 +73,11 @@ export async function PUT(
         id: characterId,
         name: "Mock Hero",
         currentHealth: body.currentHealth || 50,
-        maxHealth: body.maxHealth || 100,
+        vitality: body.vitality || 20,
         attack: body.attack || 10,
         defense: body.defense || 5,
-        raceId: 1,
-        classId: 1,
+        race: { id: 1, name: "Human", vitality: 20, attack: 10, defense: 5 },
+        class: { id: 1, name: "Warrior", vitality: 20, attack: 10, defense: 5 },
         campaignId: 1
       } as Character
     });

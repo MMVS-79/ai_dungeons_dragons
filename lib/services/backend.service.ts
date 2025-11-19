@@ -15,17 +15,17 @@
  *
  * Key Column Mappings (DB → TypeScript):
  * - current_health → currentHealth
- * - max_health → maxHealth
+ * - vitality → vitality
  * - event_number → eventNumber
  * - sprite_path → spritePath
- * - race_id/class_id/campaign_id → raceId/classId/campaignId
- * - weapon_id/armour_id/shield_id → weaponId/armorId/shieldId
+ * - race_id/class_id/campaign_id → race/class/campaignId
+ * - weapon_id/armour_id/shield_id → weapon/armor/shield
  *
  */
 
 import type {
   Character,
-  Enemy,
+  Unit,
   Campaign,
   GameEvent,
   Item,
@@ -61,14 +61,14 @@ declare global {
  * 1. Query: SELECT * FROM characters WHERE id = ?
  * 2. Map DB fields to TypeScript:
  *    - current_health → currentHealth
- *    - max_health → maxHealth
+ *    - vitality → vitality
  *    - sprite_path → spritePath
- *    - race_id → raceId
- *    - class_id → classId
+ *    - race_id → race
+ *    - class_id → class
  *    - campaign_id → campaignId
- *    - weapon_id → weaponId
- *    - armour_id → armorId
- *    - shield_id → shieldId
+ *    - weapon_id → weapon
+ *    - armour_id → armor
+ *    - shield_id → shield
  * 3. Return Character object
  *
  * @param characterId - Character ID
@@ -86,12 +86,12 @@ export async function getCharacter(characterId: number): Promise<Character> {
     id: characterId,
     name: "Placeholder Hero",
     currentHealth: 50,
-    maxHealth: 50,
+    vitality: 10,
     attack: 10,
     defense: 5,
     spritePath: "/characters/player/warrior.png",
-    raceId: 1,
-    classId: 1,
+    race: { id: 1, name: "Human", vitality: 10, attack: 10, defense: 5 },
+    class: { id: 1, name: "Warrior", vitality: 12, attack: 15, defense: 10 },
     campaignId: 1
   };
 }
@@ -104,10 +104,10 @@ export async function getCharacter(characterId: number): Promise<Character> {
  * Implementation:
  * 1. Map TypeScript fields to DB columns:
  *    - currentHealth → current_health
- *    - maxHealth → max_health
- *    - weaponId → weapon_id
- *    - armorId → armour_id (note: armour not armor in DB)
- *    - shieldId → shield_id
+ *    - vitality → vitality
+ *    - weapon → weapon_id
+ *    - armor → armour_id (note: armour not armor in DB)
+ *    - shield → shield_id
  * 2. Build dynamic UPDATE query for provided fields only
  * 3. Query: UPDATE characters SET field1 = ?, field2 = ? WHERE id = ?
  * 4. Return updated character via getCharacter()
@@ -154,7 +154,7 @@ export async function updateCharacter(
  * @param enemyId - Enemy ID
  * @returns Enemy data
  */
-export async function getEnemy(enemyId: number): Promise<Enemy> {
+export async function getEnemy(enemyId: number): Promise<Unit> {
   // Step 1: Query database for enemy
 
   // Step 2: Map database fields to Enemy type
@@ -165,7 +165,7 @@ export async function getEnemy(enemyId: number): Promise<Enemy> {
   return {
     id: enemyId,
     name: "Placeholder Dragon",
-    health: 100,
+    vitality: 10,
     attack: 15,
     defense: 8,
     spritePath: "/characters/enemy/boss/dragon.png"
@@ -186,7 +186,7 @@ export async function getEnemy(enemyId: number): Promise<Enemy> {
  * @param difficulty - Optional difficulty level ("easy", "medium", "hard")
  * @returns Random enemy matching criteria
  */
-export async function getRandomEnemy(difficulty?: string): Promise<Enemy> {
+export async function getRandomEnemy(difficulty?: string): Promise<Unit> {
   // Step 1: Build query based on difficulty parameter
 
   // Step 2: Execute query and get random enemy
@@ -489,7 +489,7 @@ export async function addItemToInventory(
       break;
 
     case "armor":
-      // Step 5: Insert into armours table with name, health (max_health bonus), and default rarity
+      // Step 5: Insert into armours table with name, vitality (vitality bonus), and default rarity
       // Step 6: Get the inserted armour_id from result
       // Step 7: Update character's armour_id field
 
@@ -600,8 +600,7 @@ export async function getItem(itemId: number): Promise<Item> {
   return {
     id: itemId,
     name: "Placeholder Item",
-    type: "potion",
-    healAmount: 20,
+    health: 20,
     description: "A placeholder item"
   };
 }
@@ -616,7 +615,7 @@ export async function getItem(itemId: number): Promise<Item> {
  * 2. Get new item from weapons/armours/shields table (based on slot)
  * 3. If character has old item in slot, get it and subtract its stats
  * 4. Add new item stats to character
- * 5. Handle maxHealth changes proportionally (preserve health ratio)
+ * 5. Handle vitality changes proportionally (preserve health ratio)
  * 6. Update character stats AND slot field (weapon_id/armour_id/shield_id)
  *
  * Example Flow:
@@ -627,8 +626,8 @@ export async function getItem(itemId: number): Promise<Item> {
  * - Update: SET attack=22, weapon_id=2
  *
  * Health Proportions:
- * - If armor changes maxHealth, preserve current health ratio
- * - Example: 50/100 HP, +20 maxHP armor → 60/120 HP (same 50% ratio)
+ * - If armor changes vitality, preserve current health ratio
+ * - Example: 50/100 HP, +4 vitality armor → 60/120 HP (same 50% ratio)
  *
  * @param characterId - Character ID
  * @param itemId - Item ID to equip
@@ -677,7 +676,7 @@ export async function equipItem(
  */
 export async function getCurrentEnemy(
   campaignId: number
-): Promise<Enemy | null> {
+): Promise<Unit | null> {
   // Step 1: Query campaigns table for enemy_id
 
   // Step 2: If no enemy_id, return null (not in combat)
@@ -861,7 +860,7 @@ export async function processCombatRewards(
     characterName: string;
     characterStats: {
       health: number;
-      maxHealth: number;
+      vitality: number;
       attack: number;
       defense: number;
     };
@@ -883,7 +882,7 @@ export async function processCombatRewards(
       character: {
         name: context.characterName,
         health: context.characterStats.health,
-        maxHealth: context.characterStats.maxHealth,
+        vitality: context.characterStats.vitality,
         attack: context.characterStats.attack,
         defense: context.characterStats.defense
       },
@@ -946,7 +945,7 @@ export async function processCombatRewards(
       } catch (error) {
         console.error("Failed to generate regular combat rewards:", error);
         return {
-          statBoosts: [{ statType: "health", value: 5 }],
+          statBoosts: [{ statType: "vitality", value: 1 }],
           items: [],
           bonusStats: []
         };
@@ -994,10 +993,10 @@ export async function processCombatRewards(
             {
               itemType: "potion",
               itemName: "Health Potion",
-              itemStats: { healAmount: 20 }
+              itemStats: { health: 20 }
             }
           ],
-          bonusStats: [{ statType: "health", value: 5 }]
+          bonusStats: [{ statType: "vitality", value: 1 }]
         };
       }
 

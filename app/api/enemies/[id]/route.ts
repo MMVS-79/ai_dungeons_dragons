@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Enemy } from "@/lib/types/game.types";
+import type { Unit } from "@/lib/types/game.types";
 
 /**
  * GET /api/enemies/[id]
@@ -45,11 +45,11 @@ export async function GET(
       enemy: {
         id: enemyId,
         name: "Mock Dragon",
-        health: 100,
+        vitality: 20,
         attack: 15,
         defense: 8,
         spritePath: "/characters/enemy/boss/dragon.png"
-      } as Enemy
+      } as Unit
     });
 
   } catch (error) {

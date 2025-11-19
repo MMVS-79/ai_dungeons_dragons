@@ -1,0 +1,1 @@
+export const HEALTH_PER_VITALITY = 5;
