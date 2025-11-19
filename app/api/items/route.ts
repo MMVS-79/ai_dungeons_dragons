@@ -9,7 +9,7 @@ import type { Item } from "@/lib/types/game.types";
  * Purpose: Browse available items for admin panel or item reference
  * 
  * Query Parameters:
- * - type?: "potion" | "weapon" | "armor" | "shield" (filter by type)
+ * - type?: "potion" | "weapon" | "armour" | "shield" (filter by type)
  * - limit?: number (default 100)
  * - offset?: number (default 0)
  * 

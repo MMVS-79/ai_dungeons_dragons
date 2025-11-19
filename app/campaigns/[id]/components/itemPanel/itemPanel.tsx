@@ -5,7 +5,7 @@ import styles from './itemPanel.module.css';
 interface Item {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'shield' | 'potion';
+  type: 'weapon' | 'armour' | 'shield' | 'potion';
   image: string;
   attack?: number;
   defense?: number;
@@ -18,7 +18,7 @@ interface ItemPanelProps {
   inventory: Item[];
   equipped: {
     weapon?: Item;
-    armor?: Item;
+    armour?: Item;
     shield?: Item;
   };
   onUseItem: (item: Item) => void;
@@ -58,7 +58,7 @@ export default function ItemPanel({
       return `${item.name}\nHeals ${item.healAmount} HP`;
     } else if (item.type === 'weapon') {
       return `${item.name}\n+${item.attack} Attack`;
-    } else if (item.type === 'armor') {
+    } else if (item.type === 'armour') {
       return `${item.name}\n+${item.hpBonus} Max HP`;  // Changed from defense to hpBonus
     } else if (item.type === 'shield') {
       return `${item.name}\n+${item.defense} Defense`;
@@ -79,7 +79,7 @@ export default function ItemPanel({
         <div className={styles.section}>
           <h3 className={styles.sectionHeader}>Equipped</h3>
           <div className={styles.equippedGrid}>
-            {(['weapon', 'armor', 'shield'] as const).map(slot => (
+            {(['weapon', 'armour', 'shield'] as const).map(slot => (
               <div key={slot} className={styles.equippedSlot}>
                 <div className={styles.slotLabel}>{slot}</div>
                 <div className={styles.slotImage}>
@@ -138,7 +138,7 @@ export default function ItemPanel({
             <div className={styles.expandedSection}>
               <h3 className={styles.expandedSectionHeader}>⚔️ Equipped</h3>
               <div className={styles.expandedEquippedGrid}>
-                {(['weapon', 'armor', 'shield'] as const).map(slot => (
+                {(['weapon', 'armour', 'shield'] as const).map(slot => (
                   <div 
                     key={slot} 
                     className={`${styles.expandedEquippedSlot} ${equipped[slot] ? styles.hasItem : ''}`}
@@ -238,7 +238,7 @@ export default function ItemPanel({
               {selectedItem.type === 'weapon' && (
                 <p className={styles.detailStats}>Attack: +{selectedItem.attack}</p>
               )}
-              {selectedItem.type === 'armor' && (
+              {selectedItem.type === 'armour' && (
                 <p className={styles.detailStats}>Max HP: +{selectedItem.hpBonus}</p>
               )}
               {selectedItem.type === 'shield' && (
@@ -299,7 +299,7 @@ export default function ItemPanel({
               {selectedEquipment.item.type === 'weapon' && (
                 <p className={styles.detailStats}>Attack: +{selectedEquipment.item.attack}</p>
               )}
-              {selectedEquipment.item.type === 'armor' && (
+              {selectedEquipment.item.type === 'armour' && (
                 <p className={styles.detailStats}>Max HP: +{selectedEquipment.item.hpBonus}</p>
               )}
               {selectedEquipment.item.type === 'shield' && (

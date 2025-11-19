@@ -18,7 +18,7 @@
 export interface Item {
   id: number;
   name: string;
-  type: "weapon" | "armor" | "shield" | "potion";
+  type: "weapon" | "armour" | "shield" | "potion";
   image?: string;
   attack?: number;
   defense?: number;
@@ -30,7 +30,7 @@ export interface Item {
 
 export interface Equipment {
   weapon?: Item;
-  armor?: Item;
+  armour?: Item;
   shield?: Item;
 }
 
@@ -50,7 +50,7 @@ export interface Character {
   classId: number;
   campaignId: number;
   weaponId?: number;
-  armorId?: number;
+  armourId?: number;
   shieldId?: number;
 }
 

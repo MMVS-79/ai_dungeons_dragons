@@ -14,7 +14,7 @@ import type { Character, Item } from "@/lib/types/game.types";
  *   character: Character;
  *   equippedItems: {
  *     weapon?: Item;
- *     armor?: Item;
+ *     armour?: Item;
  *     shield?: Item;
  *   };
  *   inventory: Item[];
@@ -24,7 +24,7 @@ import type { Character, Item } from "@/lib/types/game.types";
  * 1. Extract character ID from URL params
  * 2. Call BackendService.getCharacter(id)
  * 3. If character has weaponId, fetch weapon via BackendService.getItem(weaponId)
- * 4. If character has armorId, fetch armor via BackendService.getItem(armorId)
+ * 4. If character has armourId, fetch armour via BackendService.getItem(armourId)
  * 5. If character has shieldId, fetch shield via BackendService.getItem(shieldId)
  * 6. Call BackendService.getInventory(id) for inventory items
  * 7. Return character with equipped items and inventory
@@ -47,7 +47,7 @@ export async function GET(
     // Step 1: Query character from database
     // Step 2: Return 404 if character not found
     // Step 3: Query equipped weapon if weaponId exists
-    // Step 4: Query equipped armor if armorId exists
+    // Step 4: Query equipped armour if armourId exists
     // Step 5: Query equipped shield if shieldId exists
     // Step 6: Query character inventory
 
@@ -70,7 +70,7 @@ export async function GET(
       } as Character,
       equippedItems: {
         weapon: null,
-        armor: null,
+        armour: null,
         shield: null
       },
       inventory: []

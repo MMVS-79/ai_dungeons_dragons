@@ -20,7 +20,7 @@ import type {
   LLMServiceConfig,
   EventTypeString,
   StatBoostResponse
-} from "@/lib/types/llm.types";
+} from "../types/llm.types";
 
 const SCENARIOS = [
   "deep dungeon chamber",
@@ -154,7 +154,7 @@ Keep descriptions vivid but concise (1-2 sentences). Events should build tension
 STAT EFFECTS RULES:
 - Health: -10 to +10 (healing/damage)
 - Attack: -5 to +5 (weapon bonuses/penalties)
-- Defense: -5 to +5 (armor/protection changes)
+- Defense: -5 to +5 (armour/protection changes)
 - Use 0 for stats that don't change
 
 CURRENT GAME STATE:
@@ -425,6 +425,7 @@ RULES:
 - Avoid multiple consecutive Descriptive events
 - Build tension toward boss encounters
 - Match event intensity to character's current health
+- start out with a few item drop events
 
 Return ONLY: {"type": "TYPE_HERE"}`;
   }
@@ -501,7 +502,7 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           itemType: {
             type: "string",
-            enum: ["weapon", "armor", "shield", "potion"]
+            enum: ["weapon", "armour", "shield", "potion"]
           },
           itemName: { type: "string" },
           itemStats: {
@@ -602,7 +603,7 @@ Generate ONE balanced item for an adventurer.
 
 Item Types:
 - weapon: Increases attack (example stats: { "attack": 5-15 })
-- armor: Increases defense (example stats: { "defense": 3-12 })
+- armour: Increases defense (example stats: { "defense": 3-12 })
 - shield: Increases defense (example stats: { "defense": 2-8 })
 - potion: Heals character (example stats: { "healAmount": 10-30 })
 
@@ -611,7 +612,7 @@ Requirements:
 - Stats should be balanced (not overpowered)
 - Consider typical D&D naming conventions
 
-Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "itemStats": {}}`;
+Return JSON: {"itemType": "weapon|armour|shield|potion", "itemName": "string", "itemStats": {}}`;
     }
 
     const { character } = context;
@@ -631,8 +632,8 @@ Generate ONE item appropriate for this character's level and situation.
 
 Item Types:
 - weapon: Increases attack (balanced for current attack ${character.attack})
-- armor: Increases defense (balanced for current defense ${character.defense})
-- shield: Increases defense (smaller bonus than armor)
+- armour: Increases defense (balanced for current defense ${character.defense})
+- shield: Increases defense (smaller bonus than armour)
 - potion: Heals character (consider current health ${healthPercentage}%)
 
 Requirements:
@@ -641,7 +642,7 @@ Requirements:
 - Scale rewards to character level (estimate from stats)
 - If health is low (< 50%), slightly favor potions
 
-Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "itemStats": {}}
+Return JSON: {"itemType": "weapon|armour|shield|potion", "itemName": "string", "itemStats": {}}
 
 Example for weapon: {"itemType": "weapon", "itemName": "Rusty Longsword", "itemStats": {"attack": 7}}
 Example for potion: {"itemType": "potion", "itemName": "Greater Health Potion", "itemStats": {"healAmount": 25}}`;

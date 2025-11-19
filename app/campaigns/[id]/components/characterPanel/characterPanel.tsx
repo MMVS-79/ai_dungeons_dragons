@@ -5,7 +5,7 @@ import styles from './characterPanel.module.css';
 interface Item {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'shield' | 'potion';
+  type: 'weapon' | 'armour' | 'shield' | 'potion';
   image: string;
   attack?: number;
   defense?: number;
@@ -24,7 +24,7 @@ interface PlayerState {
   inventory: Item[];
   equipped: {
     weapon?: Item;
-    armor?: Item;
+    armour?: Item;
     shield?: Item;
   };
 }

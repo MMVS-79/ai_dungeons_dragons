@@ -9,7 +9,7 @@ import type { Item } from "@/lib/types/game.types";
  * Purpose: Fetch all items in character's inventory for display
  *
  * Query Parameters:
- * - type?: "potion" | "weapon" | "armor" | "shield" (optional filter)
+ * - type?: "potion" | "weapon" | "armour" | "shield" (optional filter)
  *
  * Response:
  * {

@@ -15,7 +15,7 @@ interface EnemyState {
 interface Item {
   id: string;
   name: string;
-  type: "weapon" | "armor" | "shield" | "potion";
+  type: "weapon" | "armour" | "shield" | "potion";
   image: string;
   attack?: number;
   defense?: number;
@@ -70,6 +70,7 @@ export default function EventPanel({
               alt={enemyState.name}
               width={512}
               height={512}
+              unoptimized
             />
           </div>
           
@@ -103,6 +104,7 @@ export default function EventPanel({
                 alt={currentEvent.data.name}
                 width={512}
                 height={512}
+                unoptimized
               />
             </div>
             <div className={styles.itemName}>{currentEvent.data.name}</div>
@@ -121,6 +123,7 @@ export default function EventPanel({
                 alt={currentEvent.data.name}
                 width={512}
                 height={512}
+                unoptimized
               />
             </div>
             <div className={styles.itemName}>{currentEvent.data.name}</div>

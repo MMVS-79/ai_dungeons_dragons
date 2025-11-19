@@ -19,10 +19,11 @@
  * - event_number → eventNumber
  * - sprite_path → spritePath
  * - race_id/class_id/campaign_id → raceId/classId/campaignId
- * - weapon_id/armour_id/shield_id → weaponId/armorId/shieldId
+ * - weapon_id/armour_id/shield_id → weaponId/armourId/shieldId
  *
  */
 
+import pool from '../db.ts';
 import type {
   Character,
   Enemy,
@@ -30,9 +31,24 @@ import type {
   GameEvent,
   Item,
   EventTypeString
-} from "@/lib/types/game.types";
-import { LLMService } from "@/lib/services/llm.service";
-import type { LLMGameContext } from "@/lib/types/llm.types";
+} from "../types/game.types";
+
+import { LLMService } from "./llm.service.ts";
+import type { LLMGameContext } from "../types/llm.types";
+
+function parseEventData(data: any): Record<string, unknown> | undefined {
+  if (!data) return undefined;
+  if (typeof data === 'object' && data !== null) return data as Record<string, unknown>;
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      console.error('[BackendService] Failed to parse event_data:', data);
+      return undefined;
+    }
+  }
+  return undefined;
+}
 
 // Initialize LLM service for combat rewards (item drops and bonus stats)
 const llmService = new LLMService({
@@ -67,7 +83,7 @@ declare global {
  *    - class_id → classId
  *    - campaign_id → campaignId
  *    - weapon_id → weaponId
- *    - armour_id → armorId
+ *    - armour_id → armourId
  *    - shield_id → shieldId
  * 3. Return Character object
  *
@@ -75,24 +91,31 @@ declare global {
  * @returns Character data from database
  */
 export async function getCharacter(characterId: number): Promise<Character> {
-  // Step 1: Query database for character
+  const [rows] = await pool.query<any[]>(
+    'SELECT * FROM characters WHERE id = ?',
+    [characterId]
+  );
 
-  // Step 2: Map database fields to Character type
+  if (rows.length === 0) {
+    throw new Error(`Character ${characterId} not found`);
+  }
 
-  console.log(`[PLACEHOLDER] getCharacter(${characterId})`);
-
-  // MOCK DATA - Replace with actual database query
+  const row = rows[0];
+  
   return {
-    id: characterId,
-    name: "Placeholder Hero",
-    currentHealth: 50,
-    maxHealth: 50,
-    attack: 10,
-    defense: 5,
-    spritePath: "/characters/player/warrior.png",
-    raceId: 1,
-    classId: 1,
-    campaignId: 1
+    id: row.id,
+    name: row.name,
+    currentHealth: row.current_health,
+    maxHealth: row.max_health,
+    attack: row.attack,
+    defense: row.defense,
+    spritePath: row.sprite_path,
+    raceId: row.race_id,
+    classId: row.class_id,
+    campaignId: row.campaign_id,
+    weaponId: row.weapon_id,
+    armourId: row.armour_id,
+    shieldId: row.shield_id
   };
 }
 
@@ -106,7 +129,7 @@ export async function getCharacter(characterId: number): Promise<Character> {
  *    - currentHealth → current_health
  *    - maxHealth → max_health
  *    - weaponId → weapon_id
- *    - armorId → armour_id (note: armour not armor in DB)
+ *    - armourId → armour_id
  *    - shieldId → shield_id
  * 2. Build dynamic UPDATE query for provided fields only
  * 3. Query: UPDATE characters SET field1 = ?, field2 = ? WHERE id = ?
@@ -124,16 +147,31 @@ export async function updateCharacter(
   characterId: number,
   updates: Partial<Character>
 ): Promise<Character> {
-  // Step 1: Build dynamic update fields
+  // Map camelCase to snake_case
+  const dbUpdates: Record<string, any> = {};
+  
+  if (updates.currentHealth !== undefined) dbUpdates.current_health = updates.currentHealth;
+  if (updates.maxHealth !== undefined) dbUpdates.max_health = updates.maxHealth;
+  if (updates.attack !== undefined) dbUpdates.attack = updates.attack;
+  if (updates.defense !== undefined) dbUpdates.defense = updates.defense;
+  if (updates.weaponId !== undefined) dbUpdates.weapon_id = updates.weaponId;
+  if (updates.armourId !== undefined) dbUpdates.armour_id = updates.armourId;
+  if (updates.shieldId !== undefined) dbUpdates.shield_id = updates.shieldId;
 
-  // Step 2: Execute update query
+  if (Object.keys(dbUpdates).length === 0) {
+    return getCharacter(characterId);
+  }
 
-  // Step 3: Return updated character
+  // Build dynamic UPDATE query
+  const setClause = Object.keys(dbUpdates).map(key => `${key} = ?`).join(', ');
+  const values = [...Object.values(dbUpdates), characterId];
 
-  console.log(`[PLACEHOLDER] updateCharacter(${characterId})`, updates);
+  await pool.query(
+    `UPDATE characters SET ${setClause}, updated_at = NOW() WHERE id = ?`,
+    values
+  );
 
-  const character = await getCharacter(characterId);
-  return { ...character, ...updates };
+  return getCharacter(characterId);
 }
 
 // ============================================================================
@@ -155,20 +193,23 @@ export async function updateCharacter(
  * @returns Enemy data
  */
 export async function getEnemy(enemyId: number): Promise<Enemy> {
-  // Step 1: Query database for enemy
+  const [rows] = await pool.query<any[]>(
+    'SELECT * FROM enemies WHERE id = ?',
+    [enemyId]
+  );
 
-  // Step 2: Map database fields to Enemy type
+  if (rows.length === 0) {
+    throw new Error(`Enemy ${enemyId} not found`);
+  }
 
-  console.log(`[PLACEHOLDER] getEnemy(${enemyId})`);
-
-  // MOCK DATA - Replace with actual database query
+  const row = rows[0];
   return {
-    id: enemyId,
-    name: "Placeholder Dragon",
-    health: 100,
-    attack: 15,
-    defense: 8,
-    spritePath: "/characters/enemy/boss/dragon.png"
+    id: row.id,
+    name: row.name,
+    health: row.health,
+    attack: row.attack,
+    defense: row.defense,
+    spritePath: row.sprite_path
   };
 }
 
@@ -187,15 +228,24 @@ export async function getEnemy(enemyId: number): Promise<Enemy> {
  * @returns Random enemy matching criteria
  */
 export async function getRandomEnemy(difficulty?: string): Promise<Enemy> {
-  // Step 1: Build query based on difficulty parameter
+  // For now, just get a random non-boss enemy
+  const [rows] = await pool.query<any[]>(
+    'SELECT * FROM enemies WHERE is_boss = 0 ORDER BY RAND() LIMIT 1'
+  );
 
-  // Step 2: Execute query and get random enemy
+  if (rows.length === 0) {
+    throw new Error('No enemies found in database');
+  }
 
-  // Step 3: Map to Enemy type and return
-
-  console.log(`[PLACEHOLDER] getRandomEnemy(${difficulty})`);
-
-  return getEnemy(1);
+  const row = rows[0];
+  return {
+    id: row.id,
+    name: row.name,
+    health: row.health,
+    attack: row.attack,
+    defense: row.defense,
+    spritePath: row.sprite_path
+  };
 }
 
 // ============================================================================
@@ -220,21 +270,24 @@ export async function getRandomEnemy(difficulty?: string): Promise<Enemy> {
  * @returns Campaign data
  */
 export async function getCampaign(campaignId: number): Promise<Campaign> {
-  // Step 1: Query database for campaign
+  const [rows] = await pool.query<any[]>(
+    'SELECT * FROM campaigns WHERE id = ?',
+    [campaignId]
+  );
 
-  // Step 2: Map database fields to Campaign type
+  if (rows.length === 0) {
+    throw new Error(`Campaign ${campaignId} not found`);
+  }
 
-  console.log(`[PLACEHOLDER] getCampaign(${campaignId})`);
-
-  // MOCK DATA - Replace with actual database query
+  const row = rows[0];
   return {
-    id: campaignId,
-    accountId: 1,
-    name: "Placeholder Campaign",
-    description: "A placeholder campaign",
-    state: "active",
-    createdAt: new Date(),
-    updatedAt: new Date()
+    id: row.id,
+    accountId: row.account_id,
+    name: row.name,
+    description: row.description,
+    state: row.state,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at)
   };
 }
 
@@ -259,16 +312,25 @@ export async function updateCampaign(
   campaignId: number,
   updates: Partial<Campaign>
 ): Promise<Campaign> {
-  // Step 1: Build dynamic update fields
+  const dbUpdates: Record<string, any> = {};
+  
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.state !== undefined) dbUpdates.state = updates.state;
 
-  // Step 2: Execute update query
+  if (Object.keys(dbUpdates).length === 0) {
+    return getCampaign(campaignId);
+  }
 
-  // Step 3: Return updated campaign
+  const setClause = Object.keys(dbUpdates).map(key => `${key} = ?`).join(', ');
+  const values = [...Object.values(dbUpdates), campaignId];
 
-  console.log(`[PLACEHOLDER] updateCampaign(${campaignId})`, updates);
+  await pool.query(
+    `UPDATE campaigns SET ${setClause}, updated_at = NOW() WHERE id = ?`,
+    values
+  );
 
-  const campaign = await getCampaign(campaignId);
-  return { ...campaign, ...updates };
+  return getCampaign(campaignId);
 }
 
 /**
@@ -287,14 +349,32 @@ export async function updateCampaign(
  * @param campaignId - Campaign ID
  * @returns Character data for this campaign
  */
-export async function getCharacterByCampaign(
-  campaignId: number
-): Promise<Character> {
-  // Step 1: Query for character by campaign_id
-  // Step 2: Map database fields (same as getCharacter mapping)
-  console.log(`[PLACEHOLDER] getCharacterByCampaign(${campaignId})`);
+export async function getCharacterByCampaign(campaignId: number): Promise<Character> {
+  const [rows] = await pool.query<any[]>(
+    'SELECT * FROM characters WHERE campaign_id = ? LIMIT 1',
+    [campaignId]
+  );
 
-  return getCharacter(1);
+  if (rows.length === 0) {
+    throw new Error(`No character found for campaign ${campaignId}`);
+  }
+
+  const row = rows[0];
+  return {
+    id: row.id,
+    name: row.name,
+    currentHealth: row.current_health,
+    maxHealth: row.max_health,
+    attack: row.attack,
+    defense: row.defense,
+    spritePath: row.sprite_path,
+    raceId: row.race_id,
+    classId: row.class_id,
+    campaignId: row.campaign_id,
+    weaponId: row.weapon_id,
+    armourId: row.armour_id,
+    shieldId: row.shield_id
+  };
 }
 
 // ============================================================================
@@ -320,14 +400,13 @@ export async function getCharacterByCampaign(
  * @returns Next event number (starts at 1)
  */
 async function getNextEventNumber(campaignId: number): Promise<number> {
-  // Step 1: Query for max event_number in this campaign
+  const [rows] = await pool.query<any[]>(
+    'SELECT MAX(event_number) as maxNum FROM logs WHERE campaign_id = ?',
+    [campaignId]
+  );
 
-  // Step 2: Get max number (will be NULL if no events exist)
-
-  // Step 3: Return next sequential number
-
-  console.log(`[PLACEHOLDER] getNextEventNumber(${campaignId})`);
-  return 1; // Placeholder: always return 1 for now
+  const maxNum = rows[0]?.maxNum;
+  return (maxNum || 0) + 1;
 }
 
 /**
@@ -361,28 +440,23 @@ export async function saveEvent(
   eventType: EventTypeString,
   eventData?: Record<string, unknown>
 ): Promise<GameEvent> {
-  // Step 1: Get next sequential event number
   const eventNumber = await getNextEventNumber(campaignId);
+  
+  // ✅ FIX: Stringify eventData for INSERT
+  const eventDataJson = eventData ? JSON.stringify(eventData) : null;
 
-  // Step 2: Insert event into logs table
+  const [result] = await pool.query<any>(
+    'INSERT INTO logs (campaign_id, message, event_number, event_type, event_data) VALUES (?, ?, ?, ?, ?)',
+    [campaignId, message, eventNumber, eventType, eventDataJson]  // ← Use stringified version
+  );
 
-  // Step 3: Return saved event with generated ID and timestamp
-
-  console.log(`[PLACEHOLDER] saveEvent(${campaignId})`, {
-    message,
-    eventNumber,
-    eventType,
-    eventData
-  });
-
-  // MOCK DATA - Replace with actual database insert
   return {
-    id: Math.floor(Math.random() * 1000),
+    id: result.insertId,
     campaignId,
     message,
     eventNumber,
     eventType,
-    eventData,
+    eventData,  // Return original object
     createdAt: new Date()
   };
 }
@@ -409,13 +483,20 @@ export async function getRecentEvents(
   campaignId: number,
   limit: number = 10
 ): Promise<GameEvent[]> {
-  // Step 1: Query recent events with limit
+  const [rows] = await pool.query<any[]>(
+    'SELECT * FROM logs WHERE campaign_id = ? ORDER BY event_number DESC LIMIT ?',
+    [campaignId, limit]
+  );
 
-  // Step 2: Map each row to GameEvent type
-
-  console.log(`[PLACEHOLDER] getRecentEvents(${campaignId}, ${limit})`);
-
-  return [];
+  return rows.map(row => ({
+    id: row.id,
+    campaignId: row.campaign_id,
+    message: row.message,
+    eventNumber: row.event_number,
+    eventType: row.event_type as EventTypeString,
+    eventData: parseEventData(row.event_data),
+    createdAt: new Date(row.created_at)
+  }));
 }
 
 // ============================================================================
@@ -461,7 +542,7 @@ export async function getInventory(characterId: number): Promise<Item[]> {
  * Implementation:
  * 1. Check itemType to determine target table
  * 2. Insert item into appropriate table (weapons/armours/shields/items)
- * 3. For equipment (weapon/armor/shield): Update character's slot field
+ * 3. For equipment (weapon/armour/shield): Update character's slot field
  * 4. For consumables (potion): Add to character_items join table
  * 5. Handle stat mapping (attack → weapons, defense → shields, etc.)
  *
@@ -488,13 +569,13 @@ export async function addItemToInventory(
       );
       break;
 
-    case "armor":
+    case "armour":
       // Step 5: Insert into armours table with name, health (max_health bonus), and default rarity
       // Step 6: Get the inserted armour_id from result
       // Step 7: Update character's armour_id field
 
       console.log(
-        `[PLACEHOLDER] addItemToInventory - Armor: ${
+        `[PLACEHOLDER] addItemToInventory - Armour: ${
           item.itemName
         } (defense/hp: ${item.itemStats.defense || item.itemStats.hpBonus})`
       );
@@ -607,23 +688,23 @@ export async function getItem(itemId: number): Promise<Item> {
  * - Update: SET attack=22, weapon_id=2
  *
  * Health Proportions:
- * - If armor changes maxHealth, preserve current health ratio
- * - Example: 50/100 HP, +20 maxHP armor → 60/120 HP (same 50% ratio)
+ * - If armour changes maxHealth, preserve current health ratio
+ * - Example: 50/100 HP, +20 maxHP armour → 60/120 HP (same 50% ratio)
  *
  * @param characterId - Character ID
  * @param itemId - Item ID to equip
- * @param slot - Equipment slot ("weapon"|"armor"|"shield")
+ * @param slot - Equipment slot ("weapon"|"armour"|"shield")
  */
 export async function equipItem(
   characterId: number,
   itemId: number,
-  slot: "weapon" | "armor" | "shield"
+  slot: "weapon" | "armour" | "shield"
 ): Promise<void> {
   // Step 1: Get current character data from database
 
   // Step 2: Get new item data from items table
 
-  // Step 3: Determine which slot field to update (weaponId/armorId/shieldId)
+  // Step 3: Determine which slot field to update (weaponId/armourId/shieldId)
 
   // Step 4: If character has old item in slot, get it and subtract its stats
 
@@ -655,18 +736,7 @@ export async function equipItem(
  * @param campaignId - Campaign ID
  * @returns Current enemy or null if not in combat
  */
-export async function getCurrentEnemy(
-  campaignId: number
-): Promise<Enemy | null> {
-  // Step 1: Query campaigns table for enemy_id
-
-  // Step 2: If no enemy_id, return null (not in combat)
-
-  // Step 3: Fetch enemy details
-
-  console.log(`[PLACEHOLDER] getCurrentEnemy(${campaignId})`);
-
-  // Temporary in-memory storage (replace with DB)
+export async function getCurrentEnemy(campaignId: number): Promise<Enemy | null> {
   if (!global.currentEnemies) {
     global.currentEnemies = new Map<number, number>();
   }
@@ -701,9 +771,17 @@ export async function setCurrentEnemy(
   campaignId: number,
   enemyId: number | null
 ): Promise<void> {
-  // Step 1: Update campaigns table with enemy_id
+  if (!global.currentEnemies) {
+    global.currentEnemies = new Map<number, number>();
+  }
 
-  console.log(`[PLACEHOLDER] setCurrentEnemy(${campaignId}, ${enemyId})`);
+  if (enemyId === null) {
+    global.currentEnemies.delete(campaignId);
+  } else {
+    global.currentEnemies.set(campaignId, enemyId);
+  }
+  
+  console.log(`[BackendService] setCurrentEnemy(${campaignId}, ${enemyId})`);
 }
 
 // ============================================================================
@@ -734,16 +812,11 @@ export async function setPendingEvent(
   campaignId: number,
   eventType: EventTypeString
 ): Promise<void> {
-  // Step 1: Update campaigns table with pending event type
-
-  console.log(`[PLACEHOLDER] setPendingEvent(${campaignId}, ${eventType})`);
-
-  // Temporary in-memory storage (replace with DB)
   if (!global.pendingEvents) {
     global.pendingEvents = new Map<number, string>();
   }
-
   global.pendingEvents.set(campaignId, eventType);
+  console.log(`[BackendService] setPendingEvent(${campaignId}, ${eventType})`);
 }
 
 /**
@@ -762,18 +835,11 @@ export async function setPendingEvent(
 export async function getPendingEvent(
   campaignId: number
 ): Promise<EventTypeString | null> {
-  // Step 1: Query campaigns table for pending_event_type
-
-  // Step 2: Return event type or null
-
-  console.log(`[PLACEHOLDER] getPendingEvent(${campaignId})`);
-
-  // Temporary in-memory storage (replace with DB)
   if (!global.pendingEvents) {
     global.pendingEvents = new Map<number, string>();
   }
-
   const eventType = global.pendingEvents.get(campaignId);
+  console.log(`[BackendService] getPendingEvent(${campaignId}) = ${eventType || 'null'}`);
   return (eventType as EventTypeString | undefined) || null;
 }
 
@@ -794,9 +860,11 @@ export async function getPendingEvent(
  * @param campaignId - Campaign ID
  */
 export async function clearPendingEvent(campaignId: number): Promise<void> {
-  // Step 1: Set pending_event_type to NULL in campaigns table
-
-  console.log(`[PLACEHOLDER] clearPendingEvent(${campaignId})`);
+  if (!global.pendingEvents) {
+    global.pendingEvents = new Map<number, string>();
+  }
+  global.pendingEvents.delete(campaignId);
+  console.log(`[BackendService] clearPendingEvent(${campaignId})`);
 }
 
 // ============================================================================
