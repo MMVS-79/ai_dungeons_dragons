@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS items;
 CREATE TABLE items (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL UNIQUE,
-    health INT NOT NULL,
+    vitality INT NOT NULL,
     description TEXT,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

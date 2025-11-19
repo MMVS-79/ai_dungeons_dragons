@@ -21,6 +21,7 @@ import type {
   EventTypeString,
   StatBoostResponse
 } from "@/lib/types/llm.types";
+import { HEALTH_PER_VITALITY } from "../contants";
 
 const SCENARIOS = [
   "deep dungeon chamber",
@@ -42,37 +43,6 @@ const EVENT_TRIGGERS = [
   "during a moment of quiet",
   "as you approach a door",
   "while examining the area"
-];
-
-const FALLBACK_EVENTS: LLMEvent[] = [
-  {
-    event:
-      "You notice ancient runes glowing faintly on the walls, their meaning lost to time.",
-    type: "Descriptive",
-    effects: { health: 0, attack: 0, defense: 0 }
-  },
-  {
-    event:
-      "A health potion falls from a crumbling shelf. You catch it just in time!",
-    type: "Item_Drop",
-    effects: { health: 5, attack: 0, defense: 0 }
-  },
-  {
-    event:
-      "You find an old shield leaning against the wall. It's still sturdy.",
-    type: "Item_Drop",
-    effects: { health: 0, attack: 0, defense: 3 }
-  },
-  {
-    event: "A sudden chill fills the air. You feel weakened by dark magic.",
-    type: "Environmental",
-    effects: { health: -5, attack: -2, defense: 0 }
-  },
-  {
-    event: "You discover a blessed fountain. Its waters restore your vitality!",
-    type: "Environmental",
-    effects: { health: 10, attack: 0, defense: 0 }
-  }
 ];
 
 export class LLMService {
@@ -104,7 +74,11 @@ export class LLMService {
       return event;
     } catch (error) {
       console.error("LLM generation failed:", error);
-      return this.getFallbackEvent();
+      return {
+        event: "An unexpected error occurred. The adventure pauses momentarily.",
+        type: "Descriptive",
+        effects: { health: 0, attack: 0, defense: 0 }
+      };
     }
   }
 
@@ -158,7 +132,7 @@ STAT EFFECTS RULES:
 - Use 0 for stats that don't change
 
 CURRENT GAME STATE:
-- Character: ${character.name} (HP: ${character.health}/${character.maxHealth}, ATK: ${character.attack}, DEF: ${character.defense})
+- Character: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}, ATK: ${character.attack}, DEF: ${character.defense})
 - Enemy: ${enemy.name} (HP: ${enemy.health}, ATK: ${enemy.attack}, DEF: ${enemy.defense})
 
 RECENT EVENTS (what happened before):
@@ -250,13 +224,6 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
       console.error("Failed to parse LLM response:", error);
       throw error;
     }
-  }
-
-  /**
-   * Returns a random fallback event if API fails
-   */
-  private getFallbackEvent(): LLMEvent {
-    return this.getRandomItem(FALLBACK_EVENTS);
   }
 
   /**
@@ -409,7 +376,7 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
     return `You are a D&D Dungeon Master. Decide what TYPE of event happens next.
 
 CURRENT STATE:
-- Character: ${character.name} (HP: ${character.health}/${character.maxHealth}, ATK: ${character.attack}, DEF: ${character.defense})
+- Character: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}, ATK: ${character.attack}, DEF: ${character.defense})
 - Enemy: ${enemy.name} (HP: ${enemy.health})
 
 RECENT EVENTS:
@@ -442,7 +409,7 @@ Return ONLY: {"type": "TYPE_HERE"}`;
 
     return `You are a D&D Dungeon Master. Generate a vivid description for a ${eventType} event.
 
-CHARACTER: ${character.name} (HP: ${character.health}/${character.maxHealth})
+CHARACTER: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY})
 LOCATION: ${finalScenario}
 CONTEXT: ${finalTrigger}
 
@@ -464,7 +431,7 @@ Return JSON: {"description": "your description here"}`;
     return `You are a D&D Dungeon Master deciding stat modifications for a ${eventType} event.
 
 CHARACTER STATE:
-- HP: ${character.health}/${character.maxHealth}
+- HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}
 - Attack: ${character.attack}
 - Defense: ${character.defense}
 
@@ -547,7 +514,7 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
    * @returns Bonus stat type and value
    */
   public async bonusStatRequest(context?: LLMGameContext): Promise<{
-    statType: "health" | "attack" | "defense";
+    statType: "vitality" | "attack" | "defense";
     value: number;
   }> {
     try {
@@ -559,7 +526,7 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           statType: {
             type: "string",
-            enum: ["health", "attack", "defense"]
+            enum: ["vitality", "attack", "defense"]
           },
           value: {
             type: "number",
@@ -575,19 +542,19 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
 
       if (!parsed.statType || parsed.value === undefined) {
         console.error("Invalid bonus stat response:", parsed);
-        return { statType: "health", value: 5 };
+        return { statType: "vitality", value: 1 };
       }
 
       // Clamp value to 2-10 range
       const clampedValue = Math.min(Math.max(parsed.value, 2), 10);
 
       return {
-        statType: parsed.statType as "health" | "attack" | "defense",
+        statType: parsed.statType as "vitality" | "attack" | "defense",
         value: clampedValue
       };
     } catch (error) {
       console.error("Failed to generate bonus stat:", error);
-      return { statType: "health", value: 5 };
+      return { statType: "vitality", value: 1 };
     }
   }
 
@@ -616,14 +583,14 @@ Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "i
 
     const { character } = context;
     const healthPercentage = Math.round(
-      (character.health / character.maxHealth) * 100
+      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
     );
 
     return `You are a D&D dungeon master distributing loot.
 
 Character: ${character.name}
 Current Stats:
-- Health: ${character.health}/${character.maxHealth} (${healthPercentage}%)
+- Health: ${character.health}/${character.vitality * HEALTH_PER_VITALITY} (${healthPercentage}%)
 - Attack: ${character.attack}
 - Defense: ${character.defense}
 
@@ -662,14 +629,14 @@ Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
 
     const { character } = context;
     const healthPercentage = Math.round(
-      (character.health / character.maxHealth) * 100
+      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
     );
 
     return `You are a D&D dungeon master rewarding exceptional performance.
 
 Character: ${character.name}
 Current Stats:
-- Health: ${character.health}/${character.maxHealth} (${healthPercentage}%)
+- Vitality: ${character.vitality}
 - Attack: ${character.attack}
 - Defense: ${character.defense}
 

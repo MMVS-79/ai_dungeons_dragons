@@ -41,7 +41,7 @@ export interface LLMGameContext {
   character: {
     name: string;
     health: number;
-    maxHealth: number;
+    vitality: number;
     attack: number;
     defense: number;
   };

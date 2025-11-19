@@ -2,22 +2,22 @@
 INSERT INTO accounts (email) VALUES ('admin@example.com');
 
 -- Seed enemies
-INSERT INTO enemies (name, health, attack, defense, sprite_path, is_boss) VALUES
-('Goblin', 30, 5, 2, 'sprites/goblin.png', 0),
-('Orc', 50, 10, 5, 'sprites/orc.png', 0),
-('Dragon', 200, 25, 15, 'sprites/dragon.png', 1);
+INSERT INTO enemies (name, vitality, attack, defense, sprite_path, is_boss) VALUES
+('Goblin', 6, 5, 2, 'sprites/goblin.png', 0),
+('Orc', 10, 10, 5, 'sprites/orc.png', 0),
+('Dragon', 40, 25, 15, 'sprites/dragon.png', 1);
 
 -- Seed Races
-INSERT INTO races (name, health, attack, defense, sprite_path) VALUES
-('Human', 100, 10, 10, 'sprites/human.png'),
-('Elf', 80, 15, 5, 'sprites/elf.png'),
-('Dwarf', 120, 8, 15, 'sprites/dwarf.png');
+INSERT INTO races (name, vitality, attack, defense, sprite_path) VALUES
+('Human', 20, 10, 10, 'sprites/human.png'),
+('Elf', 16, 15, 5, 'sprites/elf.png'),
+('Dwarf', 24, 8, 15, 'sprites/dwarf.png');
 
 -- Seed Classes
-INSERT INTO classes (name, health, attack, defense, sprite_path) VALUES
-('Warrior', 120, 15, 10, 'sprites/warrior.png'),
-('Mage', 70, 25, 5, 'sprites/mage.png'),
-('Rogue', 90, 20, 8, 'sprites/rogue.png');
+INSERT INTO classes (name, vitality, attack, defense, sprite_path) VALUES
+('Warrior', 24, 15, 10, 'sprites/warrior.png'),
+('Mage', 14, 25, 5, 'sprites/mage.png'),
+('Rogue', 18, 20, 8, 'sprites/rogue.png');
 
 -- Seed Items
 INSERT INTO items (name, health, description, sprite_path) VALUES
