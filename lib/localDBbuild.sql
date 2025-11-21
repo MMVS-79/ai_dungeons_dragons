@@ -1,3 +1,4 @@
+-- localDBbuild.sql (UPDATED)
 -- temporary workaround to create local db with tables
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -78,65 +79,71 @@ CREATE TABLE classes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-
 DROP TABLE IF EXISTS armours;
 CREATE TABLE armours (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    rarity INT NOT NULL,
     health INT NOT NULL,
-    rarity INT NOT NULL UNIQUE,
     description TEXT,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_rarity (rarity)
 );
 
 DROP TABLE IF EXISTS weapons;
 CREATE TABLE weapons (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    rarity INT NOT NULL,
     attack INT NOT NULL,
-    rarity INT NOT NULL UNIQUE,
     description TEXT,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_rarity (rarity)
 );
 
 DROP TABLE IF EXISTS shields;
 CREATE TABLE shields (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    rarity INT NOT NULL,
     defense INT NOT NULL,
-    rarity INT NOT NULL UNIQUE,
     description TEXT,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_rarity (rarity)
 );
 
 DROP TABLE IF EXISTS enemies;
 CREATE TABLE enemies (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    difficulty INT NOT NULL,
     health INT NOT NULL,
     attack INT NOT NULL,
     defense INT NOT NULL,
-    is_boss BOOLEAN NOT NULL,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_difficulty (difficulty)
 );
 
 DROP TABLE IF EXISTS items;
 CREATE TABLE items (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL UNIQUE,
-    health INT NOT NULL,
+    rarity INT NOT NULL,
+    stat_modified VARCHAR(50) NOT NULL, -- 'health', 'attack', 'defense'
+    stat_value INT NOT NULL, -- Can be positive or negative
     description TEXT,
     sprite_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_rarity (rarity)
 );
 
 DROP TABLE IF EXISTS characters;
@@ -159,9 +166,9 @@ CREATE TABLE characters (
     FOREIGN KEY (race_id) REFERENCES races (id) ON DELETE RESTRICT,
     FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE RESTRICT,
     FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE,
-    FOREIGN KEY (armour_id) REFERENCES armours (id) ON DELETE RESTRICT,
-    FOREIGN KEY (weapon_id) REFERENCES weapons (id) ON DELETE RESTRICT,
-    FOREIGN KEY (shield_id) REFERENCES shields (id) ON DELETE RESTRICT
+    FOREIGN KEY (armour_id) REFERENCES armours (id) ON DELETE SET NULL,
+    FOREIGN KEY (weapon_id) REFERENCES weapons (id) ON DELETE SET NULL,
+    FOREIGN KEY (shield_id) REFERENCES shields (id) ON DELETE SET NULL
 );
 
 DROP TABLE IF EXISTS character_items;
@@ -176,4 +183,3 @@ CREATE TABLE character_items (
 );
 
 SET FOREIGN_KEY_CHECKS = 1;
-

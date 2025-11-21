@@ -47,7 +47,7 @@ export default function EventPanel({
   enemyState 
 }: EventPanelProps) {
   // Don't show panel if no event
-  if (currentEvent.type === null || currentEvent.type === 'story') {
+  if (!currentEvent || currentEvent.type === null || currentEvent.type === 'story') {
     return (
       <div className={styles.panel}>
         <h2 className={styles.header}>📜 Current Status</h2>

@@ -1,14 +1,8 @@
 /**
- * Game Types
- * ----------
- * Shared TypeScript interfaces used by the GameEngine and related services.
- * Ensures consistent data structures between Backend, LLMService, and WebClient.
- * 
- * These types directly support:
- *  - game.service.ts (GameService orchestrator)
- *  - llm.service.ts
- *  - DB schema (campaigns, characters, enemies, events)
- *  - Frontend panels (eventPanel.tsx, characterPanel.tsx)
+ * Game Types (UPDATED FOR NEW ARCHITECTURE)
+ * ------------------------------------------
+ * Updated for investigation prompts, forced event engagement,
+ * combat snapshots, and temporary item buffs
  */
 
 // ============================================================================
@@ -18,20 +12,44 @@
 export interface Item {
   id: number;
   name: string;
-  type: "weapon" | "armour" | "shield" | "potion";
-  image?: string;
-  attack?: number;
-  defense?: number;
-  hpBonus?: number;
-  healAmount?: number;
+  rarity: number;
+  statModified: 'health' | 'attack' | 'defense';
+  statValue: number; // Positive = buff, Negative = curse
   description?: string;
-  rarity?: number;
+  spritePath?: string;
 }
 
 export interface Equipment {
-  weapon?: Item;
-  armour?: Item;
-  shield?: Item;
+  weapon?: Weapon;
+  armour?: Armour;
+  shield?: Shield;
+}
+
+export interface Weapon {
+  id: number;
+  name: string;
+  rarity: number;
+  attack: number;
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Armour {
+  id: number;
+  name: string;
+  rarity: number;
+  health: number; // Max HP bonus
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Shield {
+  id: number;
+  name: string;
+  rarity: number;
+  defense: number;
+  description?: string;
+  spritePath?: string;
 }
 
 // ============================================================================
@@ -57,6 +75,7 @@ export interface Character {
 export interface Enemy {
   id: number;
   name: string;
+  difficulty: number;
   health: number;
   attack: number;
   defense: number;
@@ -80,40 +99,45 @@ export interface Campaign {
 export interface GameState {
   campaign: Campaign;
   character: Character;
+  inventory: Item[];
+  equipment: Equipment;
   enemy: Enemy | null;
   recentEvents: GameEvent[];
   currentPhase: GamePhase;
-  pendingEvent?: {
-    eventType: string;      // "Descriptive", "Environmental", "Combat", "Item_Drop"
-    displayMessage?: string; // Optional preview message
+  investigationPrompt?: {
+    eventType: EventTypeString;
+    message: string; // "Something stirs in the environment..."
+  };
+  // Combat-specific state (only present during combat)
+  combatState?: {
+    enemyCurrentHp: number;
+    temporaryBuffs: {
+      attack: number;
+      defense: number;
+    };
   };
 }
 
 export type GamePhase = 
-  | "exploration"   // Player exploring, no active combat
-  | "combat"        // Active combat with enemy
-  | "item_choice"   // Player choosing whether to pick up item
-  | "event_choice"  // Player choosing to accept/reject event
-  | "game_over"     // Character died
-  | "victory";      // Player won
+  | "exploration"           // Normal exploration (Continue Forward)
+  | "investigation_prompt"  // Asking to investigate (Yes/No)
+  | "combat"                // Active combat
+  | "game_over"
+  | "victory";
 
-// Event type strings for game events
 export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
 
 // ============================================================================
-// ACTION TYPES
+// ACTION TYPES (UPDATED)
 // ============================================================================
 
 export type ActionType =
-  | "continue"          // Continue exploring
-  | "search"            // Search for items
-  | "attack"            // Attack enemy
-  | "use_item"          // Use item from inventory
-  | "pickup_item"       // Pick up item
-  | "reject_item"       // Reject item
-  | "equip_item"        // Equip item
-  | "accept_event"      // Accept pending event
-  | "reject_event";     // Reject pending event
+  | "continue"              // Generate next event
+  | "investigate"           // Accept investigation
+  | "decline"               // Decline investigation
+  | "attack"                // Combat attack
+  | "flee"                  // Combat flee
+  | "use_item_combat";      // Use item during combat
 
 export interface PlayerAction {
   campaignId: number;
@@ -121,7 +145,7 @@ export interface PlayerAction {
   actionData?: {
     itemId?: number;
     targetId?: number;
-    [key: string]: unknown;
+    diceRoll?: number;
   };
 }
 
@@ -129,9 +153,24 @@ export interface PlayerAction {
 // COMBAT TYPES
 // ============================================================================
 
-export interface CombatAction {
-  type: "attack" | "use_item";
-  itemId?: number;
+export interface CombatSnapshot {
+  campaignId: number;
+  enemy: Enemy;
+  enemyCurrentHp: number;
+  characterSnapshot: {
+    id: number;
+    currentHealth: number;
+    maxHealth: number;
+    baseAttack: number;
+    baseDefense: number;
+  };
+  inventorySnapshot: Item[];
+  temporaryBuffs: {
+    attack: number;
+    defense: number;
+  };
+  combatLog: string[];
+  startedAt: Date;
 }
 
 export interface CombatResult {
@@ -184,5 +223,6 @@ export interface GameServiceResponse {
   message: string;
   choices?: string[];
   combatResult?: CombatResult;
+  itemFound?: Item | Weapon | Armour | Shield | null;
   error?: string;
 }

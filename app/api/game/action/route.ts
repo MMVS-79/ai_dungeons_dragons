@@ -2,36 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
 import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
 
-// Initialize GameService with API key
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
 
-/**
- * POST /api/game/action
- * Main game action endpoint - processes player actions through GameService
- * 
- * Request body: PlayerAction
- * {
- *   campaignId: number;
- *   actionType: "continue" | "search" | "attack" | "use_item" | etc;
- *   actionData?: { itemId?: number; targetId?: number };
- * }
- * 
- * Response: GameServiceResponse
- * {
- *   success: boolean;
- *   gameState: GameState;
- *   message: string;
- *   choices?: string[];
- *   combatResult?: CombatResult;
- *   error?: string;
- * }
- */
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
     const body = await request.json();
     
-    // Validate required fields
     if (!body.campaignId || !body.actionType) {
       return NextResponse.json(
         { 
@@ -42,7 +18,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Construct PlayerAction
     const action: PlayerAction = {
       campaignId: body.campaignId,
       actionType: body.actionType,
@@ -52,14 +27,11 @@ export async function POST(request: NextRequest) {
     // Validate actionType
     const validActionTypes = [
       "continue",
-      "search",
+      "investigate",
+      "decline",
       "attack",
-      "use_item",
-      "pickup_item",
-      "reject_item",
-      "equip_item",
-      "accept_event",
-      "reject_event",
+      "flee",
+      "use_item_combat",
     ];
 
     if (!validActionTypes.includes(action.actionType)) {
@@ -74,13 +46,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] Processing action: ${action.actionType} for campaign ${action.campaignId}`);
 
-    // Call GameService
     const result: GameServiceResponse = await gameService.processPlayerAction(action);
 
-    // Log result for debugging
     console.log(`[API] Action result: success=${result.success}, phase=${result.gameState.currentPhase}`);
 
-    // Return response
     return NextResponse.json(result, {
       status: result.success ? 200 : 500,
     });
@@ -115,7 +84,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate campaign state
     const validation = await gameService.validateGameState(parseInt(campaignId));
 
     return NextResponse.json({
@@ -135,4 +103,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
