@@ -4,13 +4,16 @@
  * Handles all LLM-based event generation and context tracking.
  *
  * Responsibilities:
- * - generateEvent(context): Sends current character + recent events to model.
- * - parseLLMResponse(): Extracts event text, type, and effects.
- * - logLLMEvent(): Saves model outputs into logs table for traceability.
+ * - generateEventType(): Determines the type of event (Descriptive, Combat, etc.) based on context.
+ * - generateDescription(): Generates narrative text for specific events.
+ * - requestStatBoost(): Calculates dynamic stat changes for environmental/combat events.
+ * - RequestItemDrop(): Generates balanced items for loot.
+ * - bonusStatRequest(): Generates rewards for critical successes.
  *
  * Interacts With:
- * - gameEngine.service.ts → for next-event requests.
- * - DB (logs.sql) → saves and retrieves LLM responses.
+ * - Google Gemini API (via @google/genai)
+ * - game.service.ts (called to generate content)
+ * - Event_type.ts (called to handle specific event logic)
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -58,91 +61,6 @@ export class LLMService {
     this.temperature = config.temperature ?? 0.8;
     this.maxOutputTokens = config.maxOutputTokens ?? 500;
     this.thinkingBudget = config.thinkingBudget ?? 0;
-  }
-
-  /**
-   * Generates a D&D event based on game context with history
-   * @param context - Current game state and previous events
-   * @returns Generated event with type and effects
-   */
-  async generateEvent(context: LLMGameContext): Promise<LLMEvent> {
-    try {
-      const prompt = this.buildPrompt(context);
-      const response = await this.callGemini(prompt);
-      const event = this.parseResponse(response);
-
-      return event;
-    } catch (error) {
-      console.error("LLM generation failed:", error);
-      return {
-        event: "An unexpected error occurred. The adventure pauses momentarily.",
-        type: "Descriptive",
-        effects: { health: 0, attack: 0, defense: 0 }
-      };
-    }
-  }
-
-  /**
-   * Builds the prompt with game context and history
-   * Incorporates previous events for narrative continuity
-   */
-  private buildPrompt(context: LLMGameContext): string {
-    const { character, enemy, recentEvents, scenario, trigger } = context;
-
-    // Use provided or random scenario/trigger
-    const finalScenario = scenario || this.getRandomItem(SCENARIOS);
-    const finalTrigger = trigger || this.getRandomItem(EVENT_TRIGGERS);
-
-    // Build context from previous events WITH stat changes
-    const eventHistory =
-      recentEvents.length > 0
-        ? recentEvents
-            .map((event, i) => {
-              const effectsStr = this.formatEffects(event.effects);
-              return `${i + 1}. ${event.description} [${event.type}${
-                effectsStr ? `, ${effectsStr}` : ""
-              }]`;
-            })
-            .join("\n")
-        : "(No previous events - this is the beginning of the adventure)";
-
-    return `You are a D&D game master. Here are the rules for our game:
-
-GAME MECHANICS:
-- Characters have: Health, Attack, Defense stats
-- Characters can equip items that modify these stats
-- Players face bosses as main encounters
-- Before bosses, random events occur that can:
-  * Apply stat modifiers (temporary/permanent)
-  * Drop/pickup items
-  * Create environmental challenges
-
-EVENT TYPES:
-- Descriptive: Story/flavor events (effects should be 0,0,0)
-- Combat: Direct combat scenarios (may have negative effects)
-- Environmental: Environmental hazards or benefits (can affect any stats)
-- Item_Drop: Items found or lost (usually positive effects)
-
-Keep descriptions vivid but concise (1-2 sentences). Events should build tension before boss encounters.
-
-STAT EFFECTS RULES:
-- Health: -10 to +10 (healing/damage)
-- Attack: -5 to +5 (weapon bonuses/penalties)
-- Defense: -5 to +5 (armor/protection changes)
-- Use 0 for stats that don't change
-
-CURRENT GAME STATE:
-- Character: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}, ATK: ${character.attack}, DEF: ${character.defense})
-- Enemy: ${enemy.name} (HP: ${enemy.health}, ATK: ${enemy.attack}, DEF: ${enemy.defense})
-
-RECENT EVENTS (what happened before):
-${eventHistory}
-
-CONTEXT: You are in a ${finalScenario} ${finalTrigger}.
-
-IMPORTANT: Generate the NEXT event that continues from the previous events. Make it specific and different from typical atmospheric descriptions. Consider what just happened and build on it naturally.
-
-Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYPE", "effects": {"health": 0, "attack": 0, "defense": 0}}`;
   }
 
   /**
@@ -197,63 +115,10 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
   }
 
   /**
-   * Parses and validates Gemini response
-   */
-  private parseResponse(response: string): LLMEvent {
-    try {
-      const parsed = JSON.parse(response);
-
-      // Handle array responses (sometimes Gemini returns array)
-      const eventData = Array.isArray(parsed) ? parsed[0] : parsed;
-
-      // Validate structure
-      if (!eventData.event || !eventData.type || !eventData.effects) {
-        throw new Error("Invalid event structure");
-      }
-
-      return {
-        event: eventData.event,
-        type: eventData.type as EventTypeString,
-        effects: {
-          health: Number(eventData.effects.health) || 0,
-          attack: Number(eventData.effects.attack) || 0,
-          defense: Number(eventData.effects.defense) || 0
-        }
-      };
-    } catch (error) {
-      console.error("Failed to parse LLM response:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Utility: Get random item from array
    */
   private getRandomItem<T>(array: T[]): T {
     return array[Math.floor(Math.random() * array.length)];
-  }
-
-  /**
-   * Formats stat effects for display in prompt
-   */
-  private formatEffects(effects: {
-    health: number;
-    attack: number;
-    defense: number;
-  }): string {
-    const parts: string[] = [];
-
-    if (effects.health !== 0) {
-      parts.push(`HP ${effects.health > 0 ? "+" : ""}${effects.health}`);
-    }
-    if (effects.attack !== 0) {
-      parts.push(`ATK ${effects.attack > 0 ? "+" : ""}${effects.attack}`);
-    }
-    if (effects.defense !== 0) {
-      parts.push(`DEF ${effects.defense > 0 ? "+" : ""}${effects.defense}`);
-    }
-
-    return parts.join(", ");
   }
 
   /**
@@ -376,7 +241,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
     return `You are a D&D Dungeon Master. Decide what TYPE of event happens next.
 
 CURRENT STATE:
-- Character: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}, ATK: ${character.attack}, DEF: ${character.defense})
+- Character: ${character.name} (HP: ${character.health}/${
+      character.vitality * HEALTH_PER_VITALITY
+    }, ATK: ${character.attack}, DEF: ${character.defense})
 - Enemy: ${enemy.name} (HP: ${enemy.health})
 
 RECENT EVENTS:
@@ -409,7 +276,9 @@ Return ONLY: {"type": "TYPE_HERE"}`;
 
     return `You are a D&D Dungeon Master. Generate a vivid description for a ${eventType} event.
 
-CHARACTER: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY})
+CHARACTER: ${character.name} (HP: ${character.health}/${
+      character.vitality * HEALTH_PER_VITALITY
+    })
 LOCATION: ${finalScenario}
 CONTEXT: ${finalTrigger}
 
@@ -590,7 +459,9 @@ Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "i
 
 Character: ${character.name}
 Current Stats:
-- Health: ${character.health}/${character.vitality * HEALTH_PER_VITALITY} (${healthPercentage}%)
+- Health: ${character.health}/${
+      character.vitality * HEALTH_PER_VITALITY
+    } (${healthPercentage}%)
 - Attack: ${character.attack}
 - Defense: ${character.defense}
 

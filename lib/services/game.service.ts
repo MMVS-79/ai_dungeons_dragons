@@ -94,7 +94,6 @@ export class GameService {
       // 3. Route to appropriate handler based on action type
       switch (action.actionType) {
         case "continue":
-        case "search":
           return await this.handleExplorationAction(action, gameState);
 
         case "attack":
