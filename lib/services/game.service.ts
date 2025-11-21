@@ -397,11 +397,11 @@ export class GameService {
 
     const item = await BackendService.getItem(itemId);
 
-    // Determine slot based on item type
     let slot: "weapon" | "armor" | "shield";
-    if (item.type === "weapon") slot = "weapon";
-    else if (item.type === "armor") slot = "armor";
-    else if (item.type === "shield") slot = "shield";
+
+    if ("attack" in item) slot = "weapon";
+    else if ("vitality" in item) slot = "armor";
+    else if ("defense" in item) slot = "shield";
     else {
       return {
         success: false,

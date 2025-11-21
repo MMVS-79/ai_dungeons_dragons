@@ -22,10 +22,12 @@ import type { Unit } from "@/lib/types/game.types";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // ✅ Updated for Next.js 15+
 ) {
   try {
-    const enemyId = parseInt(params.id);
+    // Await the params promise to extract the id
+    const { id } = await context.params;
+    const enemyId = parseInt(id);
 
     if (isNaN(enemyId)) {
       return NextResponse.json(
@@ -60,4 +62,3 @@ export async function GET(
     );
   }
 }
-

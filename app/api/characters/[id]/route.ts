@@ -34,10 +34,11 @@ import { HEALTH_PER_VITALITY } from "@/lib/contants";
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // ✅ Updated for Next.js 15
 ) {
   try {
-    const characterId = parseInt(params.id);
+    const { id } = await context.params; // Must await Promise
+    const characterId = parseInt(id);
     const body = await request.json();
 
     if (isNaN(characterId)) {
@@ -90,4 +91,3 @@ export async function PUT(
     );
   }
 }
-

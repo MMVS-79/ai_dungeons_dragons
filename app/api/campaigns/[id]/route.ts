@@ -30,10 +30,11 @@ import * as BackendService from "@/lib/services/backend.service";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Next.js 15 requires params to be async
 ) {
   try {
-    const campaignId = parseInt(params.id);
+    const { id } = await context.params; // Must await the Promise
+    const campaignId = parseInt(id);
 
     if (isNaN(campaignId)) {
       return NextResponse.json(
@@ -114,10 +115,11 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Next.js 15 route signature
 ) {
   try {
-    const campaignId = parseInt(params.id);
+    const { id } = await context.params; // Await params
+    const campaignId = parseInt(id);
 
     if (isNaN(campaignId)) {
       return NextResponse.json(
@@ -213,10 +215,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // Next.js 15 signature
 ) {
   try {
-    const campaignId = parseInt(params.id);
+    const { id } = await context.params; // Await params
+    const campaignId = parseInt(id);
 
     if (isNaN(campaignId)) {
       return NextResponse.json(

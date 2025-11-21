@@ -340,3 +340,31 @@ html {
     gap: 2px;
   }
 }
+
+/* Logged in information */
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  color: white;
+}
+
+.userInfoMobile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 30px;
+  color: white;
+  border: 1px solid white;
+  border-radius: 25px;
+  margin-bottom: 20px;
+}
+
+.profileImage {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
