@@ -58,7 +58,7 @@ export class BackendService {
    * Fetch a character by ID from the database
    * Includes race, class, equipment, base stats, and final stats
    */
-  async getCharacter(id: number): Promise<Character | null> {
+  static async getCharacter(id: number): Promise<Character | null> {
     try {
       const sql = `
         SELECT 
@@ -158,7 +158,7 @@ export class BackendService {
   /**
    * Update character dynamically in the database
    */
-  async updateCharacter(characterId: number, updates: CharacterUpdates): Promise<Character | null> {
+  static async updateCharacter(characterId: number, updates: CharacterUpdates): Promise<Character | null> {
     try {
       // Map TypeScript keys to DB columns
       const fieldMap: Record<string, string> = {
