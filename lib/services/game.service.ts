@@ -51,6 +51,9 @@ import type {
   Item,
   Equipment,
   CombatSnapshot,
+  Weapon,
+  Armour,
+  Shield,
 } from "../types/game.types";
 import {
   setInvestigationPrompt,
@@ -152,18 +155,16 @@ export class GameService {
   ): Promise<GameServiceResponse> {
     console.log(`[GameService] handleContinue - Generating next event`);
 
-    // Check if this is a forced boss encounter
     const currentEventNumber =
       gameState.recentEvents.length > 0
         ? gameState.recentEvents[0].eventNumber
         : 0;
-
     const nextEventNumber = currentEventNumber + 1;
 
-    // Force boss encounter after event 48
+    // Check boss encounter (event 48)
     if (nextEventNumber >= BALANCE_CONFIG.BOSS_FORCED_EVENT_START) {
       console.log(
-        `[GameService] Forced boss encounter at event ${nextEventNumber}`
+        `[GameService] Boss encounter triggered at event ${nextEventNumber}`
       );
       return await this.generateBossEncounter(
         action.campaignId,
@@ -172,25 +173,73 @@ export class GameService {
       );
     }
 
-    // Generate random event type
+    // Build context
     const context = await this.buildLLMContext(gameState);
+
+    // Count event types in recent history
+    const recentEventTypes = gameState.recentEvents
+      .slice(0, 5)
+      .map((e) => e.eventType);
+    const eventTypeCounts = recentEventTypes.reduce((acc, type) => {
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Count total descriptive events
+    const allEvents = await BackendService.getRecentEvents(
+      action.campaignId,
+      100
+    );
+    const totalDescriptive = allEvents.filter(
+      (e) => e.eventType === "Descriptive"
+    ).length;
+
+    console.log(`[GameService] Event distribution - Recent:`, eventTypeCounts);
+    console.log(`[GameService] Total Descriptive events: ${totalDescriptive}`);
+
+    // Generate event type
     let eventType = await this.llmService.generateEventType(context);
 
-    console.log(`[GameService] Generated event type: ${eventType}`);
+    // Enforce distribution rules
+    // Rule 1: Max 2 of same type in last 5 events
+    if (eventTypeCounts[eventType] >= 2) {
+      console.log(
+        `[GameService] ${eventType} appears ${eventTypeCounts[eventType]} times in recent history, selecting alternative`
+      );
 
-    // Check descriptive counter
-    let attempts = 0;
-    while (
-      eventType === "Descriptive" &&
-      EventType.getDescriptiveCount() >= 2 &&
-      attempts < 3
-    ) {
-      console.log(`[GameService] Too many Descriptive events, regenerating...`);
-      eventType = await this.llmService.generateEventType(context);
-      attempts++;
+      // Find alternative event types
+      const alternatives = [
+        "Descriptive",
+        "Environmental",
+        "Combat",
+        "Item_Drop",
+      ].filter(
+        (type) => (eventTypeCounts[type] || 0) < 2 && type !== eventType
+      );
+
+      if (alternatives.length > 0) {
+        eventType = alternatives[
+          Math.floor(Math.random() * alternatives.length)
+        ] as any;
+        console.log(`[GameService] Selected alternative: ${eventType}`);
+      }
     }
 
-    // Route to appropriate event handler
+    // Rule 2: Max 10 Descriptive events total
+    if (eventType === "Descriptive" && totalDescriptive >= 10) {
+      console.log(
+        `[GameService] Max Descriptive events (10) reached, forcing alternative`
+      );
+      const alternatives = ["Environmental", "Combat", "Item_Drop"];
+      eventType = alternatives[
+        Math.floor(Math.random() * alternatives.length)
+      ] as any;
+      console.log(`[GameService] Selected alternative: ${eventType}`);
+    }
+
+    console.log(`[GameService] Final event type: ${eventType}`);
+
+    // Route to appropriate handler
     switch (eventType) {
       case "Descriptive":
         return await this.handleDescriptiveEvent(
@@ -198,23 +247,19 @@ export class GameService {
           gameState,
           context
         );
-
       case "Environmental":
         return await this.handleEnvironmentalPrompt(
           action.campaignId,
           gameState
         );
-
       case "Combat":
         return await this.handleCombatPrompt(
           action.campaignId,
           gameState,
           nextEventNumber
         );
-
       case "Item_Drop":
         return await this.handleItemDropPrompt(action.campaignId, gameState);
-
       default:
         throw new Error(`Unknown event type: ${eventType}`);
     }
@@ -441,12 +486,52 @@ export class GameService {
   ): Promise<GameServiceResponse> {
     console.log(`[GameService] handleDecline - Player declined investigation`);
 
+    // Get the prompt that was declined
+    const storedPrompt = getInvestigationPrompt(action.campaignId);
+
     // Clear the stored prompt
     clearInvestigationPrompt(action.campaignId);
 
     try {
-      // Generate a new event
-      return await this.handleContinue(action, gameState);
+      // Log the decline event
+      const declineMessages = {
+        Environmental:
+          "You sense something unusual in the environment but decide to move on, wary of potential dangers.",
+        Combat:
+          "You hear threatening sounds ahead but decide not to investigate, avoiding a potential encounter.",
+        Item_Drop:
+          "You notice something interesting but decide to keep moving, prioritizing safety over curiosity.",
+      };
+
+      const message = storedPrompt
+        ? declineMessages[storedPrompt.eventType] ||
+          "You decide to continue without investigating."
+        : "You continue forward cautiously.";
+
+      // Save decline event to logs
+      await BackendService.saveEvent(
+        action.campaignId,
+        message,
+        "Descriptive",
+        {
+          declined: true,
+          originalEventType: storedPrompt?.eventType || "unknown",
+        }
+      );
+
+      console.log(`[GameService] Decline event logged`);
+
+      // Get updated state
+      const updatedState = await this.getGameState(action.campaignId);
+      updatedState.currentPhase = "exploration";
+      updatedState.investigationPrompt = undefined;
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message,
+        choices: ["Continue Forward"],
+      };
     } catch (error) {
       console.error("[GameService] Error in handleDecline:", error);
       throw error;
@@ -467,54 +552,64 @@ export class GameService {
 
     try {
       const context = await this.buildLLMContext(gameState);
-      console.log(`[GameService] LLM context built`);
 
       // Generate description
-      console.log(`[GameService] Generating description...`);
       const description = await this.llmService.generateDescription(
         "Environmental",
         context
       );
-      console.log(
-        `[GameService] Description generated: ${description.substring(
-          0,
-          50
-        )}...`
-      );
 
       // Request stat boost from LLM
-      console.log(`[GameService] Requesting stat boost...`);
       const statBoost = await this.llmService.requestStatBoost(
         context,
         "Environmental"
       );
       console.log(
-        `[GameService] Stat boost: ${statBoost.statType} ${statBoost.baseValue}`
+        `[GameService] Stat boost requested: ${statBoost.statType} ${statBoost.baseValue}`
       );
+
+      // Ensure baseValue is not 0, use defaults if needed
+      let baseValue = statBoost.baseValue;
+      if (baseValue === 0) {
+        console.warn(`[GameService] LLM returned 0 baseValue, using default`);
+        // Default values if LLM fails
+        baseValue =
+          statBoost.statType === "health"
+            ? 10
+            : statBoost.statType === "attack"
+            ? 2
+            : 2;
+      }
 
       // Apply dice roll modifier
       const rollClassification = Dice_Roll.classifyRoll(diceRoll);
-      console.log(`[GameService] Roll classification: ${rollClassification}`);
-
       const finalValue = Stat_Calc.applyRoll(
         diceRoll,
         statBoost.statType.toUpperCase() as any,
         statBoost.baseValue
       );
-      console.log(`[GameService] Final value: ${finalValue}`);
+
+      console.log(
+        `[GameService] Roll ${diceRoll} (${rollClassification}): base ${statBoost.baseValue} -> final ${finalValue}`
+      );
 
       // Update character stats
-      console.log(`[GameService] Updating character stats...`);
       if (statBoost.statType === "health") {
+        // Calculate actual max HP (base + armour)
+        const actualMaxHp =
+          gameState.character.maxHealth +
+          (gameState.equipment.armour?.health || 0);
         const newHealth = Math.min(
-          gameState.character.maxHealth,
+          actualMaxHp,
           gameState.character.currentHealth + finalValue
         );
+
         await BackendService.updateCharacter(gameState.character.id, {
           currentHealth: newHealth,
         });
+
         console.log(
-          `[GameService] Health updated: ${gameState.character.currentHealth} -> ${newHealth}`
+          `[GameService] Health updated: ${gameState.character.currentHealth} -> ${newHealth} (max: ${actualMaxHp})`
         );
       } else if (statBoost.statType === "attack") {
         const newAttack = gameState.character.attack + finalValue;
@@ -550,7 +645,6 @@ export class GameService {
       }${finalValue} ${statBoost.statType}!`;
 
       // Save event
-      console.log(`[GameService] Saving event...`);
       await BackendService.saveEvent(campaignId, message, "Environmental", {
         diceRoll,
         statType: statBoost.statType,
@@ -558,12 +652,10 @@ export class GameService {
       });
 
       // Get updated state
-      console.log(`[GameService] Getting updated game state...`);
       const updatedState = await this.getGameState(campaignId);
       updatedState.currentPhase = "exploration";
       updatedState.investigationPrompt = undefined;
 
-      console.log(`[GameService] processEnvironmentalEvent - SUCCESS`);
       return {
         success: true,
         gameState: updatedState,
@@ -572,10 +664,6 @@ export class GameService {
       };
     } catch (error) {
       console.error("[GameService] Error in processEnvironmentalEvent:", error);
-      console.error(
-        "[GameService] Error stack:",
-        error instanceof Error ? error.stack : "No stack"
-      );
       throw error;
     }
   }
@@ -759,7 +847,7 @@ export class GameService {
         success: true,
         gameState: updatedState,
         message: encounterMessage,
-        choices: ["Attack", "Flee", "Use Item"],
+        choices: ["Attack", "Flee"],
       };
     } catch (error) {
       console.error("[GameService] Error in processCombatEvent:", error);
@@ -857,7 +945,7 @@ export class GameService {
       success: true,
       gameState: updatedState,
       message: encounterMessage,
-      choices: ["Attack", "Flee", "Use Item"],
+      choices: ["Attack", "Flee"],
     };
   }
 
@@ -878,6 +966,37 @@ export class GameService {
         gameState,
         message: "No active combat session",
         error: "Missing combat snapshot",
+      };
+    }
+
+    // CHECK: Is this a boss fight?
+    const isBoss = snapshot.enemy.difficulty >= 1000;
+
+    if (isBoss) {
+      console.log(
+        `[GameService] Cannot flee from boss: ${snapshot.enemy.name}`
+      );
+
+      // Add to combat log
+      addCombatLogEntry(
+        action.campaignId,
+        "You cannot escape from this powerful foe!"
+      );
+
+      // Get updated state (still in combat)
+      const updatedState = await this.getGameState(action.campaignId);
+      updatedState.currentPhase = "combat";
+      updatedState.enemy = snapshot.enemy;
+      updatedState.combatState = {
+        enemyCurrentHp: snapshot.enemyCurrentHp,
+        temporaryBuffs: snapshot.temporaryBuffs,
+      };
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message: `You try to flee, but the ${snapshot.enemy.name}'s presence is overwhelming! There is no escape from this legendary foe!`,
+        choices: ["Attack"],
       };
     }
 
@@ -980,7 +1099,7 @@ export class GameService {
           success: true,
           gameState: updatedState,
           message,
-          choices: ["Attack", "Flee", "Use Item"],
+          choices: ["Attack", "Flee"],
         };
       }
     }
@@ -1029,12 +1148,13 @@ export class GameService {
         snapshot.enemy.difficulty,
         diceRoll
       );
-      const rewardMessage = await this.processCombatRewards(
-        action.campaignId,
-        snapshot,
-        rewardRarity,
-        diceRoll
-      );
+      const { message: rewardMessage, equipment } =
+        await this.processCombatRewards(
+          action.campaignId,
+          snapshot,
+          rewardRarity,
+          diceRoll
+        );
 
       const finalMessage = `${combatMessage}\n\n${rewardMessage}`;
 
@@ -1068,7 +1188,7 @@ export class GameService {
         gameState: updatedState,
         message: finalMessage,
         choices: ["Continue Forward"],
-        itemFound: rewardEquipment,
+        itemFound: equipment,
       };
     }
 
@@ -1145,7 +1265,7 @@ export class GameService {
       success: true,
       gameState: updatedState,
       message: combatMessage,
-      choices: ["Attack", "Flee", "Use Item"],
+      choices: ["Attack", "Flee"],
       combatResult,
     };
   }
@@ -1159,7 +1279,6 @@ export class GameService {
     gameState: GameState
   ): Promise<GameServiceResponse> {
     const itemId = action.actionData?.itemId;
-
     if (!itemId) {
       return {
         success: false,
@@ -1170,7 +1289,6 @@ export class GameService {
     }
 
     const snapshot = getCombatSnapshot(action.campaignId);
-
     if (!snapshot) {
       return {
         success: false,
@@ -1180,9 +1298,10 @@ export class GameService {
       };
     }
 
+    console.log(`[GameService] Using item ${itemId} in combat`);
+
     // Find item in snapshot inventory
     const item = snapshot.inventorySnapshot.find((i) => i.id === itemId);
-
     if (!item) {
       return {
         success: false,
@@ -1219,8 +1338,9 @@ export class GameService {
       }${item.statValue} defense for this battle!`;
     }
 
-    // Remove item from snapshot
+    // Remove item from snapshot ONLY (not from database during combat)
     removeItemFromSnapshot(action.campaignId, itemId);
+    console.log(`[GameService] Item ${itemId} removed from combat snapshot`);
 
     // Add to combat log
     addCombatLogEntry(action.campaignId, message);
@@ -1237,9 +1357,11 @@ export class GameService {
       };
     }
 
-    // Get updated state
+    // Return state with snapshot inventory (not database inventory)
     const updatedState = await this.getGameState(action.campaignId);
     updatedState.currentPhase = "combat";
+    updatedState.enemy = snapshot.enemy;
+    updatedState.inventory = updatedSnapshot.inventorySnapshot; // Use snapshot inventory during combat
     updatedState.combatState = {
       enemyCurrentHp: updatedSnapshot.enemyCurrentHp,
       temporaryBuffs: updatedSnapshot.temporaryBuffs,
@@ -1249,7 +1371,7 @@ export class GameService {
       success: true,
       gameState: updatedState,
       message,
-      choices: ["Attack", "Flee", "Use Item"],
+      choices: ["Attack", "Flee"],
     };
   }
 
@@ -1274,6 +1396,7 @@ export class GameService {
     const rewardRoll = Math.random();
 
     let rewardMessage = "💰 Victory Rewards:\n";
+    let equipment: Weapon | Armour | Shield;
 
     if (rewardRoll < 0.33) {
       // WEAPON REWARD
@@ -1283,6 +1406,7 @@ export class GameService {
         weapon.id
       );
       rewardMessage += `You found: ${weapon.name}! (+${weapon.attack} ATK)`;
+      equipment = weapon;
     } else if (rewardRoll < 0.66) {
       // ARMOUR REWARD
       const armour = await BackendService.getArmourByRarity(rewardRarity);
@@ -1291,6 +1415,7 @@ export class GameService {
         armour.id
       );
       rewardMessage += `You found: ${armour.name}! (+${armour.health} Max HP)`;
+      equipment = armour;
     } else {
       // SHIELD REWARD
       const shield = await BackendService.getShieldByRarity(rewardRarity);
@@ -1299,6 +1424,7 @@ export class GameService {
         shield.id
       );
       rewardMessage += `You found: ${shield.name}! (+${shield.defense} DEF)`;
+      equipment = shield;
     }
 
     return { message: rewardMessage, equipment };
@@ -1313,28 +1439,39 @@ export class GameService {
       `[GameService] Committing combat snapshot for campaign ${snapshot.campaignId}`
     );
 
-    // Update character HP (temp buffs are NOT saved - they reset after combat)
-    await BackendService.updateCharacter(snapshot.characterSnapshot.id, {
-      currentHealth: snapshot.characterSnapshot.currentHealth,
-    });
+    try {
+      // Update character health in database
+      await BackendService.updateCharacter(snapshot.characterSnapshot.id, {
+        currentHealth: snapshot.characterSnapshot.currentHealth,
+      });
 
-    // Update inventory (remove used items)
-    const originalInventory = await BackendService.getInventory(
-      snapshot.characterSnapshot.id
-    );
-    const usedItems = originalInventory.filter(
-      (item) =>
-        !snapshot.inventorySnapshot.some((snapItem) => snapItem.id === item.id)
-    );
-
-    for (const item of usedItems) {
-      await BackendService.removeItemFromInventory(
-        snapshot.characterSnapshot.id,
-        item.id
+      // Find items that were used (items in original inventory but not in snapshot)
+      const originalInventory = await BackendService.getInventory(
+        snapshot.characterSnapshot.id
       );
-    }
+      const usedItemIds = originalInventory
+        .filter(
+          (originalItem) =>
+            !snapshot.inventorySnapshot.some(
+              (snapshotItem) => snapshotItem.id === originalItem.id
+            )
+        )
+        .map((item) => item.id);
 
-    console.log(`[GameService] Combat snapshot committed successfully`);
+      // Remove used items from database
+      for (const itemId of usedItemIds) {
+        await BackendService.removeItemFromInventory(
+          snapshot.characterSnapshot.id,
+          itemId
+        );
+        console.log(`[GameService] Removed used item ${itemId} from database`);
+      }
+
+      console.log(`[GameService] Combat snapshot committed successfully`);
+    } catch (error) {
+      console.error(`[GameService] Error committing combat snapshot:`, error);
+      throw error;
+    }
   }
 
   // ==========================================================================
@@ -1354,14 +1491,25 @@ export class GameService {
     let enemy: Enemy | null = null;
     let combatState: GameState["combatState"] = undefined;
     let investigationPrompt: GameState["investigationPrompt"] = undefined;
+    let activeInventory = inventory; // Track which inventory to use
+    let activeCharacter = character; // Track which character stats to use
 
     if (campaign.state === "game_over") {
       currentPhase = "game_over";
     } else if (campaign.state === "completed") {
       currentPhase = "victory";
     } else if (snapshot) {
+      // DURING COMBAT: Use snapshot data instead of database
       currentPhase = "combat";
       enemy = snapshot.enemy;
+      activeInventory = snapshot.inventorySnapshot; // Use snapshot inventory
+
+      // Use snapshot character health
+      activeCharacter = {
+        ...character,
+        currentHealth: snapshot.characterSnapshot.currentHealth,
+      };
+
       combatState = {
         enemyCurrentHp: snapshot.enemyCurrentHp,
         temporaryBuffs: snapshot.temporaryBuffs,
@@ -1377,8 +1525,8 @@ export class GameService {
 
     return {
       campaign,
-      character,
-      inventory,
+      character: activeCharacter,
+      inventory: activeInventory,
       equipment,
       enemy,
       recentEvents,

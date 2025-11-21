@@ -75,23 +75,23 @@ INSERT INTO items (name, rarity, stat_modified, stat_value, description, sprite_
 ('Ultimate Health Potion', 85, 'health', 100, 'Restores 100 HP', '/items/red_potion.png'),
 
 -- ATTACK BUFFS (Scrolls/Elixirs - Temporary combat boost)
-('Weak Strength Scroll', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/scroll_placeholder.png'),
-('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/scroll_placeholder.png'),
-('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/scroll_placeholder.png'),
-('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/elixir_placeholder.png'),
-('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/elixir_placeholder.png'),
+('Weak Strength Scroll', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/placeholder.png'),
+('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/placeholder.png'),
+('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/placeholder.png'),
+('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/placeholder.png'),
+('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/placeholder.png'),
 
 -- DEFENSE BUFFS (Temporary combat boost)
-('Weak Protection Scroll', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/scroll_placeholder.png'),
-('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/scroll_placeholder.png'),
-('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/scroll_placeholder.png'),
-('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/elixir_placeholder.png'),
-('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/elixir_placeholder.png'),
+('Weak Protection Scroll', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/placeholder.png'),
+('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/placeholder.png'),
+('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/placeholder.png'),
+('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/placeholder.png'),
+('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/placeholder.png'),
 
 -- CURSED ITEMS (Negative stats - clogs inventory)
-('Cursed Vial', 5, 'health', -10, 'A toxic vial that damages you', '/items/cursed_placeholder.png'),
-('Weakness Curse', 15, 'attack', -3, 'Temporarily reduces attack by 3', '/items/cursed_placeholder.png'),
-('Fragility Curse', 15, 'defense', -3, 'Temporarily reduces defense by 3', '/items/cursed_placeholder.png');
+('Cursed Vial', 5, 'health', -10, 'A toxic vial that damages you', '/items/placeholder.png'),
+('Weakness Curse', 15, 'attack', -3, 'Temporarily reduces attack by 3', '/items/placeholder.png'),
+('Fragility Curse', 15, 'defense', -3, 'Temporarily reduces defense by 3', '/items/placeholder.png');
 
 -- ============================================================================
 -- WEAPONS (Rarity-based system)
@@ -122,8 +122,8 @@ INSERT INTO weapons (name, rarity, attack, description, sprite_path) VALUES
 ('Holy Avenger', 75, 22, 'A blessed weapon of righteousness', '/items/epic_sword.png'),
 
 -- LEGENDARY (81+)
-('Excalibur', 85, 25, 'The legendary sword of kings', '/items/legendary_placeholder.png'),
-('Mjolnir', 95, 28, 'The hammer of thunder gods', '/items/legendary_placeholder.png');
+('Excalibur', 85, 25, 'The legendary sword of kings', '/items/placeholder.png'),
+('Mjolnir', 95, 28, 'The hammer of thunder gods', '/items/placeholder.png');
 
 -- ============================================================================
 -- ARMOURS (Rarity-based system)
@@ -151,8 +151,8 @@ INSERT INTO armours (name, rarity, health, description, sprite_path) VALUES
 ('Titan Plate', 75, 95, 'Armor fit for giants', '/items/epic_armour.png'),
 
 -- LEGENDARY (81+)
-('Aegis of Immortality', 85, 110, 'Nearly indestructible protection', '/items/legendary_placeholder.png'),
-('Divine Raiment', 95, 130, 'Armor of the gods themselves', '/items/legendary_placeholder.png');
+('Aegis of Immortality', 85, 110, 'Nearly indestructible protection', '/items/placeholder.png'),
+('Divine Raiment', 95, 130, 'Armor of the gods themselves', '/items/placeholder.png');
 
 -- ============================================================================
 -- SHIELDS (Rarity-based system)
@@ -180,5 +180,5 @@ INSERT INTO shields (name, rarity, defense, description, sprite_path) VALUES
 ('Bulwark of Eternity', 75, 19, 'An unbreakable defense', '/items/epic_shield.png'),
 
 -- LEGENDARY (81+)
-('Shield of the Gods', 85, 22, 'Divine protection incarnate', '/items/legendary_placeholder.png'),
-('Infinity Shield', 95, 25, 'Absolute defensive power', '/items/legendary_placeholder.png');
+('Shield of the Gods', 85, 22, 'Divine protection incarnate', '/items/placeholder.png'),
+('Infinity Shield', 95, 25, 'Absolute defensive power', '/items/placeholder.png');

@@ -107,22 +107,112 @@ export default function CampaignPage() {
   const loadGameState = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/game/action?campaignId=${params.id}`);
+
+      const response = await fetch("/api/game/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          campaignId: Number(params.id),
+          actionType: "continue",
+          actionData: { diceRoll: Math.floor(Math.random() * 20) + 1 },
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to load game state");
+        const errorData = await response.json();
+        console.error("[Frontend] Failed to load game state:", errorData);
+        throw new Error(errorData.error || "Failed to load game state");
       }
 
       const result = await response.json();
+      console.log("[Frontend] Initial game state loaded:", result);
 
-      if (result.success && result.validation) {
-        // Load initial state via a "continue" action to generate first event
-        await handleChatAction("Continue Forward");
+      if (!result.success) {
+        throw new Error(result.error || "Failed to initialize game");
+      }
+
+      // Initialize player state
+      if (result.gameState.character) {
+        const char = result.gameState.character;
+        const equip = result.gameState.equipment || {};
+        const inv = result.gameState.inventory || [];
+
+        setPlayerState({
+          name: char.name,
+          image: char.spritePath || "/characters/player/warrior.png",
+          hp: char.currentHealth,
+          maxHp: char.maxHealth,
+          attack: char.attack,
+          defense: char.defense,
+          inventory: inv,
+          equipment: equip,
+        });
+      }
+
+      // Initialize enemy state if present
+      if (result.gameState.enemy) {
+        const combatState = result.gameState.combatState;
+
+        setEnemyState({
+          name: result.gameState.enemy.name,
+          image:
+            result.gameState.enemy.spritePath ||
+            "/characters/enemy/low/goblin.png",
+          hp: combatState?.enemyCurrentHp || result.gameState.enemy.health,
+          maxHp: result.gameState.enemy.health,
+          attack: result.gameState.enemy.attack,
+          defense: result.gameState.enemy.defense,
+        });
+      }
+
+      // Initialize temporary buffs
+      if (result.gameState.combatState?.temporaryBuffs) {
+        setTemporaryBuffs(result.gameState.combatState.temporaryBuffs);
+      }
+
+      // Initialize item found
+      if (result.itemFound) {
+        setItemFound(result.itemFound);
+      }
+
+      // Load messages from logs
+      const logMessages = result.gameState.recentEvents
+        .slice()
+        .reverse() // Oldest first
+        .map((event: any) => ({
+          id: generateMessageId(),
+          text: event.message,
+          choices: [], // No choices for historical messages
+        }));
+
+      // Add current message with choices
+      const currentMessage = {
+        id: generateMessageId(),
+        text: result.message,
+        choices: result.choices || ["Continue Forward"],
+      };
+
+      setMessages([...logMessages, currentMessage]);
+
+      // Check for game over or victory
+      if (result.gameState.currentPhase === "game_over") {
+        setShowGameOver(true);
+      } else if (result.gameState.currentPhase === "victory") {
+        setShowVictory(true);
       }
 
       setLoading(false);
     } catch (error) {
       console.error("[Frontend] Error loading game state:", error);
+      setMessages([
+        {
+          id: generateMessageId(),
+          text: `Failed to load game: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          choices: [],
+        },
+      ]);
       setLoading(false);
     }
   };
@@ -209,6 +299,8 @@ export default function CampaignPage() {
       if (result.gameState.enemy) {
         const combatState = result.gameState.combatState;
 
+        console.log("[Frontend] Enemy detected:", result.gameState.enemy);
+
         setEnemyState({
           name: result.gameState.enemy.name,
           image:
@@ -293,10 +385,13 @@ export default function CampaignPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to use item");
+        const errorData = await response.json();
+        console.error("[Frontend] Failed to use item:", errorData);
+        throw new Error(errorData.error || "Failed to use item");
       }
 
       const result = await response.json();
+      console.log("[Frontend] Item use result:", result);
 
       if (result.success) {
         // Update state from backend
@@ -328,7 +423,7 @@ export default function CampaignPage() {
           {
             id: generateMessageId(),
             text: result.message,
-            choices: result.choices || ["Attack", "Flee", "Use Item"],
+            choices: result.choices || ["Attack", "Flee"],
           },
         ]);
       }

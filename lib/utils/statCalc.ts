@@ -52,10 +52,11 @@ export class Stat_Calc {
     } 
     // Regular Roll (5-15): Scale stat based on formula
     else if (rollValue >= 5 && rollValue <= 15) {
-      // Formula: initValue * (1 + (rollValue - 10) / 10)
-      // - Roll 10 → 1.0x (no change)
-      // - Roll 5 → 0.5x (half value)
-      // - Roll 15 → 1.5x (150% value)
+      // Current: initValue * (1 + (rollValue - 10) / 10)
+      // Roll 10 = 1.0x, Roll 5 = 0.5x, Roll 15 = 1.5x
+      
+      // Example: Make it less punishing for low rolls
+      // finalValue = initValue * (0.7 + (rollValue - 5) / 10);
       finalValue = initValue * (1 + (rollValue - 10) / 10);
       console.log(
         `[Stat_Calc] Regular roll on ${statType}: Roll ${rollValue}, scaled stat = ${finalValue.toFixed(1)}`
@@ -63,6 +64,9 @@ export class Stat_Calc {
     } 
     // Critical Success (16-20): Double the stat
     else if (rollValue >= 16 && rollValue <= 20) {
+      // Current: 2x
+      
+      // Example: Make crits less powerful: finalValue = initValue * 1.5;
       finalValue = initValue * 2;
       console.log(
         `[Stat_Calc] Critical success on ${statType}: Roll ${rollValue}, stat doubled = ${finalValue}`

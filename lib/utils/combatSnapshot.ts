@@ -76,11 +76,17 @@ export function applyTemporaryBuff(
 export function removeItemFromSnapshot(campaignId: number, itemId: number): void {
   const snapshot = getCombatSnapshot(campaignId);
   if (snapshot) {
-    snapshot.inventorySnapshot = snapshot.inventorySnapshot.filter(
-      item => item.id !== itemId
-    );
-    global.combatSnapshots!.set(campaignId, snapshot);
-    console.log(`[CombatSnapshot] Removed item ${itemId} from snapshot`);
+    // Find the index of the first matching item
+    const itemIndex = snapshot.inventorySnapshot.findIndex(item => item.id === itemId);
+    
+    if (itemIndex !== -1) {
+      // Remove only ONE instance
+      snapshot.inventorySnapshot.splice(itemIndex, 1);
+      global.combatSnapshots!.set(campaignId, snapshot);
+      console.log(`[CombatSnapshot] Removed one instance of item ${itemId} from snapshot`);
+    } else {
+      console.warn(`[CombatSnapshot] Item ${itemId} not found in snapshot`);
+    }
   }
 }
 

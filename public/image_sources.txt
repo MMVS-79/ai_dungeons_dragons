@@ -63,3 +63,4 @@ https://www.flaticon.com/free-icon/mummy_2332720
 
 // other
 https://www.flaticon.com/free-icon/treasures_4215429 // mimic
+https://www.flaticon.com/free-icon/packaging_10469224  // placeholder
