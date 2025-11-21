@@ -23,10 +23,9 @@ export interface Item {
   description?: string;
 }
 
-interface Equipment {
+export interface Equipment {
   id: number;
   name: string;
-  health: number;
   image?: string;
   description?: string;
   rarity?: number;
