@@ -470,7 +470,7 @@ export class GameService {
       // - Combat: calls CombatUI.InitializeCombat() → if won: Dice_Roll → RequestStatBoost/ItemDrop → Backend_Service
       //   NOTE: Combat handling needs team discussion - see COMBAT SYSTEM NOTE in file header
       // - Item_Drop: calls LLM_Service.RequestItemDrop() → Backend_Service
-      await this.triggerEventType(eventType);
+      await this.triggerEventType(gameState, eventType);
 
       // Clear pending event
       await BackendService.clearPendingEvent(action.campaignId);
@@ -788,9 +788,9 @@ export class GameService {
    * - Combat initialization
    * - Item drop handling
    */
-  private async triggerEventType(eventType: EventTypeString): Promise<void> {
+  private async triggerEventType(gameState: GameState, eventType: EventTypeString): Promise<void> {
     const eventTypeInstance = new EventType(eventType);
-    await eventTypeInstance.trigger();
+    await eventTypeInstance.trigger(await this.buildLLMContext(gameState));
   }
 
   /**
