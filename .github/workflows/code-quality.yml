@@ -34,31 +34,59 @@ jobs:
       - name: Find tracked source files
         id: find_files
         run: |
-          # Look for tracked JS/TS files under the common source dirs
-          FILES="$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)"
-          echo "::set-output name=files::$FILES"
+          # Find tracked JS/TS files under common source dirs (NUL-separated)
+          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+
+          if [ -z "$FILES_Z" ]; then
+            echo "No tracked source files found."
+            # set empty output (safe for conditions)
+            echo "files=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Convert NUL list to newline-separated for output value
+          FILES=$(printf "%s" "$FILES_Z" | tr '\0' '\n')
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          printf "%s\n" "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Run Prettier on tracked files (if any)
         if: steps.find_files.outputs.files != ''
         run: |
-          # NUL-safe: list tracked source files and run prettier on them
-          git ls-files -z 'app/**/*.{js,ts,jsx,tsx}' 'lib/**/*.{js,ts,jsx,tsx}' 'src/**/*.{js,ts,jsx,tsx}' \
-            | xargs -0 -r npx prettier --write || true
+          # Recompute NUL-separated tracked files (we used newline output for step output)
+          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          if [ -z "$FILES_Z" ]; then
+            echo "No tracked files found for Prettier. Skipping."
+            exit 0
+          fi
+
+          echo "Running Prettier on tracked files (showing up to 10):"
+          printf "%s" "$FILES_Z" | tr '\0' '\n' | sed -n '1,10p'
+
+          # Run Prettier on the tracked files (NUL-safe)
+          printf "%s" "$FILES_Z" | xargs -0 -r npx prettier --write || true
 
       - name: Run ESLint --fix (tracked files, robust)
         if: steps.find_files.outputs.files != ''
         id: autofix
         run: |
           set -euo pipefail
-          # Use the actual tracked files to avoid ESLint "no files match pattern" errors.
-          printf "%s\n" "${{ steps.find_files.outputs.files }}" \
-            | xargs -r npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
 
-          # If eslint --fix above failed/crashed, attempt per-file to surface problematic files.
-          # (We allow the above to exit non-zero without failing the step so we can inspect.)
-          printf "%s\n" "${{ steps.find_files.outputs.files }}" | while read -r file; do
+          # Build a newline-separated file list from git (matching the earlier step)
+          FILES=$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          if [ -z "$FILES" ]; then
+            echo "No tracked source files to run eslint --fix on."
+            exit 0
+          fi
+
+          # Try to fix all files at once (use xargs to pass file list safely)
+          printf "%s\n" "$FILES" | xargs -r npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
+
+          # If the bulk fix failed/crashed, run per-file to surface problematic files
+          printf "%s\n" "$FILES" | while read -r file; do
+            echo "Attempting per-file fix: $file"
             if ! npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern "$file"; then
-              echo "ESLINT_FIX_FAILED:$file" >> eslint-failures.txt || true
+              echo "$file" >> eslint-failures.txt || true
             fi
           done
 
@@ -117,16 +145,21 @@ jobs:
       - name: Find tracked source files (for lint)
         id: find_lint_files
         run: |
-          FILES="$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)"
-          echo "::set-output name=files::$FILES"
+          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          if [ -z "$FILES_Z" ]; then
+            echo "files=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FILES=$(printf "%s" "$FILES_Z" | tr '\0' '\n')
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          printf "%s\n" "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Run ESLint (errors fail, warnings ignored)
         if: steps.find_lint_files.outputs.files != ''
         run: |
-          # Use --quiet to suppress warnings; add --no-error-on-unmatched-pattern to avoid
-          # "No files matching the pattern" CLI error in case a pattern is empty.
-          printf "%s\n" "${{ steps.find_lint_files.outputs.files }}" \
-            | xargs -r npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
+          # Read the file list and run eslint. --quiet suppresses warnings.
+          printf "%s\n" "${{ steps.find_lint_files.outputs.files }}" | xargs -r npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
 
       - name: Skip lint if no source files found
         if: steps.find_lint_files.outputs.files == ''
