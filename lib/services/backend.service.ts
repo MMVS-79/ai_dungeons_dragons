@@ -23,7 +23,7 @@
  *
  */
 
-import type { Character, Equipment, Weapon, Armor, Shield, Item } from "@/lib/types/game.types";
+import type { Character, Weapon, Armor, Shield, Item, Unit } from "@/lib/types/game.types";
 import { pool } from "../db";
 import type { RowDataPacket } from "mysql2";
 import { LLMService } from "@/lib/services/llm.service";
@@ -109,12 +109,31 @@ export class BackendService {
         ? { id: row.shield_id, name: row.shield_name, defense: row.shield_def, image: row.shield_sprite }
         : undefined;
 
+        const race: Unit = {
+          id: row.race_id,
+          name: row.race_name,
+          vitality: row.race_vitality,
+          attack: row.race_attack,
+          defense: row.race_defense,
+          spritePath: row.race_sprite
+        };
+      
+        const Class: Unit = {
+          id: row.class_id,
+          name: row.class_name,
+          vitality: row.class_vitality,
+          attack: row.class_attack,
+          defense: row.class_defense,
+          spritePath: row.class_sprite
+        };
+
       // -----------------------------
       // Final stats calculation (currently unused, for future combat logic)
       // -----------------------------
-      const finalAttack = row.base_attack + (weapon?.attack ?? 0);
+      /*const finalAttack = row.base_attack + (weapon?.attack ?? 0);
       const finalVitality = row.base_vitality + (armor?.vitality ?? 0);
       const finalDefense = row.base_defense + (shield?.defense ?? 0);
+      */
 
       // -----------------------------
       // Compose Character object
@@ -127,22 +146,8 @@ export class BackendService {
         defense: row.base_defense,
         campaignId: row.campaign_id,
         currentHealth: row.character_health,
-        race: {
-          id: row.race_id,
-          name: row.race_name,
-          vitality: row.race_vitality,
-          attack: row.race_attack,
-          defense: row.race_defense,
-          spritePath: row.race_sprite
-        },
-        class: {
-          id: row.class_id,
-          name: row.class_name,
-          vitality: row.class_vitality,
-          attack: row.class_attack,
-          defense: row.class_defense,
-          spritePath: row.class_sprite
-        },
+        race: race,
+        class: Class,
         weapon: weapon,  // only attack
         armor: armor,    // only vitality
         shield: shield,  // only defense
