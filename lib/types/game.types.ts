@@ -23,7 +23,7 @@ export interface Item {
   description?: string;
 }
 
-export interface Equipment {
+interface Equipment {
   id: number;
   name: string;
   image?: string;
