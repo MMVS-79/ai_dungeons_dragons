@@ -20,6 +20,27 @@ https://www.flaticon.com/free-icon/potion_2029453
 https://www.flaticon.com/free-icon/poison_9276363
 https://www.flaticon.com/free-icon/scrolls_13112882
 
+// health potions
+https://www.flaticon.com/free-icon/game_13929509
+https://www.flaticon.com/free-icon/game_13929507
+https://www.flaticon.com/free-icon/game_13929501
+https://www.flaticon.com/free-icon/game_13929503
+https://www.flaticon.com/free-icon/game_13929499
+
+// strength items
+https://www.flaticon.com/free-icon/berries_12532253
+https://www.flaticon.com/free-icon/history_9809606
+https://www.flaticon.com/free-icon/scroll_4330917
+https://www.flaticon.com/free-icon/potion_4330737
+https://www.flaticon.com/free-icon/magic-potion_5484299
+
+// defence items
+https://www.flaticon.com/free-icon/ginger_7014056
+https://www.flaticon.com/free-icon/scroll_4334372
+https://www.flaticon.com/free-icon/scroll_5201366
+https://www.flaticon.com/free-icon/medicine_9702063
+https://www.flaticon.com/free-icon/magic-potion_5484318
+
 // other
 https://www.flaticon.com/free-icon/treasure-chest_4320061
 
@@ -30,7 +51,7 @@ https://www.flaticon.com/free-icon/warrior_2332589 // dwarf warrior
 https://www.flaticon.com/free-icon/archer_2332597 // elf archer
 https://www.flaticon.com/free-icon/elf_4413190 // rogue elf
 
-// enemies
+// enemies -----------------------
 https://www.flaticon.com/free-icon/santa-claus_2332736
 https://www.flaticon.com/free-icon/zeus_2332642
 

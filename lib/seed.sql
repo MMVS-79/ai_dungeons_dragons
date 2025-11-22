@@ -16,31 +16,31 @@ INSERT INTO accounts (email) VALUES ('admin@example.com');
 
 INSERT INTO enemies (name, difficulty, health, attack, defense, sprite_path) VALUES
 -- LOW DIFFICULTY (0-30)
-('Giant Rat', 5, 15, 3, 1, '/characters/enemy/low/rat.png'),
-('Zombie', 10, 25, 4, 2, '/characters/enemy/low/zombie.png'),
-('Goblin', 15, 30, 5, 2, '/characters/enemy/low/goblin.png'),
-('Mummy', 20, 35, 6, 3, '/characters/enemy/low/mummy.png'),
-('Giant Spider', 25, 40, 7, 3, '/characters/enemy/low/spider.png'),
+('Giant Rat', 5, 15, 11, 1, '/characters/enemy/low/rat.png'),
+('Zombie', 10, 25, 12, 2, '/characters/enemy/low/zombie.png'),
+('Goblin', 15, 30, 13, 2, '/characters/enemy/low/goblin.png'),
+('Mummy', 20, 35, 14, 3, '/characters/enemy/low/mummy.png'),
+('Giant Spider', 25, 40, 15, 3, '/characters/enemy/low/spider.png'),
 
 -- MID DIFFICULTY (31-70)
-('Orc Warrior', 35, 50, 10, 5, '/characters/enemy/mid/orc.png'),
-('Dark Wizard', 45, 45, 12, 4, '/characters/enemy/mid/dark_wizard.png'),
-('Centaur', 50, 60, 11, 6, '/characters/enemy/mid/centaur.png'),
-('Echidna', 55, 55, 13, 5, '/characters/enemy/mid/echidna.png'),
-('Lesser Devil', 65, 70, 14, 7, '/characters/enemy/mid/devil.png'),
+('Orc Warrior', 35, 50, 18, 5, '/characters/enemy/mid/orc.png'),
+('Dark Wizard', 45, 45, 20, 4, '/characters/enemy/mid/dark_wizard.png'),
+('Centaur', 50, 60, 19, 6, '/characters/enemy/mid/centaur.png'),
+('Echidna', 55, 55, 21, 5, '/characters/enemy/mid/echidna.png'),
+('Lesser Devil', 65, 70, 22, 7, '/characters/enemy/mid/devil.png'),
 
 -- HIGH DIFFICULTY (71-110)
-('Troll', 75, 90, 16, 9, '/characters/enemy/high/troll.png'),
-('Vampire', 80, 85, 18, 8, '/characters/enemy/high/vampire.png'),
-('Ghost', 85, 70, 20, 10, '/characters/enemy/high/ghost.png'),
-('Cyclops', 95, 110, 19, 10, '/characters/enemy/high/cyclops.png'),
-('Minotaur', 105, 120, 21, 11, '/characters/enemy/high/minotaur.png'),
+('Troll', 75, 90, 24, 9, '/characters/enemy/high/troll.png'),
+('Vampire', 80, 85, 26, 8, '/characters/enemy/high/vampire.png'),
+('Ghost', 85, 70, 28, 10, '/characters/enemy/high/ghost.png'),
+('Cyclops', 95, 110, 27, 10, '/characters/enemy/high/cyclops.png'),
+('Minotaur', 105, 120, 29, 11, '/characters/enemy/high/minotaur.png'),
 
 -- BOSSES (1000+)
-('Griffin', 1000, 180, 24, 14, '/characters/enemy/boss/griffin.png'),
-('Chimera', 1001, 200, 26, 15, '/characters/enemy/boss/chimera.png'),
-('Black Dragon', 1002, 220, 28, 16, '/characters/enemy/boss/black_dragon.png'),
-('Ancient Dragon', 1003, 250, 30, 18, '/characters/enemy/boss/dragon.png');
+('Griffin', 1000, 180, 30, 14, '/characters/enemy/boss/griffin.png'),
+('Chimera', 1001, 200, 32, 15, '/characters/enemy/boss/chimera.png'),
+('Black Dragon', 1002, 220, 34, 16, '/characters/enemy/boss/black_dragon.png'),
+('Ancient Dragon', 1003, 250, 34, 16, '/characters/enemy/boss/dragon.png');
 
 -- ============================================================================
 -- RACES
@@ -68,30 +68,30 @@ INSERT INTO classes (name, health, attack, defense, sprite_path) VALUES
 
 INSERT INTO items (name, rarity, stat_modified, stat_value, description, sprite_path) VALUES
 -- HEALTH POTIONS (0-90 rarity range)
-('Minor Health Potion', 5, 'health', 15, 'Restores 15 HP', '/items/green_potion.png'),
-('Health Potion', 20, 'health', 25, 'Restores 25 HP', '/items/green_potion.png'),
-('Greater Health Potion', 40, 'health', 40, 'Restores 40 HP', '/items/red_potion.png'),
-('Superior Health Potion', 60, 'health', 60, 'Restores 60 HP', '/items/red_potion.png'),
-('Ultimate Health Potion', 85, 'health', 100, 'Restores 100 HP', '/items/red_potion.png'),
+('Minor Health Potion', 5, 'health', 15, 'Restores 15 HP', '/items/minor_health_potion'),
+('Health Potion', 20, 'health', 25, 'Restores 25 HP', '/items/health_potion.png'),
+('Greater Health Potion', 40, 'health', 40, 'Restores 40 HP', '/items/greater_health_potion.png'),
+('Superior Health Potion', 60, 'health', 60, 'Restores 60 HP', '/items/superior_health_potion.png'),
+('Ultimate Health Potion', 85, 'health', 100, 'Restores 100 HP', '/items/ultimate_health_potion.png'),
 
 -- ATTACK BUFFS (Scrolls/Elixirs - Temporary combat boost)
-('Weak Strength Scroll', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/placeholder.png'),
-('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/placeholder.png'),
-('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/placeholder.png'),
-('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/placeholder.png'),
-('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/placeholder.png'),
+('Strength Berries', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/strength_berries.png'),
+('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/strength_scroll.png'),
+('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/greater_strength_scroll.png'),
+('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/berserker_potion.png'),
+('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/titan_potion.png'),
 
 -- DEFENSE BUFFS (Temporary combat boost)
-('Weak Protection Scroll', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/placeholder.png'),
-('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/placeholder.png'),
-('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/placeholder.png'),
-('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/placeholder.png'),
-('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/placeholder.png'),
+('Fortifying Ginger', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/fortifying_ginger.png'),
+('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/protection_scroll.png'),
+('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/greater_protection_scroll.png'),
+('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/sturdy_potion.png'),
+('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/invulnerability_potion.png'),
 
 -- CURSED ITEMS (Negative stats - clogs inventory)
 ('Cursed Vial', 5, 'health', -10, 'A toxic vial that damages you', '/items/placeholder.png'),
-('Weakness Curse', 15, 'attack', -3, 'Temporarily reduces attack by 3', '/items/placeholder.png'),
-('Fragility Curse', 15, 'defense', -3, 'Temporarily reduces defense by 3', '/items/placeholder.png');
+('Weakness Curse', 15, 'attack', -5, 'Temporarily reduces attack by 3', '/items/placeholder.png'),
+('Fragility Curse', 15, 'defense', -5, 'Temporarily reduces defense by 3', '/items/placeholder.png');
 
 -- ============================================================================
 -- WEAPONS (Rarity-based system)
