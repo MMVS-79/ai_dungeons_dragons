@@ -1783,7 +1783,7 @@ Your introduction:`;
     const campaign = await BackendService.getCampaign(campaignId);
     const { character, equipment, inventory } =
       await BackendService.getCharacterWithFullData(campaignId);
-    const recentEvents = await BackendService.getRecentEvents(campaignId, 10);
+    const recentEvents = await BackendService.getRecentEvents(campaignId, 1000);
 
     // Check if in combat
     const snapshot = getCombatSnapshot(campaignId);
