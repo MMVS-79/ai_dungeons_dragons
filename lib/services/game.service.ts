@@ -67,11 +67,7 @@ export class GameService {
   private llmService: LLMService;
 
   constructor(llmApiKey: string) {
-    this.llmService = new LLMService({
-      apiKey: llmApiKey,
-      model: "gemini-flash-lite-latest",
-      temperature: 0.8,
-    });
+    this.llmService = new LLMService();
   }
 
   /**
@@ -108,8 +104,9 @@ Character:
 - Class: ${className}
 
 Create a compelling introduction (3-4 sentences) that:
+- Creates a background for the character based on their name, race, and class (be creative)
 - Sets the dark, dangerous atmosphere of an ancient dungeon
-- Explains that a legendary dragon boss threatens the world
+- Explains that a legendary monster boss of unknown type threatens the world
 - Describes why ${gameState.character.name} has ventured into this perilous place
 - Builds anticipation and heroic purpose
 

@@ -142,7 +142,7 @@ export const BALANCE_CONFIG = {
   
   // Combat reward formula multipliers
   REWARD_DIFFICULTY_WEIGHT: 0.5,
-  REWARD_DICE_ROLL_WEIGHT: 10,
+  REWARD_DICE_ROLL_WEIGHT: 1,
   
   // Selection variance
   ITEM_RARITY_VARIANCE: 5,
