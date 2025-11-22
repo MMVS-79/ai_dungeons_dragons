@@ -56,18 +56,6 @@ export interface LLMGameContext {
   trigger?: string; // Optional: what prompted this event
 }
 
-// Output: What the LLM service returns to game engine (legacy, no longer used)
-// The new flow uses generateEventType() -> generateDescription() -> requestStatBoost() separately
-export interface LLMEvent {
-  event: string; // Description of what happens
-  type: EventTypeString; // Event type
-  effects: {
-    health: number; // -10 to +10
-    attack: number; // -5 to +5
-    defense: number; // -5 to +5
-  };
-}
-
 // Stat boost response from LLM for dynamic stat modifications
 // Used in multi-call LLM flow: LLM decides which stat and base value, dice roll modifies final value
 export interface StatBoostResponse {

@@ -25,7 +25,6 @@
 import { LLMService } from "@/lib/services/llm.service";
 import { EventType } from "@/lib/services/Event_type";
 import { Dice_Roll } from "@/lib/services/dice_roll";
-import { Stat_Calc, StatType } from "@/lib/services/Stat_calc";
 import type {
   LLMGameContext,
   EventHistoryEntry,
@@ -36,16 +35,10 @@ import type {
   GameState,
   GameServiceResponse,
   CombatResult,
-  GameValidation,
-  Character,
-  Unit
+  GameValidation
 } from "@/lib/types/game.types";
 import * as BackendService from "@/lib/services/backend.service";
 import { HEALTH_PER_VITALITY } from "../contants";
-// TODO: Import utility functions when implemented
-// import { rollD20WithDetails } from "@/lib/utils/diceRoll";
-// import { calculateDamage, applyStatEffects } from "@/lib/utils/statCalc";
-// import { validateEventType, convertLLMEventToGameEvent } from "@/lib/utils/eventUtils";
 
 /**
  * GameService class - Main game engine orchestrator
@@ -94,7 +87,6 @@ export class GameService {
       // 3. Route to appropriate handler based on action type
       switch (action.actionType) {
         case "continue":
-        case "search":
           return await this.handleExplorationAction(action, gameState);
 
         case "attack":
@@ -185,7 +177,10 @@ export class GameService {
     }
 
     // Check for invalid states
-    if (gameState.character.currentHealth > gameState.character.vitality * HEALTH_PER_VITALITY) {
+    if (
+      gameState.character.currentHealth >
+      gameState.character.vitality * HEALTH_PER_VITALITY
+    ) {
       warnings.push("Character health exceeds maximum");
     }
 
@@ -339,7 +334,10 @@ export class GameService {
     const itemId = action.actionData?.itemId;
 
     if (action.actionType === "pickup_item" && itemId) {
-      await BackendService.assignItemToCharacter(gameState.character.id, itemId);
+      await BackendService.assignItemToCharacter(
+        gameState.character.id,
+        itemId
+      );
       const item = await BackendService.getItem(itemId);
 
       const message = `You picked up ${item.name}!`;
@@ -633,13 +631,9 @@ export class GameService {
     character: LLMGameContext["character"],
     enemy: LLMGameContext["enemy"]
   ): Promise<CombatResult> {
-    // TODO: Uncomment when Dice_Roll is available
-    // const diceRoll = Dice_Roll.roll();
-    // const isCritical = diceRoll >= 16 && diceRoll <= 20;
-
-    // Temporary placeholders until Dice_Roll is available
-    const diceRoll = Math.floor(Math.random() * 20) + 1;
-    const isCritical = diceRoll >= 16 && diceRoll <= 20;
+    // Use Dice_Roll service for RNG
+    const diceRoll = Dice_Roll.roll();
+    const isCritical = Dice_Roll.classifyRoll(diceRoll) === "critical_success";
 
     // Basic damage calculation
     // Note: Combat damage uses simple 2× multiplier, not three-tier system
@@ -704,7 +698,7 @@ export class GameService {
 
     // Exploration actions not valid in combat
     if (
-      (action.actionType === "continue" || action.actionType === "search") &&
+      action.actionType === "continue" &&
       gameState.currentPhase === "combat"
     ) {
       errors.push("Cannot explore during combat");
@@ -750,7 +744,10 @@ export class GameService {
 
     const newHealth = Math.max(
       0,
-      Math.min(character.vitality * HEALTH_PER_VITALITY, character.currentHealth + changes.health)
+      Math.min(
+        character.vitality * HEALTH_PER_VITALITY,
+        character.currentHealth + changes.health
+      )
     );
     const newAttack = Math.max(0, character.attack + changes.attack);
     const newDefense = Math.max(0, character.defense + changes.defense);
@@ -788,7 +785,10 @@ export class GameService {
    * - Combat initialization
    * - Item drop handling
    */
-  private async triggerEventType(gameState: GameState, eventType: EventTypeString): Promise<void> {
+  private async triggerEventType(
+    gameState: GameState,
+    eventType: EventTypeString
+  ): Promise<void> {
     const eventTypeInstance = new EventType(eventType);
     await eventTypeInstance.trigger(await this.buildLLMContext(gameState));
   }
