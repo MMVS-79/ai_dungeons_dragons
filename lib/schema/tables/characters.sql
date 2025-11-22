@@ -6,7 +6,7 @@ CREATE TABLE characters (
     campaign_id INT NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
     current_health INT NOT NULL,
-    max_health INT NOT NULL,
+    vitality INT NOT NULL,
     attack INT NOT NULL,
     defense INT NOT NULL,
     sprite_path VARCHAR(255),
