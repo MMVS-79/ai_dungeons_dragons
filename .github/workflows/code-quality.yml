@@ -31,48 +31,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Prettier and ESLint auto-fix (source-only, robust)
+      - name: Find tracked source files
+        id: find_files
+        run: |
+          # Look for tracked JS/TS files under the common source dirs
+          FILES="$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)"
+          echo "::set-output name=files::$FILES"
+
+      - name: Run Prettier on tracked files (if any)
+        if: steps.find_files.outputs.files != ''
+        run: |
+          # NUL-safe: list tracked source files and run prettier on them
+          git ls-files -z 'app/**/*.{js,ts,jsx,tsx}' 'lib/**/*.{js,ts,jsx,tsx}' 'src/**/*.{js,ts,jsx,tsx}' \
+            | xargs -0 -r npx prettier --write || true
+
+      - name: Run ESLint --fix (tracked files, robust)
+        if: steps.find_files.outputs.files != ''
         id: autofix
         run: |
           set -euo pipefail
+          # Use the actual tracked files to avoid ESLint "no files match pattern" errors.
+          printf "%s\n" "${{ steps.find_files.outputs.files }}" \
+            | xargs -r npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
 
-          # Adjust these globs to match where your source files actually live.
-          # Based on your repo logs, this project uses app/ and lib/. Include src/ too just in case.
-          SOURCE_GLOBS=(
-            "app/**/*.{js,ts,jsx,tsx}"
-            "lib/**/*.{js,ts,jsx,tsx}"
-            "src/**/*.{js,ts,jsx,tsx}"
-          )
-
-          echo "Running Prettier (source-only) if available"
-          if npx prettier --version >/dev/null 2>&1; then
-            for g in "${SOURCE_GLOBS[@]}"; do
-              npx prettier --write "$g" || true
-            done
-          else
-            echo "Prettier not available; skipping Prettier step"
-          fi
-
-          echo "Attempting eslint --fix on source globs"
-          # Try to run eslint --fix across all globs at once
-          if npx eslint "${SOURCE_GLOBS[@]}" --ext .js,.jsx,.ts,.tsx; then
-            echo "eslint --fix completed successfully on source files"
-          else
-            echo "eslint --fix failed; attempting per-file fixes to locate problematic files"
-            printf "" > eslint-failures.txt || true
-            # Iterate only over tracked source files under the common source dirs
-            git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' | while read -r file; do
-              echo "Fixing: $file"
-              if ! npx eslint --fix "$file"; then
-                echo "$file" >> eslint-failures.txt
-              fi
-            done
-            if [ -s eslint-failures.txt ]; then
-              echo "ESLint failed on these source files:"
-              cat eslint-failures.txt
-              echo "::error::ESLint crashed or cannot fix some source files. See eslint-failures.txt"
-              exit 1
+          # If eslint --fix above failed/crashed, attempt per-file to surface problematic files.
+          # (We allow the above to exit non-zero without failing the step so we can inspect.)
+          printf "%s\n" "${{ steps.find_files.outputs.files }}" | while read -r file; do
+            if ! npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern "$file"; then
+              echo "ESLINT_FIX_FAILED:$file" >> eslint-failures.txt || true
             fi
+          done
+
+          if [ -f eslint-failures.txt ] && [ -s eslint-failures.txt ]; then
+            echo "ESLint failed to auto-fix these files:"
+            sed -n '1,200p' eslint-failures.txt || true
+            echo "::error::ESLint crashed or cannot fix some files. See eslint-failures.txt"
+            exit 1
           fi
 
       - name: Show changes made by auto-fix (for debugging)
@@ -81,14 +75,13 @@ jobs:
           echo "---- DIFF ----"
           git -c color.ui=false --no-pager diff || true
 
-      - name: Commit & push formatted changes (if any, source-only)
-        if: steps.autofix.outcome == 'success'
+      - name: Commit & push formatted changes (if any)
+        if: steps.autofix.outcome == 'success' && steps.find_files.outputs.files != ''
         uses: EndBug/add-and-commit@v9
         with:
           author_name: "github-actions[bot]"
           author_email: "41898282+github-actions[bot]@users.noreply.github.com"
           message: "chore: auto-format source files (CI)"
-          # Only add source and lock/package files to avoid touching tests or fixtures
           add: "app lib src package.json package-lock.json yarn.lock"
           push: "true"
         env:
@@ -109,7 +102,6 @@ jobs:
       - name: Ensure latest branch (pick up formatting commit if pushed)
         run: |
           BRANCH="${{ github.head_ref || github.ref_name }}"
-          echo "Branch=$BRANCH"
           git fetch origin "$BRANCH" || true
           git reset --hard "origin/$BRANCH" || true
 
@@ -122,10 +114,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint (source-only, ignore warnings)
-        # --quiet hides warnings and only reports errors (so warnings won't fail CI)
+      - name: Find tracked source files (for lint)
+        id: find_lint_files
         run: |
-          npx eslint "app/**/*.{js,ts,jsx,tsx}" "lib/**/*.{js,ts,jsx,tsx}" "src/**/*.{js,ts,jsx,tsx}" --ext .js,.jsx,.ts,.tsx --quiet || true
+          FILES="$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)"
+          echo "::set-output name=files::$FILES"
+
+      - name: Run ESLint (errors fail, warnings ignored)
+        if: steps.find_lint_files.outputs.files != ''
+        run: |
+          # Use --quiet to suppress warnings; add --no-error-on-unmatched-pattern to avoid
+          # "No files matching the pattern" CLI error in case a pattern is empty.
+          printf "%s\n" "${{ steps.find_lint_files.outputs.files }}" \
+            | xargs -r npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
+
+      - name: Skip lint if no source files found
+        if: steps.find_lint_files.outputs.files == ''
+        run: echo "No source files found (app/, lib/, src/). Skipping ESLint."
 
   test:
     name: Jest Tests
@@ -142,7 +147,6 @@ jobs:
       - name: Ensure latest branch (pick up formatting commit if pushed)
         run: |
           BRANCH="${{ github.head_ref || github.ref_name }}"
-          echo "Branch=$BRANCH"
           git fetch origin "$BRANCH" || true
           git reset --hard "origin/$BRANCH" || true
 
