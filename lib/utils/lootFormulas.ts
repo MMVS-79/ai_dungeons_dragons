@@ -12,7 +12,7 @@
 
 /**
  * Calculate item rarity for exploration item drops
- * Formula: (event_number + dice_roll * 2)
+ * Formula: (event_number * ITEM_EVENT_NUMBER_WEIGHT + dice_roll * ITEM_DICE_ROLL_WEIGHT)
  * 
  * Examples:
  * - Event 1, Roll 5: 1 + 10 = 11 rarity (low-tier items)
@@ -38,7 +38,7 @@ export function calculateItemRarity(eventNumber: number, diceRoll: number): numb
 
 /**
  * Calculate enemy difficulty for combat encounters
- * Formula: (event_number * 2 + dice_roll)
+ * Formula: (event_number * ENEMY_EVENT_NUMBER_WEIGHT + dice_roll * ENEMY_DICE_ROLL_WEIGHT)
  * 
  * Examples:
  * - Event 1, Roll 5: 2 + 5 = 7 (rats, zombies)
@@ -66,7 +66,7 @@ export function calculateEnemyDifficulty(eventNumber: number, diceRoll: number):
 
 /**
  * Calculate item/equipment rarity for combat rewards
- * Formula: (enemy_difficulty * 0.5 + dice_roll * 2)
+ * Formula: (enemy_difficulty * REWARD_DIFFICULTY_WEIGHT + dice_roll * REWARD_DICE_ROLL_WEIGHT)
  * 
  * This ensures harder enemies drop better loot, with dice roll adding variance
  * 
@@ -133,11 +133,11 @@ export function getDifficultyRange(targetDifficulty: number, variance: number = 
  */
 export const BALANCE_CONFIG = {
   // Item drop formula multipliers
-  ITEM_EVENT_NUMBER_WEIGHT: 10,
+  ITEM_EVENT_NUMBER_WEIGHT: 1,
   ITEM_DICE_ROLL_WEIGHT: 2,
   
   // Enemy selection formula multipliers
-  ENEMY_EVENT_NUMBER_WEIGHT: 10,
+  ENEMY_EVENT_NUMBER_WEIGHT: 2,
   ENEMY_DICE_ROLL_WEIGHT: 1,
   
   // Combat reward formula multipliers
