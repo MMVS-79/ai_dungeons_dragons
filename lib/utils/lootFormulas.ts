@@ -110,7 +110,7 @@ export const BALANCE_CONFIG = {
   ITEM_DICE_ROLL_WEIGHT: 2,
   
   // Enemy selection formula multipliers
-  ENEMY_EVENT_NUMBER_WEIGHT: 2,
+  ENEMY_EVENT_NUMBER_WEIGHT: 4,
   ENEMY_DICE_ROLL_WEIGHT: 1,
   
   // Combat reward formula multipliers
@@ -123,8 +123,8 @@ export const BALANCE_CONFIG = {
   
   // Campaign constants
   BOSS_DIFFICULTY_THRESHOLD: 1000,
-  MAX_EVENT_NUMBER: 10,
-  BOSS_FORCED_EVENT_START: 8, // Boss encounters forced after event 48
+  MAX_EVENT_NUMBER: 50,
+  BOSS_FORCED_EVENT_START: 48, // Boss encounters forced after this many events
 };
 
 /**

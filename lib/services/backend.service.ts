@@ -862,3 +862,4 @@ export async function getRecentEvents(
     createdAt: new Date(row.created_at),
   }));
 }
+

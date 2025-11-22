@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
+import {
+  getCombatSnapshot,
+  clearCombatSnapshot,
+  createCombatSnapshot,
+} from "@/lib/utils/combatSnapshot";
+import type { CombatSnapshot } from "@/lib/types/game.types";
 
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
 
@@ -21,20 +27,93 @@ export async function GET(request: NextRequest) {
     }
 
     const id = parseInt(campaignId);
+
+    // Single check and creation logic
+    let shouldRecreateCombat = false;
+    let combatEnemyId: number | null = null;
+
+    // Check if there's a snapshot in memory
+    const existingSnapshot = getCombatSnapshot(id);
+
+    if (existingSnapshot) {
+      // Snapshot exists in memory - reset it
+      console.log(
+        `[API] Found active combat snapshot, resetting to fresh state`
+      );
+      shouldRecreateCombat = true;
+      combatEnemyId = existingSnapshot.enemy.id;
+      clearCombatSnapshot(id);
+    } else {
+      // No snapshot in memory - check database for incomplete combat
+      const recentEvents = await BackendService.getRecentEvents(id, 10);
+      const lastEvent = recentEvents[0];
+
+      if (
+        lastEvent &&
+        lastEvent.eventType === "Combat" &&
+        lastEvent.eventData
+      ) {
+        const eventData = lastEvent.eventData as any;
+
+        if (eventData.phase === "encounter" && eventData.enemyId) {
+          console.log(
+            `[API] Found incomplete combat in DB, recreating snapshot`
+          );
+          shouldRecreateCombat = true;
+          combatEnemyId = eventData.enemyId;
+        }
+      }
+    }
+
+    // If need to recreate combat, do it once here
+    if (shouldRecreateCombat && combatEnemyId) {
+      const { character, equipment, inventory } =
+        await BackendService.getCharacterWithFullData(id);
+      const enemy = await BackendService.getEnemy(combatEnemyId);
+
+      console.log(`[API] Creating fresh combat snapshot with equipment`);
+      console.log(`[API] Weapon:`, equipment.weapon);
+      console.log(`[API] Shield:`, equipment.shield);
+
+      const freshSnapshot: CombatSnapshot = {
+        campaignId: id,
+        enemy,
+        enemyCurrentHp: enemy.health,
+        characterSnapshot: {
+          id: character.id,
+          currentHealth: character.currentHealth,
+          maxHealth: character.maxHealth,
+          baseAttack: character.attack,
+          baseDefense: character.defense,
+        },
+        equipment: equipment,
+        inventorySnapshot: [...inventory],
+        originalInventoryIds: inventory.map((item) => item.id),
+        temporaryBuffs: {
+          attack: 0,
+          defense: 0,
+        },
+        combatLog: [],
+        startedAt: new Date(),
+      };
+
+      createCombatSnapshot(freshSnapshot);
+      console.log(`[API] Snapshot equipment:`, freshSnapshot.equipment);
+    }
+
     const gameState = await gameService.getGameState(id);
 
     return NextResponse.json({
       ...gameState,
       success: true,
     });
-
   } catch (error) {
     console.error("[API] Game state fetch error:", error);
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to fetch game state" 
+      {
+        success: false,
+        error: "Failed to fetch game state",
       },
       { status: 500 }
     );

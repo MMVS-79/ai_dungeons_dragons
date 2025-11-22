@@ -945,6 +945,7 @@ Your introduction:`;
           baseAttack: gameState.character.attack,
           baseDefense: gameState.character.defense,
         },
+        equipment: gameState.equipment,
         inventorySnapshot: [...gameState.inventory],
         originalInventoryIds: gameState.inventory.map((item) => item.id),
         temporaryBuffs: {
@@ -1328,7 +1329,7 @@ Your introduction:`;
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.75) {
+      if (rewardRoll < 0.05) {
         // EQUIPMENT REWARD (75%)
         rewardRarity = calculateCombatRewardRarity(
           snapshot.enemy.difficulty,
@@ -1344,13 +1345,17 @@ Your introduction:`;
         rewardEquipment = equipment;
       } else {
         // ITEM REWARD (25%)
-        // CHECK: Inventory full?
-        const currentInventory = await BackendService.getInventory(
-          snapshot.characterSnapshot.id
-        );
+        // Check snapshot inventory, not database inventory
         const MAX_INVENTORY = 10;
 
-        if (currentInventory.length >= MAX_INVENTORY) {
+        // Use snapshot inventory count (reflects items used during combat)
+        const currentInventoryCount = snapshot.inventorySnapshot.length;
+
+        console.log(
+          `[GameService] Inventory check: ${currentInventoryCount}/${MAX_INVENTORY} (snapshot)`
+        );
+
+        if (currentInventoryCount >= MAX_INVENTORY) {
           console.log(
             `[GameService] Inventory full, cannot add combat reward item`
           );
@@ -1370,7 +1375,6 @@ Your introduction:`;
           rewardEquipment = item;
         }
       }
-
       const finalMessage = `${combatMessage}\n\n${rewardMessage}`;
 
       // LOG #2: Combat conclusion (victory)

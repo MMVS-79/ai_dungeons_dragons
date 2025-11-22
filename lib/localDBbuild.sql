@@ -36,13 +36,13 @@ CREATE TABLE chats (
 DROP TABLE IF EXISTS logs;
 CREATE TABLE logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    campaign_id INT NOT NULL, -- * used to be nullable for ON DELETE SET NULL
+    campaign_id INT, -- * used to be nullable for ON DELETE SET NULL
     message TEXT NOT NULL,
     event_number INT NOT NULL,
     event_type VARCHAR(50),
     event_data JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL,
+    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
     UNIQUE (campaign_id, event_number)
 );
 
