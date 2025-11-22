@@ -165,6 +165,7 @@ export interface CombatSnapshot {
     baseDefense: number;
   };
   inventorySnapshot: Item[];
+  originalInventoryIds: number[];
   temporaryBuffs: {
     attack: number;
     defense: number;

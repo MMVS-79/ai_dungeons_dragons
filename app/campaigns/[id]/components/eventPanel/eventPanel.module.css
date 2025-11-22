@@ -46,6 +46,7 @@
   height: 0.75rem;
   overflow: hidden;
   margin-bottom: 0.5rem;
+  border: 1px solid #ffffff;
 }
 
 .hpBarFill {

@@ -108,14 +108,9 @@ export default function CampaignPage() {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/game/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          campaignId: Number(params.id),
-          actionType: "continue",
-          actionData: { diceRoll: Math.floor(Math.random() * 20) + 1 },
-        }),
+      // Use GET to load state without triggering new event
+      const response = await fetch(`/api/game/state?campaignId=${params.id}`, {
+        method: "GET",
       });
 
       if (!response.ok) {
@@ -127,20 +122,20 @@ export default function CampaignPage() {
       const result = await response.json();
       console.log("[Frontend] Initial game state loaded:", result);
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to initialize game");
-      }
-
       // Initialize player state
-      if (result.gameState.character) {
-        const char = result.gameState.character;
-        const equip = result.gameState.equipment || {};
-        const inv = result.gameState.inventory || [];
+      if (result.character) {
+        const char = result.character;
+        const equip = result.equipment || {};
+        const inv = result.inventory || [];
+
+        const armourBonus = equip.armour?.health || 0;
+        const trueMaxHp = char.maxHealth + armourBonus;
+        const validCurrentHp = Math.min(char.currentHealth, trueMaxHp);
 
         setPlayerState({
           name: char.name,
           image: char.spritePath || "/characters/player/warrior.png",
-          hp: char.currentHealth,
+          hp: validCurrentHp,
           maxHp: char.maxHealth,
           attack: char.attack,
           defense: char.defense,
@@ -150,24 +145,22 @@ export default function CampaignPage() {
       }
 
       // Initialize enemy state if present
-      if (result.gameState.enemy) {
-        const combatState = result.gameState.combatState;
+      if (result.enemy) {
+        const combatState = result.combatState;
 
         setEnemyState({
-          name: result.gameState.enemy.name,
-          image:
-            result.gameState.enemy.spritePath ||
-            "/characters/enemy/low/goblin.png",
-          hp: combatState?.enemyCurrentHp || result.gameState.enemy.health,
-          maxHp: result.gameState.enemy.health,
-          attack: result.gameState.enemy.attack,
-          defense: result.gameState.enemy.defense,
+          name: result.enemy.name,
+          image: result.enemy.spritePath || "/characters/enemy/low/goblin.png",
+          hp: combatState?.enemyCurrentHp || result.enemy.health,
+          maxHp: result.enemy.health,
+          attack: result.enemy.attack,
+          defense: result.enemy.defense,
         });
       }
 
       // Initialize temporary buffs
-      if (result.gameState.combatState?.temporaryBuffs) {
-        setTemporaryBuffs(result.gameState.combatState.temporaryBuffs);
+      if (result.combatState?.temporaryBuffs) {
+        setTemporaryBuffs(result.combatState.temporaryBuffs);
       }
 
       // Initialize item found
@@ -175,32 +168,84 @@ export default function CampaignPage() {
         setItemFound(result.itemFound);
       }
 
-      // Load messages from logs
-      const logMessages = result.gameState.recentEvents
+      // Load messages from logs and add appropriate current message
+      const logMessages = result.recentEvents
         .slice()
-        .reverse() // Oldest first
+        .reverse()
         .map((event: any) => ({
           id: generateMessageId(),
           text: event.message,
-          choices: [], // No choices for historical messages
+          choices: [],
         }));
 
-      // Add current message with choices
-      const currentMessage = {
-        id: generateMessageId(),
-        text: result.message,
-        choices: result.choices || ["Continue Forward"],
-      };
+      // Determine current choices based on phase
+      let currentChoices = ["Continue Forward"];
+      let currentMessageText = "";
 
-      setMessages([...logMessages, currentMessage]);
+      if (result.currentPhase === "combat") {
+        currentChoices = ["Attack", "Flee"];
+        currentMessageText = `You are in combat with ${
+          result.enemy?.name || "an enemy"
+        }!`;
+      } else if (result.currentPhase === "investigation_prompt") {
+        currentChoices = ["Investigate", "Decline"];
+        currentMessageText =
+          result.investigationPrompt?.message ||
+          "Something awaits investigation...";
+      } else if (result.currentPhase === "game_over") {
+        currentChoices = [];
+        currentMessageText = "You have been defeated...";
+      } else if (result.currentPhase === "victory") {
+        currentChoices = [];
+        currentMessageText = "🎉 Victory is yours!";
+      } else {
+        // Exploration phase
+        currentChoices = ["Continue Forward"];
 
-      // Check for game over or victory
-      if (result.gameState.currentPhase === "game_over") {
-        setShowGameOver(true);
-      } else if (result.gameState.currentPhase === "victory") {
-        setShowVictory(true);
+        // If no events yet (fresh campaign), show welcome message
+        if (logMessages.length === 0) {
+          currentMessageText = "Your adventure begins...";
+        } else {
+          // Show last event's message as current
+          currentMessageText =
+            logMessages.length > 0
+              ? logMessages[logMessages.length - 1].text
+              : "Continue your adventure...";
+        }
       }
 
+      // Build messages array
+      let finalMessages = [];
+
+      if (logMessages.length === 0) {
+        // Fresh campaign - just show welcome message
+        finalMessages = [
+          {
+            id: generateMessageId(),
+            text: currentMessageText,
+            choices: currentChoices,
+          },
+        ];
+      } else if (result.currentPhase === "investigation_prompt") {
+        // Investigation prompt - add it as current message
+        finalMessages = [
+          ...logMessages,
+          {
+            id: generateMessageId(),
+            text: currentMessageText,
+            choices: currentChoices,
+          },
+        ];
+      } else {
+        // Normal case - last log message gets the choices
+        const allMessages = [...logMessages];
+        if (allMessages.length > 0) {
+          allMessages[allMessages.length - 1].choices = currentChoices;
+        }
+        finalMessages = allMessages;
+      }
+
+      setMessages(finalMessages);
       setLoading(false);
     } catch (error) {
       console.error("[Frontend] Error loading game state:", error);
@@ -225,7 +270,7 @@ export default function CampaignPage() {
       const actionType = mapChoiceToAction(choice);
 
       // Determine if dice roll is needed
-      const actionsNeedingDice = ["attack", "flee", "continue", "investigate"];
+      const actionsNeedingDice = ["attack", "flee", "investigate"];
       const needsDiceRoll = actionsNeedingDice.includes(actionType);
 
       let diceResult = 0;
@@ -410,6 +455,12 @@ export default function CampaignPage() {
             inventory: inv,
             equipment: equip,
           });
+
+          if (result.gameState.currentPhase === "game_over") {
+            setShowGameOver(true);
+          } else if (result.gameState.currentPhase === "victory") {
+            setShowVictory(true);
+          }
         }
 
         // Update temporary buffs

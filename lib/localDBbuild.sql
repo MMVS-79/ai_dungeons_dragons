@@ -36,7 +36,7 @@ CREATE TABLE chats (
 DROP TABLE IF EXISTS logs;
 CREATE TABLE logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    campaign_id INT, -- nullable for ON DELETE SET NULL
+    campaign_id INT NOT NULL, -- * used to be nullable for ON DELETE SET NULL
     message TEXT NOT NULL,
     event_number INT NOT NULL,
     event_type VARCHAR(50),

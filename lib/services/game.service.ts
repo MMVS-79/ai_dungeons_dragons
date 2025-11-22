@@ -61,6 +61,7 @@ import {
   clearInvestigationPrompt,
 } from "../utils/investigationPrompt";
 import * as BackendService from "./backend.service";
+import pool from "../db";
 
 export class GameService {
   private llmService: LLMService;
@@ -71,6 +72,97 @@ export class GameService {
       model: "gemini-flash-lite-latest",
       temperature: 0.8,
     });
+  }
+
+  /**
+   * Expose investigation prompt check for API route
+   */
+  public getStoredInvestigationPrompt(campaignId: number) {
+    return getInvestigationPrompt(campaignId);
+  }
+
+  private async generateCampaignIntroduction(
+    campaignId: number,
+    gameState: GameState
+  ): Promise<GameServiceResponse> {
+    console.log(`[GameService] Generating campaign introduction`);
+
+    // Get character race and class names from database
+    const [raceRows] = await pool.query<any[]>(
+      "SELECT name FROM races WHERE id = ?",
+      [gameState.character.raceId]
+    );
+    const [classRows] = await pool.query<any[]>(
+      "SELECT name FROM classes WHERE id = ?",
+      [gameState.character.classId]
+    );
+
+    const raceName = raceRows[0]?.name || "adventurer";
+    const className = classRows[0]?.name || "warrior";
+
+    const introPrompt = `You are a D&D dungeon master starting a new 48-turn campaign. Create an epic introduction.
+
+Character:
+- Name: ${gameState.character.name}
+- Race: ${raceName}
+- Class: ${className}
+
+Create a compelling introduction (3-4 sentences) that:
+- Sets the dark, dangerous atmosphere of an ancient dungeon
+- Explains that a legendary dragon boss threatens the world
+- Describes why ${gameState.character.name} has ventured into this perilous place
+- Builds anticipation and heroic purpose
+
+Make it epic and immersive.
+
+Your introduction:`;
+
+    try {
+      const result = await this.llmService.model.generateContent(introPrompt);
+      const response = await result.response;
+      const introduction = response.text().trim();
+
+      console.log(
+        `[GameService] Generated introduction: ${introduction.substring(
+          0,
+          100
+        )}...`
+      );
+
+      // Save as first event
+      await BackendService.saveEvent(campaignId, introduction, "Descriptive", {
+        campaignIntro: true,
+      });
+
+      const updatedState = await this.getGameState(campaignId);
+      updatedState.currentPhase = "exploration";
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message: introduction,
+        choices: ["Continue Forward"],
+      };
+    } catch (error) {
+      console.error("[GameService] Error generating introduction:", error);
+
+      // Fallback introduction
+      const fallback = `${gameState.character.name}, a brave ${raceName} ${className}, stands at the entrance of an ancient dungeon. Deep within these cursed halls, a legendary dragon threatens the realm. Only by venturing into the darkness and facing unimaginable dangers can you hope to save the world from destruction.`;
+
+      await BackendService.saveEvent(campaignId, fallback, "Descriptive", {
+        campaignIntro: true,
+      });
+
+      const updatedState = await this.getGameState(campaignId);
+      updatedState.currentPhase = "exploration";
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message: fallback,
+        choices: ["Continue Forward"],
+      };
+    }
   }
 
   // ==========================================================================
@@ -160,6 +252,14 @@ export class GameService {
         ? gameState.recentEvents[0].eventNumber
         : 0;
     const nextEventNumber = currentEventNumber + 1;
+
+    // First event is campaign introduction
+    if (nextEventNumber === 1) {
+      return await this.generateCampaignIntroduction(
+        action.campaignId,
+        gameState
+      );
+    }
 
     // Check boss encounter (event 48)
     if (nextEventNumber >= BALANCE_CONFIG.BOSS_FORCED_EVENT_START) {
@@ -508,18 +608,20 @@ export class GameService {
           "You decide to continue without investigating."
         : "You continue forward cautiously.";
 
+      // Save with ORIGINAL event type
+      const eventTypeToLog = storedPrompt?.eventType || "Descriptive";
+
       // Save decline event to logs
       await BackendService.saveEvent(
         action.campaignId,
         message,
-        "Descriptive",
+        eventTypeToLog as EventTypeString,
         {
           declined: true,
-          originalEventType: storedPrompt?.eventType || "unknown",
         }
       );
 
-      console.log(`[GameService] Decline event logged`);
+      console.log(`[GameService] Decline event logged as ${eventTypeToLog}`);
 
       // Get updated state
       const updatedState = await this.getGameState(action.campaignId);
@@ -596,21 +698,20 @@ export class GameService {
       // Update character stats
       if (statBoost.statType === "health") {
         // Calculate actual max HP (base + armour)
-        const actualMaxHp =
-          gameState.character.maxHealth +
-          (gameState.equipment.armour?.health || 0);
-        const newHealth = Math.min(
-          actualMaxHp,
-          gameState.character.currentHealth + finalValue
+        const armourBonus = gameState.equipment.armour?.health || 0;
+        const actualMaxHp = gameState.character.maxHealth + armourBonus;
+        const currentHp = gameState.character.currentHealth;
+        const newHealth = Math.min(actualMaxHp, currentHp + finalValue);
+
+        console.log(
+          `[GameService] Health calculation: current=${currentHp}, change=+${finalValue}, new=${newHealth}, trueMax=${actualMaxHp}`
         );
 
         await BackendService.updateCharacter(gameState.character.id, {
           currentHealth: newHealth,
         });
 
-        console.log(
-          `[GameService] Health updated: ${gameState.character.currentHealth} -> ${newHealth} (max: ${actualMaxHp})`
-        );
+        console.log(`[GameService] Health updated in database`);
       } else if (statBoost.statType === "attack") {
         const newAttack = gameState.character.attack + finalValue;
         await BackendService.updateCharacter(gameState.character.id, {
@@ -680,6 +781,34 @@ export class GameService {
     console.log(
       `[GameService] Processing Item_Drop event with dice roll ${diceRoll}`
     );
+
+    const MAX_INVENTORY = 10;
+    if (gameState.inventory.length >= MAX_INVENTORY) {
+      console.log(
+        `[GameService] Inventory full (${gameState.inventory.length}/${MAX_INVENTORY})`
+      );
+
+      const message =
+        "You discover a valuable item, but your inventory is full! You must leave it behind...";
+
+      await BackendService.saveEvent(campaignId, message, "Item_Drop", {
+        inventoryFull: true,
+        diceRoll,
+      });
+
+      EventType.resetDescriptiveCount();
+
+      const updatedState = await this.getGameState(campaignId);
+      updatedState.currentPhase = "exploration";
+      updatedState.investigationPrompt = undefined;
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message,
+        choices: ["Continue Forward"],
+      };
+    }
 
     const context = await this.buildLLMContext(gameState);
     const eventNumber = gameState.recentEvents.length + 1;
@@ -817,6 +946,7 @@ export class GameService {
           baseDefense: gameState.character.defense,
         },
         inventorySnapshot: [...gameState.inventory],
+        originalInventoryIds: gameState.inventory.map((item) => item.id),
         temporaryBuffs: {
           attack: 0,
           defense: 0,
@@ -972,36 +1102,38 @@ export class GameService {
     // CHECK: Is this a boss fight?
     const isBoss = snapshot.enemy.difficulty >= 1000;
 
-    if (isBoss) {
-      console.log(
-        `[GameService] Cannot flee from boss: ${snapshot.enemy.name}`
-      );
-
-      // Add to combat log
-      addCombatLogEntry(
-        action.campaignId,
-        "You cannot escape from this powerful foe!"
-      );
-
-      // Get updated state (still in combat)
-      const updatedState = await this.getGameState(action.campaignId);
-      updatedState.currentPhase = "combat";
-      updatedState.enemy = snapshot.enemy;
-      updatedState.combatState = {
-        enemyCurrentHp: snapshot.enemyCurrentHp,
-        temporaryBuffs: snapshot.temporaryBuffs,
-      };
-
-      return {
-        success: true,
-        gameState: updatedState,
-        message: `You try to flee, but the ${snapshot.enemy.name}'s presence is overwhelming! There is no escape from this legendary foe!`,
-        choices: ["Attack"],
-      };
-    }
-
     const diceRoll = action.actionData?.diceRoll || Dice_Roll.roll();
     const rollClassification = Dice_Roll.classifyRoll(diceRoll);
+
+    if (combatAction === "flee") {
+      if (isBoss) {
+        console.log(
+          `[GameService] Cannot flee from boss: ${snapshot.enemy.name}`
+        );
+
+        // Add to combat log
+        addCombatLogEntry(
+          action.campaignId,
+          "You cannot escape from this powerful foe!"
+        );
+
+        // Get updated state (still in combat)
+        const updatedState = await this.getGameState(action.campaignId);
+        updatedState.currentPhase = "combat";
+        updatedState.enemy = snapshot.enemy;
+        updatedState.combatState = {
+          enemyCurrentHp: snapshot.enemyCurrentHp,
+          temporaryBuffs: snapshot.temporaryBuffs,
+        };
+
+        return {
+          success: true,
+          gameState: updatedState,
+          message: `You try to flee, but the ${snapshot.enemy.name}'s presence is overwhelming! There is no escape from this legendary foe!`,
+          choices: ["Attack", "Flee"],
+        };
+      }
+    }
 
     // FLEE ACTION
     if (combatAction === "flee") {
@@ -1105,24 +1237,31 @@ export class GameService {
     }
 
     // ATTACK ACTION
-    let characterDamage = Math.max(
-      1,
+    // FORMULA: Base damage + dice modifier
+    const baseDamage = Math.max(
+      0,
       getEffectiveAttack(snapshot) - snapshot.enemy.defense
     );
+    const diceModifier = diceRoll - 10; // -9 to +10 range
+    let characterDamage = Math.max(1, baseDamage + diceModifier);
 
-    // Apply critical modifiers
-    if (rollClassification === "critical_success") {
-      characterDamage *= 2;
-    } else if (rollClassification === "critical_failure") {
-      characterDamage = 0;
-    }
-
-    const enemyDamage = Math.max(
-      1,
-      snapshot.enemy.attack - getEffectiveDefense(snapshot)
+    console.log(
+      `[GameService] Damage calc: base=${baseDamage}, dice mod=${diceModifier}, final=${characterDamage}`
     );
 
-    // Apply damage
+    // Enemy counterattack damage
+    const baseEnemyDamage = Math.max(
+      0,
+      snapshot.enemy.attack - getEffectiveDefense(snapshot)
+    );
+    const enemyDiceModifier = -(diceRoll - 10); // Inverse for defense (high roll = less damage taken)
+    const enemyDamage = Math.max(1, baseEnemyDamage + enemyDiceModifier);
+
+    console.log(
+      `[GameService] Enemy damage calc: base=${baseEnemyDamage}, dice mod=${enemyDiceModifier}, final=${enemyDamage}`
+    );
+
+    // Apply damage to enemy
     const newEnemyHp = Math.max(0, snapshot.enemyCurrentHp - characterDamage);
     updateEnemyHp(action.campaignId, newEnemyHp);
 
@@ -1132,7 +1271,7 @@ export class GameService {
     if (rollClassification === "critical_success") {
       combatMessage += `⚡ CRITICAL HIT! You strike the ${snapshot.enemy.name} for ${characterDamage} damage! `;
     } else if (rollClassification === "critical_failure") {
-      combatMessage += `💀 CRITICAL MISS! Your attack fails! `;
+      combatMessage += `💀 CRITICAL MISS! You strike the ${snapshot.enemy.name} for only ${characterDamage} damage! `;
     } else {
       combatMessage += `You hit the ${snapshot.enemy.name} for ${characterDamage} damage! `;
     }
@@ -1143,18 +1282,94 @@ export class GameService {
     if (newEnemyHp <= 0) {
       combatMessage += `The ${snapshot.enemy.name} has been defeated! 🎉`;
 
-      // Process combat rewards
-      const rewardRarity = calculateCombatRewardRarity(
-        snapshot.enemy.difficulty,
-        diceRoll
-      );
-      const { message: rewardMessage, equipment } =
-        await this.processCombatRewards(
+      // CHECK: Is this a boss?
+      const isBoss = snapshot.enemy.difficulty >= 1000;
+
+      if (isBoss) {
+        // BOSS: No rewards, just victory
+        console.log(`[GameService] Boss defeated! No combat rewards.`);
+
+        // Update campaign to completed
+        await BackendService.updateCampaign(action.campaignId, {
+          state: "completed",
+        });
+
+        const finalMessage = `${combatMessage}\n\n🎉 You have defeated the legendary ${snapshot.enemy.name}! Victory is yours!`;
+
+        await BackendService.saveEvent(
+          action.campaignId,
+          finalMessage,
+          "Combat",
+          {
+            phase: "conclusion",
+            outcome: "boss_defeated",
+            diceRoll,
+          }
+        );
+
+        await this.commitCombatSnapshot(snapshot);
+        clearCombatSnapshot(action.campaignId);
+        EventType.resetDescriptiveCount();
+
+        const updatedState = await this.getGameState(action.campaignId);
+        updatedState.currentPhase = "victory";
+
+        return {
+          success: true,
+          gameState: updatedState,
+          message: finalMessage,
+          choices: [],
+        };
+      }
+
+      // NORMAL ENEMY: Process combat rewards
+      const rewardRoll = Math.random();
+      let rewardEquipment: Weapon | Armour | Shield | Item | null = null;
+      let rewardMessage = "💰 Victory Rewards:\n";
+      let rewardRarity: number = 0;
+
+      if (rewardRoll < 0.75) {
+        // EQUIPMENT REWARD (75%)
+        rewardRarity = calculateCombatRewardRarity(
+          snapshot.enemy.difficulty,
+          diceRoll
+        );
+        const { message, equipment } = await this.processCombatRewards(
           action.campaignId,
           snapshot,
           rewardRarity,
           diceRoll
         );
+        rewardMessage = message;
+        rewardEquipment = equipment;
+      } else {
+        // ITEM REWARD (25%)
+        // CHECK: Inventory full?
+        const currentInventory = await BackendService.getInventory(
+          snapshot.characterSnapshot.id
+        );
+        const MAX_INVENTORY = 10;
+
+        if (currentInventory.length >= MAX_INVENTORY) {
+          console.log(
+            `[GameService] Inventory full, cannot add combat reward item`
+          );
+          rewardMessage = `💰 Victory Rewards:\nYou found an item, but your inventory is full!`;
+          rewardRarity = 0;
+        } else {
+          const eventNumber = gameState.recentEvents.length + 1;
+          rewardRarity = calculateItemRarity(eventNumber, diceRoll);
+          const item = await BackendService.getItemByRarity(rewardRarity);
+
+          await BackendService.addItemToInventory(
+            snapshot.characterSnapshot.id,
+            item.id
+          );
+
+          rewardMessage = `💰 Victory Rewards:\nYou found: ${item.name}! (${item.description})`;
+          rewardEquipment = item;
+        }
+      }
 
       const finalMessage = `${combatMessage}\n\n${rewardMessage}`;
 
@@ -1188,7 +1403,7 @@ export class GameService {
         gameState: updatedState,
         message: finalMessage,
         choices: ["Continue Forward"],
-        itemFound: equipment,
+        itemFound: rewardEquipment,
       };
     }
 
@@ -1318,12 +1533,19 @@ export class GameService {
 
     if (item.statModified === "health") {
       // Heal character
+      const armourBonus = gameState.equipment.armour?.health || 0;
+      const trueMaxHp = snapshot.characterSnapshot.maxHealth + armourBonus;
+
       const newHp = Math.min(
-        snapshot.characterSnapshot.maxHealth,
+        trueMaxHp, // Use true max HP, not base
         snapshot.characterSnapshot.currentHealth + item.statValue
       );
+
       updateCharacterHp(action.campaignId, newHp);
       message = `You used ${item.name} and restored ${item.statValue} HP!`;
+      console.log(
+        `[GameService] Healed: ${snapshot.characterSnapshot.currentHealth} -> ${newHp} (true max: ${trueMaxHp})`
+      );
     } else if (item.statModified === "attack") {
       // Temporary attack buff
       applyTemporaryBuff(action.campaignId, "attack", item.statValue);
@@ -1445,27 +1667,85 @@ export class GameService {
         currentHealth: snapshot.characterSnapshot.currentHealth,
       });
 
-      // Find items that were used (items in original inventory but not in snapshot)
-      const originalInventory = await BackendService.getInventory(
-        snapshot.characterSnapshot.id
+      // Handle backwards compatibility for old snapshots
+      if (!snapshot.originalInventoryIds) {
+        console.warn(
+          `[GameService] Old snapshot format detected, no originalInventoryIds`
+        );
+        console.log(
+          `[GameService] Combat snapshot committed successfully (legacy format)`
+        );
+        return;
+      }
+
+      console.log(
+        `[GameService] Original inventory IDs: ${snapshot.originalInventoryIds.join(
+          ", "
+        )}`
       );
-      const usedItemIds = originalInventory
-        .filter(
-          (originalItem) =>
-            !snapshot.inventorySnapshot.some(
-              (snapshotItem) => snapshotItem.id === originalItem.id
-            )
-        )
-        .map((item) => item.id);
+      console.log(
+        `[GameService] Current snapshot inventory IDs: ${snapshot.inventorySnapshot
+          .map((i) => i.id)
+          .join(", ")}`
+      );
+
+      // Count occurrences of each item ID
+      const originalCounts = snapshot.originalInventoryIds.reduce((acc, id) => {
+        acc[id] = (acc[id] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
+
+      const currentCounts = snapshot.inventorySnapshot.reduce((acc, item) => {
+        acc[item.id] = (acc[item.id] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
+
+      console.log(`[GameService] Original counts:`, originalCounts);
+      console.log(`[GameService] Current counts:`, currentCounts);
+
+      // Find items that were used (compare counts)
+      const itemsToRemove: number[] = [];
+      for (const [itemIdStr, originalCount] of Object.entries(originalCounts)) {
+        const itemId = Number(itemIdStr);
+        const currentCount = currentCounts[itemId] || 0;
+        const usedCount = originalCount - currentCount;
+
+        if (usedCount > 0) {
+          console.log(
+            `[GameService] Item ${itemId}: used ${usedCount} times (had ${originalCount}, now ${currentCount})`
+          );
+          // Add itemId 'usedCount' times to removal list
+          for (let i = 0; i < usedCount; i++) {
+            itemsToRemove.push(itemId);
+          }
+        }
+      }
+
+      console.log(
+        `[GameService] Items to remove: ${
+          itemsToRemove.length > 0 ? itemsToRemove.join(", ") : "none"
+        }`
+      );
 
       // Remove used items from database
-      for (const itemId of usedItemIds) {
+      for (const itemId of itemsToRemove) {
+        console.log(`[GameService] Removing item ${itemId} from database...`);
         await BackendService.removeItemFromInventory(
           snapshot.characterSnapshot.id,
           itemId
         );
-        console.log(`[GameService] Removed used item ${itemId} from database`);
+        console.log(`[GameService] ✓ Removed item ${itemId} from database`);
       }
+
+      // Verify items were removed
+      const finalInventory = await BackendService.getInventory(
+        snapshot.characterSnapshot.id
+      );
+      console.log(
+        `[GameService] Final DB inventory after commit: ${finalInventory
+          .map((i) => i.id)
+          .join(", ")}`
+      );
 
       console.log(`[GameService] Combat snapshot committed successfully`);
     } catch (error) {
@@ -1537,17 +1817,11 @@ export class GameService {
   }
 
   private async buildLLMContext(gameState: GameState): Promise<LLMGameContext> {
-    const recentEvents: EventHistoryEntry[] = gameState.recentEvents.map(
-      (event) => ({
-        description: event.message,
-        type: event.eventType as EventHistoryEntry["type"],
-        effects: (event.eventData?.effects as EventHistoryEntry["effects"]) || {
-          health: 0,
-          attack: 0,
-          defense: 0,
-        },
-      })
-    );
+    const recentEvents = gameState.recentEvents.slice(0, 5).map((event) => ({
+      eventType: event.eventType,
+      message: event.message,
+      eventNumber: event.eventNumber,
+    }));
 
     const enemy = gameState.enemy || {
       name: "Unknown Creature",
@@ -1555,22 +1829,18 @@ export class GameService {
       attack: 10,
       defense: 5,
     };
-
     return {
       character: {
         name: gameState.character.name,
-        health: gameState.character.currentHealth,
-        maxHealth: gameState.character.maxHealth,
+        currentHealth: gameState.character.currentHealth,
+        maxHealth:
+          gameState.character.maxHealth +
+          (gameState.equipment.armour?.health || 0),
         attack: gameState.character.attack,
         defense: gameState.character.defense,
       },
-      enemy: {
-        name: enemy.name,
-        health: enemy.health,
-        attack: enemy.attack,
-        defense: enemy.defense,
-      },
       recentEvents,
+      currentEventNumber: gameState.recentEvents.length + 1,
     };
   }
 

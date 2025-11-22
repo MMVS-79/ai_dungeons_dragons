@@ -202,16 +202,20 @@ Your response:`;
   }
 
   private buildDescriptivePrompt(context: LLMContext): string {
-    return `You are a D&D dungeon master. Create an atmospheric description of the dungeon environment.
+    const lastEvent = context.recentEvents[0];
+    const previousContext = lastEvent
+      ? `\n\nPrevious event: ${lastEvent.message.substring(0, 150)}...`
+      : "";
 
-Character: ${context.character.name} is exploring deep within an ancient dungeon.
+    return `You are a D&D dungeon master. Create an atmospheric description that flows naturally from the previous events.
 
-Create a SHORT (2-3 sentences) immersive description that includes:
-- Visual details (lighting, architecture, ancient decorations, decay)
-- Atmospheric elements (sounds, smells, temperature, air quality)
-- A sense of danger, mystery, or wonder
+Character: ${context.character.name} is exploring an ancient dungeon.${previousContext}
 
-Focus on world-building and atmosphere. No combat or items mentioned.
+Create a SHORT (2-3 sentences) description that:
+- Builds upon or contrasts with the previous atmosphere
+- Introduces new environmental details
+- Maintains narrative continuity
+- Creates a sense of progression deeper into the dungeon
 
 Your description:`;
   }
@@ -316,19 +320,20 @@ Character Status:
 - Attack: ${context.character.attack}
 - Defense: ${context.character.defense}
 
-Choose ONE stat type and provide a base value:
+Choose ONE stat type and provide a base value (can be positive OR negative):
 
-**health**: Modify HP
-  - Base value: -5 to 15 HP change
-  - Priority: HIGH if HP < 70%, MEDIUM otherwise
+**health**: HP change (positive = heal, negative = damage from hazard)
+  - Base value: -5 to 15 HP
+  - Positive values for healing, negative for environmental hazards
+  - Priority: HIGH if HP < 50%
 
-**attack**: Permanent attack increase
-  - Base value: 2 to 4 points
-  - Priority: MEDIUM (good for character progression)
+**attack**: Permanent attack change
+  - Base value: -3 to 4 points
+  - Usually positive, negative only for curses
 
-**defense**: Permanent defense increase
-  - Base value: 2 to 4 points
-  - Priority: MEDIUM (good for survivability)
+**defense**: Permanent defense change
+  - Base value: -3 to 4 points
+  - Usually positive, negative only for curses
 
 CRITICAL FORMATTING RULES:
 1. Return ONLY a JSON object
@@ -342,8 +347,8 @@ Required Format:
 Valid statType values: "health", "attack", "defense"
 Valid baseValue ranges:
 - health: -5 to 15
-- attack: 2 to 4
-- defense: 2 to 4
+- attack: -3 to 4
+- defense: -3 to 4
 
 Your JSON response:`;
 
@@ -386,18 +391,18 @@ Your JSON response:`;
 
       // Validate and clamp baseValue
       let baseValue = Number(parsed.baseValue);
-      if (isNaN(baseValue) || baseValue <= 0) {
+      if (isNaN(baseValue)) {
         console.warn(
           `[LLMService] Invalid baseValue: ${parsed.baseValue}, using intelligent default`
         );
         return this.getIntelligentStatBoost(context);
       }
 
-      // Clamp to valid ranges
+      // New ranges with negative values
       if (parsed.statType === "health") {
-        baseValue = Math.max(10, Math.min(15, Math.round(baseValue)));
+        baseValue = Math.max(-5, Math.min(15, Math.round(baseValue)));
       } else {
-        baseValue = Math.max(2, Math.min(4, Math.round(baseValue)));
+        baseValue = Math.max(-3, Math.min(4, Math.round(baseValue)));
       }
 
       console.log(
@@ -426,14 +431,21 @@ Your JSON response:`;
       )}% HP`
     );
 
-    // Prioritize healing if low HP
+    // 20% chance of negative effect
+    const isNegative = Math.random() < 0.2;
+
+    if (isNegative) {
+      // Negative effect (hazard/curse)
+      return { statType: "health", baseValue: -3 };
+    }
+
+    // Positive effects
     if (healthPercent < 50) {
       return { statType: "health", baseValue: 12 };
     } else if (healthPercent < 70) {
       return { statType: "health", baseValue: 10 };
     }
 
-    // Otherwise, randomly choose between attack and defense
     const roll = Math.random();
     if (roll < 0.5) {
       return { statType: "attack", baseValue: 3 };

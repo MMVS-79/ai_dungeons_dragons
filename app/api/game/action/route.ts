@@ -1,5 +1,7 @@
+// app/api/game/action/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
+import * as BackendService from "@/lib/services/backend.service";
 import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
 
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
@@ -18,8 +20,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const campaignId = Number(body.campaignId);
+
+    console.log(`[API] Processing action: ${body.actionType} for campaign ${campaignId}`);
+
+    // CHECK: Is campaign completed or game over?
+    const campaign = await BackendService.getCampaign(campaignId);
+    
+    if (campaign.state === "game_over" || campaign.state === "completed") {
+      console.log(`[API] Campaign ${campaignId} is ${campaign.state}, loading final state`);
+      
+      const gameState = await gameService.getGameState(campaignId);
+      
+      return NextResponse.json({
+        success: true,
+        gameState,
+        message: campaign.state === "game_over" 
+          ? "You have been defeated..." 
+          : "🎉 Victory is yours!",
+        choices: [],
+      });
+    }
+
+    // If actionType is "continue" but there's an investigation prompt in memory,
+    // convert it to "decline" to skip the lost prompt
+    if (body.actionType === "continue") {
+      const storedPrompt = gameService.getStoredInvestigationPrompt(campaignId);
+      if (storedPrompt) {
+        console.log(`[API] Investigation prompt detected, auto-declining on refresh`);
+        body.actionType = "decline";
+      }
+    }
+
+    // Normal action processing
     const action: PlayerAction = {
-      campaignId: body.campaignId,
+      campaignId,
       actionType: body.actionType,
       actionData: body.actionData || {},
     };
@@ -44,8 +79,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Processing action: ${action.actionType} for campaign ${action.campaignId}`);
-
     const result: GameServiceResponse = await gameService.processPlayerAction(action);
 
     console.log(`[API] Action result: success=${result.success}, phase=${result.gameState.currentPhase}`);
@@ -69,8 +102,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/game/action
- * Optional: Get current game state without performing an action
- * Useful for refreshing the UI or recovering from errors
+ * Get current game state without performing an action
  */
 export async function GET(request: NextRequest) {
   try {
