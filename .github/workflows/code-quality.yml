@@ -36,7 +36,6 @@ jobs:
         run: |
           set -euo pipefail
           echo "Running Prettier (if available)"
-          # run formatter if script exists
           if npm run -s format >/dev/null 2>&1; then
             npm run format || true
           else
@@ -44,34 +43,32 @@ jobs:
           fi
 
           echo "Attempting eslint --fix on repository"
-          # Try normal eslint --fix first; if it crashes/returns non-zero, fallback to per-file
           if npx eslint --fix . --ext .js,.jsx,.ts,.tsx; then
             echo "eslint --fix completed successfully"
           else
             echo "eslint --fix failed; attempting per-file fix to locate problematic files"
-            failed=0
             printf "" > eslint-failures.txt || true
             git ls-files '*.[jt]s' '*.[jt]sx' | while read -r file; do
               echo "Fixing: $file"
               if ! npx eslint --fix "$file"; then
                 echo "$file" >> eslint-failures.txt
-                failed=1
               fi
             done
             if [ -s eslint-failures.txt ]; then
               echo "ESLint failed on these files:"
               cat eslint-failures.txt
               echo "::error::ESLint crashed or cannot fix some files. See eslint-failures.txt"
-              # Fail so maintainers can address parser/plugin issues. Comment out next line if you prefer not to fail.
               exit 1
             fi
           fi
 
       - name: Show changes made by auto-fix
         run: |
-          git --no-pager status --porcelain
+          # Show staged/unstaged changes, then the diff without color in a portable way.
+          git --no-pager status --porcelain || true
           echo "---- DIFF ----"
-          git --no-pager --no-color diff
+          # Use -c color.ui=false to reliably disable color before the subcommand (portable across Git versions).
+          git -c color.ui=false --no-pager diff || true
 
       - name: Commit & push formatted changes (if any)
         if: steps.autofix.outcome == 'success'
@@ -156,3 +153,4 @@ jobs:
         if: failure()
         run: |
           echo "::error::Tests failed. Please fix failing tests before merging."
+          
