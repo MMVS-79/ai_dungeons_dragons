@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
-import type { PlayerAction, GameServiceResponse, CombatSnapshot } from "@/lib/types/game.types";
+import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
 
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
 
@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/game/state
- * Load current game state without triggering new events
+ * GET /api/game/action
+ * Get current game state without performing an action
  */
 export async function GET(request: NextRequest) {
   try {
@@ -116,64 +116,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const id = parseInt(campaignId);
-    
-    // 🔥 NEW: Check for active combat snapshot on page load
-    const existingSnapshot = getCombatSnapshot(id);
-    if (existingSnapshot) {
-      console.log(`[API] Found active combat snapshot on page load, resetting combat to start`);
-      
-      // Get the most recent combat event from database
-      const recentEvents = await BackendService.getRecentEvents(id, 10);
-      const lastCombatEvent = recentEvents.find(e => e.eventType === "Combat");
-      
-      if (lastCombatEvent && lastCombatEvent.eventData) {
-        const eventData = lastCombatEvent.eventData as any;
-        
-        // Only reset if it's an encounter (not a conclusion)
-        if (eventData.phase === "encounter" && eventData.enemyId) {
-          console.log(`[API] Resetting combat encounter with enemy ID ${eventData.enemyId}`);
-          
-          // Clear old snapshot
-          clearCombatSnapshot(id);
-          
-          // Get fresh data
-          const { character, equipment, inventory } = await BackendService.getCharacterWithFullData(id);
-          const enemy = await BackendService.getEnemy(eventData.enemyId);
-          
-          // Create fresh combat snapshot with full HP
-          const freshSnapshot: CombatSnapshot = {
-            campaignId: id,
-            enemy,
-            enemyCurrentHp: enemy.health, // 🔥 Full enemy HP
-            characterSnapshot: {
-              id: character.id,
-              currentHealth: character.currentHealth, // 🔥 Character HP from before combat
-              maxHealth: character.maxHealth,
-              baseAttack: character.attack,
-              baseDefense: character.defense,
-            },
-            inventorySnapshot: [...inventory],
-            originalInventoryIds: inventory.map(item => item.id),
-            temporaryBuffs: {
-              attack: 0,
-              defense: 0,
-            },
-            combatLog: [],
-            startedAt: new Date(),
-          };
-          
-          createCombatSnapshot(freshSnapshot);
-          console.log(`[API] Created fresh combat snapshot`);
-        }
-      }
-    }
-
-    const gameState = await gameService.getGameState(id);
+    const validation = await gameService.validateGameState(parseInt(campaignId));
 
     return NextResponse.json({
-      ...gameState,
       success: true,
+      validation,
     });
 
   } catch (error) {

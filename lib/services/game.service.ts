@@ -253,6 +253,14 @@ Your introduction:`;
         : 0;
     const nextEventNumber = currentEventNumber + 1;
 
+    console.log(
+      `[GameService] Recent events count: ${gameState.recentEvents.length}`
+    );
+    console.log(
+      `[GameService] Current event number from DB: ${currentEventNumber}`
+    );
+    console.log(`[GameService] Next event number: ${nextEventNumber}`);
+
     // First event is campaign introduction
     if (nextEventNumber === 1) {
       return await this.generateCampaignIntroduction(
@@ -811,7 +819,10 @@ Your introduction:`;
     }
 
     const context = await this.buildLLMContext(gameState);
-    const eventNumber = gameState.recentEvents.length + 1;
+    const eventNumber =
+      gameState.recentEvents.length > 0
+        ? gameState.recentEvents[0].eventNumber + 1
+        : 1;
 
     // Calculate target rarity using formula
     const targetRarity = calculateItemRarity(eventNumber, diceRoll);
@@ -874,8 +885,17 @@ Your introduction:`;
     console.log(`[GameService] Campaign: ${campaignId}, Dice: ${diceRoll}`);
 
     try {
-      const eventNumber = gameState.recentEvents.length + 1;
+      //  Use actual event number from most recent event, not array length
+      const eventNumber =
+        gameState.recentEvents.length > 0
+          ? gameState.recentEvents[0].eventNumber + 1
+          : 1;
+
       console.log(`[GameService] Event number: ${eventNumber}`);
+      console.log(
+        `[GameService] Recent events:`,
+        gameState.recentEvents.map((e) => e.eventNumber)
+      );
 
       // Calculate target difficulty using formula
       const targetDifficulty = calculateEnemyDifficulty(eventNumber, diceRoll);

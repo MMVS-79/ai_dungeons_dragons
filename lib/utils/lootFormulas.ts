@@ -20,7 +20,16 @@
  * - Event 50, Roll 20: 50 + 40 = 90 rarity (high-tier items)
  */
 export function calculateItemRarity(eventNumber: number, diceRoll: number): number {
-  return eventNumber + (diceRoll * 2);
+  console.log(`[LootFormula] Item Config: EVENT_WEIGHT=${BALANCE_CONFIG.ITEM_EVENT_NUMBER_WEIGHT}, DICE_WEIGHT=${BALANCE_CONFIG.ITEM_DICE_ROLL_WEIGHT}`);
+  
+  const baseValue = eventNumber * BALANCE_CONFIG.ITEM_EVENT_NUMBER_WEIGHT;
+  const diceContribution = diceRoll * BALANCE_CONFIG.ITEM_DICE_ROLL_WEIGHT;
+  
+  const targetRarity = baseValue + diceContribution;
+  
+  console.log(`[LootFormula] Item rarity: event=${eventNumber} * ${BALANCE_CONFIG.ITEM_EVENT_NUMBER_WEIGHT} + dice=${diceRoll} * ${BALANCE_CONFIG.ITEM_DICE_ROLL_WEIGHT} = ${targetRarity}`);
+  
+  return Math.round(targetRarity);
 }
 
 // ============================================================================
@@ -39,7 +48,16 @@ export function calculateItemRarity(eventNumber: number, diceRoll: number): numb
  * Bosses (difficulty 1000+) are only encountered in forced end-game events
  */
 export function calculateEnemyDifficulty(eventNumber: number, diceRoll: number): number {
-  return (eventNumber * 2) + diceRoll;
+  console.log(`[LootFormula] Config: EVENT_WEIGHT=${BALANCE_CONFIG.ENEMY_EVENT_NUMBER_WEIGHT}, DICE_WEIGHT=${BALANCE_CONFIG.ENEMY_DICE_ROLL_WEIGHT}`);
+  
+  const baseValue = eventNumber * BALANCE_CONFIG.ENEMY_EVENT_NUMBER_WEIGHT;
+  const diceContribution = (diceRoll - 10) * BALANCE_CONFIG.ENEMY_DICE_ROLL_WEIGHT;
+  
+  const targetDifficulty = Math.max(0, baseValue + diceContribution);
+  
+  console.log(`[LootFormula] Enemy difficulty: event=${eventNumber} * ${BALANCE_CONFIG.ENEMY_EVENT_NUMBER_WEIGHT} + (dice=${diceRoll} - 10) * ${BALANCE_CONFIG.ENEMY_DICE_ROLL_WEIGHT} = ${targetDifficulty}`);
+  
+  return Math.round(targetDifficulty);
 }
 
 // ============================================================================
@@ -62,7 +80,16 @@ export function calculateCombatRewardRarity(
   enemyDifficulty: number,
   diceRoll: number
 ): number {
-  return Math.round((enemyDifficulty * 0.5) + (diceRoll * 2));
+  console.log(`[LootFormula] Reward Config: DIFFICULTY_WEIGHT=${BALANCE_CONFIG.REWARD_DIFFICULTY_WEIGHT}, DICE_WEIGHT=${BALANCE_CONFIG.REWARD_DICE_ROLL_WEIGHT}`);
+  
+  const difficultyContribution = enemyDifficulty * BALANCE_CONFIG.REWARD_DIFFICULTY_WEIGHT;
+  const diceContribution = diceRoll * BALANCE_CONFIG.REWARD_DICE_ROLL_WEIGHT;
+  
+  const targetRarity = difficultyContribution + diceContribution;
+  
+  console.log(`[LootFormula] Reward rarity: difficulty=${enemyDifficulty} * ${BALANCE_CONFIG.REWARD_DIFFICULTY_WEIGHT} + dice=${diceRoll} * ${BALANCE_CONFIG.REWARD_DICE_ROLL_WEIGHT} = ${targetRarity}`);
+  
+  return Math.round(targetRarity);
 }
 
 // ============================================================================
@@ -106,16 +133,16 @@ export function getDifficultyRange(targetDifficulty: number, variance: number = 
  */
 export const BALANCE_CONFIG = {
   // Item drop formula multipliers
-  ITEM_EVENT_NUMBER_WEIGHT: 1,
+  ITEM_EVENT_NUMBER_WEIGHT: 10,
   ITEM_DICE_ROLL_WEIGHT: 2,
   
   // Enemy selection formula multipliers
-  ENEMY_EVENT_NUMBER_WEIGHT: 4,
+  ENEMY_EVENT_NUMBER_WEIGHT: 10,
   ENEMY_DICE_ROLL_WEIGHT: 1,
   
   // Combat reward formula multipliers
   REWARD_DIFFICULTY_WEIGHT: 0.5,
-  REWARD_DICE_ROLL_WEIGHT: 2,
+  REWARD_DICE_ROLL_WEIGHT: 10,
   
   // Selection variance
   ITEM_RARITY_VARIANCE: 5,

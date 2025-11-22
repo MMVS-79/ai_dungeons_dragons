@@ -659,6 +659,8 @@ export async function getEnemyByDifficulty(
   const minDifficulty = Math.max(0, targetDifficulty - variance);
   const maxDifficulty = targetDifficulty + variance;
 
+  console.log(`[BackendService] Looking for enemy: difficulty ${minDifficulty}-${maxDifficulty} (target: ${targetDifficulty})`);
+
   let query = `SELECT * FROM enemies WHERE difficulty BETWEEN ? AND ?`;
   const params: any[] = [minDifficulty, maxDifficulty];
 
@@ -673,6 +675,7 @@ export async function getEnemyByDifficulty(
 
   if (rows.length === 0) {
     // Fallback to closest enemy
+    console.warn(`[BackendService] No enemy found in range, using closest`);
     let fallbackQuery = "SELECT * FROM enemies";
     if (excludeBosses) {
       fallbackQuery += " WHERE difficulty < 1000";
@@ -700,6 +703,7 @@ export async function getEnemyByDifficulty(
   }
 
   const row = rows[0];
+  console.log(`[BackendService] Found enemy: ${row.name} (difficulty ${row.difficulty})`);
   return {
     id: row.id,
     name: row.name,
