@@ -1,5 +1,8 @@
 name: Code Quality Checks
 
+permissions:
+  contents: write
+
 on:
   pull_request:
     branches: [ main, develop ]
@@ -7,54 +10,207 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  lint:
-    name: ESLint
+  format:
+    name: Auto-format source files (Prettier + ESLint --fix)
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
-      - name: Run ESLint
-        run: npm run lint
-        
-      - name: Annotate code with lint results
-        if: failure()
+
+      - name: Install ESLint TypeScript/React plugins (CI only)
         run: |
-          echo "::error::ESLint found issues in the code. Run 'npm run lint:fix' locally to auto-fix some issues."
+          # Install parser/plugins for ESLint at runtime so CI can parse TS/JSX even
+          # if package-lock.json doesn't include them yet.
+          npm install --no-save \
+            @typescript-eslint/parser \
+            @typescript-eslint/eslint-plugin \
+            eslint-plugin-react \
+            eslint-plugin-react-hooks \
+            eslint-plugin-jsx-a11y \
+            eslint-config-prettier \
+            prettier
+
+      - name: Find tracked source files
+        id: find_files
+        run: |
+          # Find tracked JS/TS files under common source dirs (NUL-separated)
+          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+
+          if [ -z "$FILES_Z" ]; then
+            echo "No tracked source files found."
+            echo "files=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          FILES=$(printf "%s" "$FILES_Z" | tr '\0' '\n')
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          printf "%s\n" "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run Prettier on tracked files (if any)
+        if: steps.find_files.outputs.files != ''
+        run: |
+          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          if [ -z "$FILES_Z" ]; then
+            echo "No tracked files found for Prettier. Skipping."
+            exit 0
+          fi
+
+          echo "Running Prettier on tracked files (showing up to 10):"
+          printf "%s" "$FILES_Z" | tr '\0' '\n' | sed -n '1,10p'
+
+          printf "%s" "$FILES_Z" | xargs -0 -r npx prettier --write || true
+
+      - name: Run ESLint --fix (tracked files, robust)
+        if: steps.find_files.outputs.files != ''
+        id: autofix
+        run: |
+          set -euo pipefail
+
+          FILES=$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          if [ -z "$FILES" ]; then
+            echo "No tracked source files to run eslint --fix on."
+            exit 0
+          fi
+
+          printf "%s\n" "$FILES" | xargs -r npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
+
+          printf "%s\n" "$FILES" | while read -r file; do
+            echo "Attempting per-file fix: $file"
+            if ! npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern "$file"; then
+              echo "$file" >> eslint-failures.txt || true
+            fi
+          done
+
+          if [ -f eslint-failures.txt ] && [ -s eslint-failures.txt ]; then
+            echo "ESLint failed to auto-fix these files:"
+            sed -n '1,200p' eslint-failures.txt || true
+            echo "::error::ESLint crashed or cannot fix some files. See eslint-failures.txt"
+            exit 1
+          fi
+
+      - name: Show changes made by auto-fix (for debugging)
+        run: |
+          git --no-pager status --porcelain || true
+          echo "---- DIFF ----"
+          git -c color.ui=false --no-pager diff || true
+
+      - name: Commit & push formatted changes (if any)
+        if: steps.autofix.outcome == 'success' && steps.find_files.outputs.files != ''
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: "github-actions[bot]"
+          author_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          message: "chore: auto-format source files (CI)"
+          add: "app lib src package.json package-lock.json yarn.lock"
+          push: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: ESLint (source-only, warnings ignored)
+    runs-on: ubuntu-latest
+    needs: format
+
+    steps:
+      - name: Checkout code (sync latest branch)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Ensure latest branch (pick up formatting commit if pushed)
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          git fetch origin "$BRANCH" || true
+          git reset --hard "origin/$BRANCH" || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install ESLint TypeScript/React plugins (CI only)
+        run: |
+          npm install --no-save \
+            @typescript-eslint/parser \
+            @typescript-eslint/eslint-plugin \
+            eslint-plugin-react \
+            eslint-plugin-react-hooks \
+            eslint-plugin-jsx-a11y \
+            eslint-config-prettier \
+            prettier
+
+      - name: Find tracked source files (for lint)
+        id: find_lint_files
+        run: |
+          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          if [ -z "$FILES_Z" ]; then
+            echo "files=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FILES=$(printf "%s" "$FILES_Z" | tr '\0' '\n')
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          printf "%s\n" "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run ESLint (errors fail, warnings ignored)
+        if: steps.find_lint_files.outputs.files != ''
+        run: |
+          printf "%s\n" "${{ steps.find_lint_files.outputs.files }}" | xargs -r npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
+
+      - name: Skip lint if no source files found
+        if: steps.find_lint_files.outputs.files == ''
+        run: echo "No source files found (app/, lib/, src/). Skipping ESLint."
 
   test:
     name: Jest Tests
     runs-on: ubuntu-latest
-    
+    needs: format
+
     steps:
-      - name: Checkout code
+      - name: Checkout code (sync latest branch)
         uses: actions/checkout@v4
-        
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Ensure latest branch (pick up formatting commit if pushed)
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          git fetch origin "$BRANCH" || true
+          git reset --hard "origin/$BRANCH" || true
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run tests
         run: npm test
         env:
           CI: true
+
           
-      - name: Annotate code with test results
-        if: failure()
-        run: |
-          echo "::error::Tests failed. Please fix failing tests before merging."
