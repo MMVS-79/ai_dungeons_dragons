@@ -23,8 +23,9 @@
  *
  */
 
-import type { Character, Equipment, Weapon, Armor, Shield } from "@/lib/types/game.types";
+import type { Character, Equipment, Weapon, Armor, Shield, Item } from "@/lib/types/game.types";
 import { pool } from "../db";
+import type { RowDataPacket } from "mysql2";
 import { LLMService } from "@/lib/services/llm.service";
 import type { LLMGameContext } from "@/lib/types/llm.types";
 
@@ -87,7 +88,7 @@ export class BackendService {
         WHERE c.id = ?
       `;
 
-      const [rows]: any = await pool.query(sql, [id]);
+      const [rows] = await pool.query<RowDataPacket[]>(sql, [id]);
       if (rows.length === 0) return null;
 
       const row = rows[0];
@@ -158,7 +159,10 @@ export class BackendService {
   /**
    * Update character dynamically in the database
    */
-  static async updateCharacter(characterId: number, updates: CharacterUpdates): Promise<Character | null> {
+  static async updateCharacter(
+    characterId: number,
+    updates: CharacterUpdates
+  ): Promise<Character | null> {
     try {
       // Map TypeScript keys to DB columns
       const fieldMap: Record<string, string> = {
@@ -173,39 +177,43 @@ export class BackendService {
         armor: "armour_id",
         shield: "shield_id",
       };
-
+  
       const columns: string[] = [];
-      const values: any[] = [];
-
+      const values: (number | string | null)[] = [];
+  
+      const equipKeys = ["weapon", "armor", "shield"];
+  
       for (const [key, value] of Object.entries(updates)) {
         const col = fieldMap[key];
         if (!col) continue;
-
-        // Equipment fields store only the ID
-        if (key === "weapon" || key === "armor" || key === "shield") {
-          values.push(value ? (value as any).id : null);
+  
+        // For equipment, store only the ID (or null)
+        if (equipKeys.includes(key)) {
+          const equip = value as Weapon | Armor | Shield | null;
+          values.push(equip?.id ?? null);
         } else {
-          values.push(value);
+          values.push(value as number | string | null);
         }
-
+  
         columns.push(col);
       }
-
+  
+      // Nothing to update
       if (columns.length === 0) return await this.getCharacter(characterId);
-
+  
       const setClause = columns.map(col => `${col} = ?`).join(", ");
       const sql = `UPDATE characters SET ${setClause} WHERE id = ?`;
       values.push(characterId);
-
+  
       await pool.query(sql, values);
-
+  
       return await this.getCharacter(characterId);
     } catch (error) {
       console.error(`[BackendService] updateCharacter(${characterId}) failed:`, error);
       return null;
     }
   }
-}
+  
 
 // ============================================================================
 // ENEMY OPERATIONS
