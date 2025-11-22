@@ -213,7 +213,7 @@ export class BackendService {
       return null;
     }
   }
-  
+}
 
 // ============================================================================
 // ENEMY OPERATIONS
