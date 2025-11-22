@@ -5,7 +5,7 @@ module.exports = {
     ecmaVersion: 2024,
     sourceType: 'module',
     ecmaFeatures: { jsx: true }
-    // If you want type-aware rules enable the line below and ensure tsconfig.json exists:
+    // If you want type-aware rules enable:
     // project: './tsconfig.json'
   },
   settings: {
@@ -27,7 +27,6 @@ module.exports = {
     'prettier'
   ],
   rules: {
-    // keep warnings rather than failing CI; adjust to taste
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     'react/react-in-jsx-scope': 'off'
