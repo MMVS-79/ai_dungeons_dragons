@@ -1,5 +1,8 @@
 name: Code Quality Checks
 
+permissions:
+  contents: write
+
 on:
   pull_request:
     branches: [ main, develop ]
@@ -7,26 +10,111 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  lint:
-    name: ESLint
+  format:
+    name: Auto-format code (Prettier + ESLint --fix)
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
-      - name: Run ESLint
+
+      - name: Run Prettier and ESLint auto-fix (robust)
+        id: autofix
+        run: |
+          set -euo pipefail
+          echo "Running Prettier (if available)"
+          # run formatter if script exists
+          if npm run -s format >/dev/null 2>&1; then
+            npm run format || true
+          else
+            echo "No package.json format script found; skipping Prettier step"
+          fi
+
+          echo "Attempting eslint --fix on repository"
+          # Try normal eslint --fix first; if it crashes/returns non-zero, fallback to per-file
+          if npx eslint --fix . --ext .js,.jsx,.ts,.tsx; then
+            echo "eslint --fix completed successfully"
+          else
+            echo "eslint --fix failed; attempting per-file fix to locate problematic files"
+            failed=0
+            printf "" > eslint-failures.txt || true
+            git ls-files '*.[jt]s' '*.[jt]sx' | while read -r file; do
+              echo "Fixing: $file"
+              if ! npx eslint --fix "$file"; then
+                echo "$file" >> eslint-failures.txt
+                failed=1
+              fi
+            done
+            if [ -s eslint-failures.txt ]; then
+              echo "ESLint failed on these files:"
+              cat eslint-failures.txt
+              echo "::error::ESLint crashed or cannot fix some files. See eslint-failures.txt"
+              # Fail so maintainers can address parser/plugin issues. Comment out next line if you prefer not to fail.
+              exit 1
+            fi
+          fi
+
+      - name: Show changes made by auto-fix
+        run: |
+          git --no-pager status --porcelain
+          echo "---- DIFF ----"
+          git --no-pager --no-color diff
+
+      - name: Commit & push formatted changes (if any)
+        if: steps.autofix.outcome == 'success'
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: "github-actions[bot]"
+          author_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          message: "chore: auto-format code (CI)"
+          add: "."
+          push: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    needs: format
+    steps:
+      - name: Checkout code (sync latest branch)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Ensure latest branch (pick up formatting commit if pushed)
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          echo "Branch=$BRANCH"
+          git fetch origin "$BRANCH" || true
+          git reset --hard "origin/$BRANCH" || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint (check)
         run: npm run lint
-        
+
       - name: Annotate code with lint results
         if: failure()
         run: |
@@ -35,25 +123,35 @@ jobs:
   test:
     name: Jest Tests
     runs-on: ubuntu-latest
-    
+    needs: format
     steps:
-      - name: Checkout code
+      - name: Checkout code (sync latest branch)
         uses: actions/checkout@v4
-        
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Ensure latest branch (pick up formatting commit if pushed)
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          echo "Branch=$BRANCH"
+          git fetch origin "$BRANCH" || true
+          git reset --hard "origin/$BRANCH" || true
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run tests
         run: npm test
         env:
           CI: true
-          
+
       - name: Annotate code with test results
         if: failure()
         run: |
