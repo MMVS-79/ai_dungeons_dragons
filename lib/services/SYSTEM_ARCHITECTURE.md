@@ -1,924 +1,907 @@
 # System Architecture Overview
 
-This document provides a comprehensive overview of the AI Dungeons & Dragons game system architecture, from frontend to backend services.
+This document provides a comprehensive overview of the AI Dungeons & Dragons game system architecture, accurately reflecting the current implementation as of November 2024.
 
 ## Table of Contents
 
-- [Architecture Layers](#architecture-layers)
+- [Architecture Overview](#architecture-overview)
+- [Core Concepts](#core-concepts)
 - [Request Flow](#request-flow)
-- [Service Responsibilities](#service-responsibilities)
-- [Two-Phase Event System](#two-phase-event-system)
-- [Data Flow Examples](#data-flow-examples)
+- [Service Layer Details](#service-layer-details)
+- [Game Flow Examples](#game-flow-examples)
+- [Database Schema](#database-schema)
 - [Integration Points](#integration-points)
 
 ---
 
-## Architecture Layers
+## Architecture Overview
 
-The system is organized into distinct layers, each with specific responsibilities:
+The system follows a layered architecture with clear separation of concerns:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        FRONTEND LAYER                        │
-│  (app/campaigns/[id]/page.tsx)                              │
-│  - React UI components                                       │
-│  - User interaction handling (mock generateLLMResponse)      │
-│  - State management (character, enemy, chat history)         │
-│  - Direct rendering (NO API calls - uses mock data)          │
-└─────────────────────────────────────────────────────────────┘
-                         
-                         (Future: Direct API calls)
-                         
-┌─────────────────────────────────────────────────────────────┐
-│                        API ENDPOINT                          │
-│  (app/api/game/action/route.ts)                             │
-│  - HTTP request handling (POST)                              │
-│  - Route parameter validation                                │
-│  - GameService instantiation                                 │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    GAME SERVICE LAYER                        │
-│  (lib/services/game.service.ts)                             │
-│  - Central orchestration                                     │
-│  - Phase management (exploration/combat/event_choice)        │
-│  - Two-phase event coordination                              │
-│  - Stat application and validation                           │
-└─────┬────────────────┬──────────────────┬──────────────────┘
-      │                │                  │
-      ▼                ▼                  ▼
-┌──────────┐  ┌─────────────────┐  ┌─────────────┐
-│   LLM    │  │  Backend        │  │  Event      │
-│ Service  │  │  Service        │  │  Type       │
-└──────────┘  └─────────────────┘  └─────────────┘
-      │                │                  │
-      ▼                ▼                  ▼
-┌──────────┐  ┌─────────────────┐  ┌─────────────┐
-│  Gemini  │  │   Database      │  │  Dice Roll  │
-│   API    │  │   (MySQL)       │  │  Stat Calc  │
-└──────────┘  └─────────────────┘  └─────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND LAYER                           │
+│  (Next.js React Components)                                     │
+│  ├─ page.tsx (Campaign Interface)                               │
+│  ├─ CharacterPanel, EventPanel, ChatPanel, ItemPanel            │
+│  └─ DicePanel (visual dice rolling)                             │
+│                                                                 │
+│  Responsibilities:                                              │
+│  • User interaction and UI state management                     │
+│  • Fetch game state on load (GET /api/game/state)               │
+│  • Send player actions (POST /api/game/action)                  │
+│  • Real-time UI updates (health bars, inventory, combat)        │
+└─────────────────────────────────────────────────────────────────┘
+                                ↕ HTTP
+┌─────────────────────────────────────────────────────────────────┐
+│                         API ROUTES                              │
+│  (Next.js App Router)                                           │
+│  ├─ /api/game/state (GET)  - Load game state (read-only)        │
+│  └─ /api/game/action (POST) - Process player actions            │
+│                                                                 │
+│  Responsibilities:                                              │
+│  • HTTP request handling and validation                         │
+│  • GameService instantiation with API keys                      │
+│  • Combat snapshot recovery on server restart                   │
+│  • Response formatting                                          │
+└─────────────────────────────────────────────────────────────────┘
+                                ↕
+┌─────────────────────────────────────────────────────────────────┐
+│                      GAME SERVICE LAYER                         │
+│  (lib/services/game.service.ts)                                 │
+│                                                                 │
+│  Central orchestration engine - coordinates all game logic      │
+│                                                                 │
+│  Key Responsibilities:                                          │
+│  • Player action routing and validation                         │
+│  • Phase management (exploration → investigation → combat)      │
+│  • Event generation and progression                             │
+│  • Combat state management via snapshots                        │
+│  • Boss fight triggers at event 48+                             │
+│  • Victory/defeat detection and campaign completion             │
+└─────────────────────────────────────────────────────────────────┘
+            ↕              ↕               ↕              ↕
+    ┌────────────┐  ┌────────────┐  ┌──────────┐  ┌──────────┐
+    │    LLM     │  │  Backend   │  │  Utils   │  │ Combat   │
+    │  Service   │  │  Service   │  │ (Dice,   │  │ Snapshot │
+    │            │  │            │  │  Stats)  │  │ (Memory) │
+    └────────────┘  └────────────┘  └──────────┘  └──────────┘
+          ↕               ↕
+    ┌────────────┐  ┌────────────┐
+    │   Gemini   │  │   MySQL    │
+    │    API     │  │  Database  │
+    └────────────┘  └────────────┘
 ```
+
+---
+
+## Core Concepts
+
+### 1. Investigation Prompt System
+
+**Philosophy**: Force player engagement with meaningful choices rather than accept/reject mechanics.
+
+**Flow**:
+```
+Continue → Event Generated → Investigation Prompt
+                                    ↓
+                        "You find a mystical fountain..."
+                                    ↓
+                         [Investigate] [Decline]
+                                    ↓
+            Investigate = Apply event effects
+            Decline = Skip and generate new event
+```
+
+**Event Types Supporting Investigation**:
+- `Environmental` - Stat modifications (health, attack, defense)
+- `Item_Drop` - Consumable items (potions, scrolls, buffs)
+
+**Event Types Without Investigation**:
+- `Descriptive` - Pure narrative, no choices
+- `Combat` - Automatic engagement
+
+### 2. Combat Snapshot System
+
+**Problem Solved**: Preserve combat state during server restarts and ensure accurate inventory management.
+
+**How It Works**:
+```typescript
+// Combat Start - Create Snapshot
+{
+  campaignId: number,
+  enemy: Enemy,
+  enemyCurrentHp: number,
+  characterSnapshot: {
+    currentHealth: number,
+    maxHealth: number,
+    baseAttack: number,
+    baseDefense: number
+  },
+  equipment: Equipment,
+  inventorySnapshot: Item[],        // Copy of inventory at combat start
+  originalInventoryIds: number[],   // For tracking item usage
+  temporaryBuffs: { attack: 0, defense: 0 },
+  combatLog: string[],
+  startedAt: Date
+}
+```
+
+**Key Features**:
+- Stored in global memory (`global.combatSnapshots`)
+- Temporary buffs only persist during combat
+- Item usage tracked by comparing snapshots
+- Committed to database only after combat ends
+- Recreated from database on server restart if incomplete combat detected
+
+### 3. Event Progression System
+
+**Campaign Structure**: 48 events → Boss fight → Victory or defeat
+
+**Event Counter Logic**:
+```
+Events 1-47:  Normal event generation (LLM decides type)
+Events 48+:   Forced boss encounters (difficulty ≥ 1000)
+Victory:      Defeat boss → Campaign state = "completed"
+Defeat:       HP ≤ 0 → Campaign state = "game_over"
+```
+
+**Descriptive Event Limiter**:
+- Tracks consecutive descriptive events
+- Resets after combat encounters
+- Prevents boring narrative-only gameplay
+
+### 4. Loot Formula System
+
+**Rarity/Difficulty Scaling**:
+```typescript
+// Item drops during exploration
+itemRarity = (eventNumber × 1) + (diceRoll × 2)
+
+// Enemy difficulty in combat
+enemyDifficulty = (eventNumber × 2) + ((diceRoll - 10) × 1)
+
+// Combat rewards
+rewardRarity = (enemyDifficulty × 0.5) + (diceRoll × 1)
+```
+
+**Examples**:
+- Event 1, Roll 10: Item rarity ~21, Enemy difficulty ~2
+- Event 25, Roll 15: Item rarity ~55, Enemy difficulty ~55
+- Event 48, Roll 20: Item rarity ~88, Enemy difficulty ~106
+
+**Boss Encounters**:
+- Difficulty threshold: 1000+
+- Guaranteed legendary rewards
+- Only appear at events 48+
 
 ---
 
 ## Request Flow
 
-### Complete Request Cycle
+### Initial Page Load
 
 ```
-1. USER ACTION
-   │
-   ├─→ User clicks button in UI (Continue, Search, Accept, etc.)
-   │
-   └─→ Frontend: handleChatAction(choice: string)
-        │
-        ├─→ Plays dice roll animation
-        │
-        └─→ Calls: generateLLMResponse(choice, diceRoll, gameState)
-             │
-             └─→ **CURRENT**: Uses local mock data (no API call)
-                 **FUTURE**: Will call POST /api/game/action directly
-
-2. API ENDPOINT (Ready but not connected to frontend yet)
-   │
-   ├─→ Parses request body
-   │
-   ├─→ Instantiates GameService (with Gemini API key)
-   │
-   └─→ Calls: gameService.processPlayerAction(playerAction)
-
-4. GAME SERVICE (Orchestration)
-   │
-   ├─→ Validates game state
-   │
-   ├─→ Routes action to appropriate handler:
-   │   • exploration → handleExplorationAction()
-   │   • combat → handleCombatAction()
-   │   • event_choice → handleEventChoice()
-   │
-   └─→ Returns: GameServiceResponse
-
-5. RESPONSE FLOW (When API integration is enabled)
-   │
-   ├─→ GameService → API Endpoint → Frontend
-   │
-   └─→ Frontend updates UI state
-        │
-        ├─→ Updates character stats
-        ├─→ Adds chat message
-        ├─→ Updates choices/buttons
-        └─→ Handles phase transitions
+1. User navigates to /campaigns/[id]
+        ↓
+2. Frontend: useEffect(() => loadGameState())
+        ↓
+3. GET /api/game/state?campaignId=123
+        ↓
+4. API Route:
+   - Check for combat snapshot in memory
+   - If snapshot exists → reset to fresh state
+   - If no snapshot but DB shows incomplete combat → recreate snapshot
+        ↓
+5. gameService.getGameState(campaignId)
+   - Load campaign, character, equipment, inventory
+   - Load recent events (up to 1000 for full history)
+   - Determine currentPhase (exploration/investigation/combat/game_over/victory)
+        ↓
+6. Return GameState to frontend
+        ↓
+7. Frontend renders UI based on currentPhase
 ```
 
----
+### Player Action Flow
 
-## Service Responsibilities
-
-### Frontend Layer (`app/campaigns/[id]/page.tsx`)
-
-**Purpose**: User interface and interaction
-
-**Responsibilities**:
-
-- Display game state (character stats, enemy, chat history)
-- Handle user input (button clicks, item selection)
-- Manage local UI state (dice animation, loading states)
-- **CURRENT**: Use mock LLM response generator locally
-- **FUTURE**: Call /api/game/action directly
-
-**Key Functions**:
-
-- `handleChatAction(choice)` - Process user button clicks
-- `generateLLMResponse(choice, diceRoll, gameState)` - Mock data generator
-- `handleItemUse(item)` - Process item usage
-- `handleEquipItem(item, slot)` - Process equipment
-- State updates for character, enemy, messages, choices
-
-**Implementation Note**:
-Frontend currently uses local mock data for development. API integration will be added in future sprint.
-
-**Does NOT**:
-
-- Directly call backend services
-- Generate game events
-- Make LLM calls
-- Access database
-
----
-
-### API Endpoint (`app/api/game/action/route.ts`)
-
-**Purpose**: HTTP interface to game system
-
-**Responsibilities**:
-
-- Handle POST requests for player actions
-- Handle GET requests for game state validation
-- Instantiate GameService with environment config
-- Return JSON responses
-
-**Endpoints**:
-
-**POST /api/game/action**
-
-```typescript
-Request:
-{
-  campaignId: number,
-  actionType: ActionType,  // "continue" | "search" | "attack" | "use_item" | "pickup_item" | "reject_item" | "equip_item" | "accept_event" | "reject_event"
-  actionData?: {
-    itemId?: number,
-    targetId?: number,
-    diceRoll?: number
-  }
-}
-
-Response:
-GameServiceResponse {
-  success: boolean,
-  gameState: GameState,
-  message: string,
-  choices?: string[],
-  combatResult?: CombatResult,
-  error?: string
-}
 ```
-
-**Note**: Frontend currently uses mock data and does not call this endpoint.
-
----
-
-### Game Service (`lib/services/game.service.ts`)
-
-**Purpose**: Central game orchestration and business logic
-
-**Responsibilities**:
-
-- Coordinate all game actions
-- Manage game phases (exploration, combat, event_choice)
-- Implement two-phase event system
-- Orchestrate LLM, Backend, and Event Type services
-- Apply stat changes and combat resolution
-- Validate game state
-
-**Key Methods**:
-
-**`processPlayerAction(action: PlayerAction)`**
-
-- Main entry point for all player actions
-- Routes to appropriate phase handler
-
-**Phase Handlers**:
-
-- `handleExplorationAction()` - Generates event type, sets pending event
-- `handleCombatAction()` - **EMPTY STUB** - Awaiting team discussion on combat system design
-- `handleEventChoice()` - Handles Accept/Reject for events (delegates to EventType.trigger())
-- `handleUseItem()` - Item usage logic (healing, effects)
-- `handleEquipItem()` - Equipment changes via BackendService
-- `handleItemChoice()` - Pick up or reject dropped items
-
-**Event Processing**:
-
-- Two-phase system: Event type preview → User choice → Full event execution
-- EventType service handles all event logic internally after acceptance
-- GameService only orchestrates the preview phase
-
-**Combat** (Implementation Status):
-
-- `handleCombatAction()` - Pending team discussion (instant vs turn-based)
-- Combat rewards delegated to BackendService.processCombatRewards()
-- See architectural note in game.service.ts for detailed flow
-
-**Orchestration Pattern**:
-
-```typescript
-GameService coordinates:
-├─→ LLMService.generateEventType()           ✅ Implemented
-├─→ LLMService.generateDescription()         ✅ Implemented
-├─→ LLMService.requestStatBoost()            ✅ Implemented
-├─→ EventType.trigger()                      ⏳ External file (not in scope)
-├─→ Dice_Roll.roll()                         ⏳ External file (not in scope)
-├─→ Stat_Calc.applyRoll()                    ⏳ External file (not in scope)
-├─→ BackendService.saveEvent()               📝 Stub (step comments exist)
-├─→ BackendService.updateCharacter()         📝 Stub (step comments exist)
-├─→ BackendService.equipItem()               📝 Steps only (needs implementation)
-└─→ BackendService.processCombatRewards()    ✅ Fully implemented with LLM
-```
-
-**Legend**:
-
-- ✅ Fully implemented
-- 📝 Stub with TODO/step comments
-- ⏳ External dependency (coming from other PR)
-- ⚠️ Partial implementation
-
----
-
-### LLM Service (`lib/services/llm.service.ts`)
-
-**Purpose**: Interface to Gemini API for AI-generated content
-
-**Responsibilities**:
-
-- Generate event types based on context
-- Generate event descriptions
-- Request stat modifications
-- Request item drops
-- Call Gemini API with structured prompts and schemas
-
-**Multi-Call Architecture**:
-
-**Call 1: Generate Event Type**
-
-```typescript
-generateEventType(context: LLMGameContext): Promise<EventTypeString>
-// Returns: "Descriptive" | "Environmental" | "Combat" | "Item_Drop"
-```
-
-**Call 2: Generate Description**
-
-```typescript
-generateDescription(eventType: EventTypeString, context: LLMGameContext): Promise<string>
-// Returns: Narrative text for the event
-```
-
-**Call 3: Request Stat Boost**
-
-```typescript
-requestStatBoost(context: LLMGameContext, eventType: EventTypeString): Promise<StatBoostResponse>
-// Returns: { statType: "health"|"attack"|"defense", baseValue: number }
-```
-
-**Call 4: Request Item Drop** ✅ **FULLY IMPLEMENTED**
-
-```typescript
-RequestItemDrop(context?: LLMGameContext): Promise<{ 
-  itemType: string,        // "weapon" | "armour" | "shield" | "potion"
-  itemName: string, 
-  itemStats: Record<string, number> 
-}>
-// Implementation: Full LLM integration with contextual prompts
-// Schema: Enforces valid itemType enum and required fields
-// Used for: Item_Drop events and critical success combat rewards
-// Error handling: Falls back to health potion on failure
-```
-
-**Call 5: Request Bonus Stat** ✅ **FULLY IMPLEMENTED**
-
-```typescript
-bonusStatRequest(context?: LLMGameContext): Promise<{ 
-  statType: "health" | "attack" | "defense", 
-  value: number    // Clamped to 2-10
-}>
-// Implementation: Full LLM integration with contextual prompts
-// Schema: Enforces valid statType enum and value range
-// Used for: Critical success combat rewards (dice rolls 16-20)
-// Error handling: Falls back to health:5 on failure
-```
-
-**Context Building**:
-
-- Character stats (HP, attack, defense)
-- Recent events (for continuity)
-- Enemy state (if in combat)
-- Trigger information (combat result, player action)
-
----
-
-### Backend Service (`lib/services/backend.service.ts`)
-
-**Purpose**: Database abstraction layer
-
-**Responsibilities**:
-
-- CRUD operations for all entities
-- Database query execution
-- Data mapping (snake_case ↔ camelCase)
-- Pending event state management (currently in-memory)
-- Current enemy state management (currently in-memory)
-- Combat rewards processing with LLM integration
-
-**Implementation Status Overview**:
-
-- ✅ **Fully Implemented**: `processCombatRewards()` with full LLM integration
-- ⚠️ **Routing Logic Implemented**: `addItemToInventory()` routes items to correct tables (needs SQL)
-- 🔄 **In-Memory Implemented**: `setPendingEvent()`, `getPendingEvent()`, `setCurrentEnemy()`, `getCurrentEnemy()`
-- 📝 **Stubs with Step Comments**: Most CRUD functions have detailed implementation instructions
-- 📝 **Steps Only**: `equipItem()` has step-by-step comments but no code
-
-**Entity Operations**:
-
-**Characters** (📝 Stubs):
-
-- `getCharacter(id)` - Fetch character by ID
-- `updateCharacter(id, updates)` - Update stats/equipment
-- `getCharacterByCampaign(campaignId)` - Get campaign character
-- `createCharacter(data)` - Create new character with base stats
-
-**Enemies** (📝 Stubs / 🔄 In-Memory):
-
-- `getEnemy(id)` - 📝 Stub with steps
-- `getRandomEnemy(difficulty?)` - 📝 Stub with steps
-- `getCurrentEnemy(campaignId)` - 🔄 In-memory implementation (Map-based)
-- `setCurrentEnemy(campaignId, enemyId)` - 🔄 In-memory implementation
-
-**Campaigns** (📝 Stubs):
-
-- `getCampaign(id)` - Fetch campaign
-- `updateCampaign(id, updates)` - Update campaign state
-
-**Events/Logs** (📝 Stubs):
-
-- `saveEvent(campaignId, message, eventType, eventData)` - Save event to logs
-- `getRecentEvents(campaignId, limit)` - Fetch event history
-- `getNextEventNumber(campaignId)` - Get sequential event number
-
-**Items/Inventory**:
-
-- `getItem(id)` - 📝 Stub with steps
-- `getInventory(characterId)` - 📝 Stub with steps
-- `addItemToInventory(characterId, item)` - ⚠️ **ROUTING LOGIC IMPLEMENTED** (needs SQL queries)
-  - **Item Routing** (switch-case by itemType):
-    - `weapon` → inserts into `weapons` table, updates character.weapon_id
-    - `armour` → inserts into `armours` table, updates character.armour_id
-    - `shield` → inserts into `shields` table, updates character.shield_id
-    - `potion` → inserts into `items` table, adds to `character_items` join table
-  - Currently logs placeholder messages, ready for database implementation
-- `removeItemFromInventory(characterId, itemId)` - 📝 Stub with steps
-- `equipItem(characterId, itemId, slot)` - 📝 **STEPS ONLY** (needs full implementation)
-  - Has detailed step-by-step comments for stat replacement logic
-
-**Combat Rewards** ✅:
-
-- `processCombatRewards(campaignId, characterId, rollClassification, context)` - ✅ **FULLY IMPLEMENTED**
-  - **Roll Classification**:
-    - `critical_failure` (1-4): No rewards
-    - `regular` (5-15): Calls LLMService.requestStatBoost(), logs event
-    - `critical_success` (16-20): Calls LLMService.RequestItemDrop() + bonusStatRequest(), adds item to inventory, logs event
-  - **Implementation Status**:
-    - ✅ LLM reward generation (requestStatBoost, RequestItemDrop, bonusStatRequest)
-    - ✅ Event logging to database
-    - ✅ Item inventory routing (via addItemToInventory)
-    - ⏳ Character stat updates (pending getCharacter implementation)
-
-**Pending Events** (🔄 In-Memory / 📝 Stub):
-
-- `setPendingEvent(campaignId, eventType)` - 🔄 In-memory implementation (Map-based)
-- `getPendingEvent(campaignId)` - 🔄 In-memory implementation
-- `clearPendingEvent(campaignId)` - 📝 Stub (to be replaced with database storage)
-
-**Database Field Mapping**:
-
-```typescript
-Database (snake_case)    →    TypeScript (camelCase)
-─────────────────────────────────────────────────────
-current_health           →    currentHealth
-max_health               →    maxHealth
-sprite_path              →    spritePath
-race_id                  →    raceId
-campaign_id              →    campaignId
-weapon_id                →    weaponId
-event_number             →    eventNumber
-event_type               →    eventType
+1. User clicks button (Continue, Investigate, Attack, Use Item, etc.)
+        ↓
+2. Frontend: Send action to backend
+   POST /api/game/action
+   Body: {
+     campaignId: 123,
+     actionType: "continue",
+     actionData: { itemId?: number }
+   }
+        ↓
+3. API Route:
+   - Validate campaign not ended
+   - Check for lost investigation prompt (auto-decline on refresh)
+        ↓
+4. gameService.processPlayerAction(action)
+   - Load current game state
+   - Validate action against current phase
+   - Route to appropriate handler:
+     
+     Phase: exploration
+       → handleContinue() - Generate next event
+     
+     Phase: investigation_prompt
+       → handleInvestigate() - Apply event effects
+       → handleDecline() - Skip and generate new event
+     
+     Phase: combat
+       → handleCombatAction("attack") - Process attack
+       → handleCombatAction("flee") - Attempt escape
+       → handleUseItemInCombat() - Use item
+        ↓
+5. Event Processing:
+   - Call LLM for event type/description/stats
+   - Roll dice for modifiers
+   - Update character/enemy in database or snapshot
+   - Save event to logs table
+        ↓
+6. Return GameServiceResponse
+   {
+     success: true,
+     gameState: UpdatedGameState,
+     message: "Narrative text...",
+     choices: ["Continue Forward"] or ["Investigate", "Decline"] or ["Attack", "Flee", "Use Item"]
+   }
+        ↓
+7. Frontend updates UI with new state
 ```
 
 ---
 
-### Event Type Service (`lib/services/Event_type.ts`)
+## Service Layer Details
 
-**Purpose**: Event type handling and descriptive counter management
+### Game Service (`game.service.ts`)
 
-**Responsibilities**:
+**Core Methods**:
 
-- Track descriptive event count
-- Trigger event type logic
-- Coordinate event-specific flows
+#### `processPlayerAction(action: PlayerAction)`
+Main entry point - routes all player actions to appropriate handlers.
 
-**Event Types**:
+#### Event Generation
+- `handleContinue()` - Generate next event (events 1-47) or boss fight (48+)
+- Uses LLM to determine event type based on game context
+- Creates investigation prompt for Environmental/Item_Drop events
+- Directly processes Descriptive events
+- Starts combat for Combat events
 
-**Descriptive**:
+#### Investigation Phase
+- `handleInvestigate()` - Apply event effects (Environmental or Item_Drop)
+  - For Environmental: Request stat boost from LLM, apply with dice modifier
+  - For Item_Drop: Get item by rarity, add to inventory
+- `handleDecline()` - Skip current event, generate new one
 
-- Pure narrative (no mechanical effects)
-- Increments counter
-- Counter prevents consecutive boring events
+#### Combat Phase
+- `handleCombatAction(action, "attack")` - Process attack round
+  - Player attacks using effective stats (base + equipment + buffs)
+  - Enemy counterattacks if alive
+  - Check for combat end (victory or defeat)
+  
+- `handleCombatAction(action, "flee")` - Attempt to escape
+  - 50% success rate
+  - Return to exploration or continue combat
 
-**Environmental**:
+- `handleUseItemInCombat()` - Use consumable item
+  - Apply health restoration or stat buffs
+  - Remove item from snapshot (NOT database yet)
+  - Buffs are temporary (combat only)
 
-- Stat modifications from environment
-- Calls LLMService.requestStatBoost()
+#### Combat Resolution
+- `resolveCombatEnd()` - Victory rewards or defeat handling
+  - Victory: Roll for loot (items + equipment), transition to exploration
+  - Defeat: Set campaign state to "game_over"
 
-**Combat**:
+- `commitCombatSnapshot()` - Write snapshot changes to database
+  - Update character HP
+  - Remove used items from inventory (compare snapshot to original)
+  - Clear combat snapshot from memory
 
-- Spawns enemy encounter
-- Triggers combat phase
-- Post-combat rewards delegated to BackendService.processCombatRewards()
+#### Boss Fight Logic
+- `checkForBossFight()` - Trigger boss at event 48+
+- `startBossCombat()` - Create boss encounter
+- Boss victory = Campaign completion
 
-**Item_Drop**:
+#### Helper Methods
+- `getGameState()` - Load complete game state
+  - Uses snapshot data during combat (NOT database)
+  - Returns database data during exploration
+  
+- `buildLLMContext()` - Prepare context for LLM calls
+  - Recent 5 events
+  - Character stats (with equipment bonuses)
+  - Current event number
 
-- Items found or lost
-- Calls LLMService.RequestItemDrop()
+- `validateAction()` - Ensure action is valid for current phase
 
-**Descriptive Counter Logic**:
+### LLM Service (`llm.service.ts`)
 
+**Purpose**: Handle all AI content generation using Google Gemini API
+
+**Configuration**:
 ```typescript
-EventType.trigger("Descriptive") → Increments counter
-EventType.getDescriptiveCount() → Returns count
-EventType.resetDescriptiveCount() → Resets to 0 (after boss fights)
-
-GameService checks:
-if (eventType === "Descriptive" && getDescriptiveCount() > 1) {
-  // Regenerate event - too many consecutive descriptive events
-}
+model: "gemini-flash-lite-latest"
+temperature: 0.9  // High creativity
+topK: 40
+topP: 0.95
+maxOutputTokens: 1024
 ```
-
----
-
-### Utility Services
-
-#### Dice Roll (`lib/services/dice_roll.ts`)
-
-**Purpose**: D20 dice rolling and classification
 
 **Methods**:
 
-- `roll()` - Returns random 1-20
-- `classifyRoll(value)` - Classifies as critical_failure/regular/critical_success
+#### `generateEventType(context: LLMContext): EventTypeString`
+Decides which event type should occur next based on:
+- Current event number
+- Character health status
+- Recent event history (avoid repetition)
+- Statistical probabilities (30% Descriptive, 25% Environmental, 30% Combat, 15% Item_Drop)
 
-**Three-Tier System**:
+**Returns**: One of `"Descriptive"`, `"Environmental"`, `"Combat"`, `"Item_Drop"`
 
+#### `generateDescription(eventType: string, context: LLMContext): string`
+Creates atmospheric narrative for events:
+- **Descriptive**: World-building, dungeon atmosphere (2-3 sentences)
+- **Environmental**: Description of interactive feature (fountain, shrine, altar)
+- **Combat**: Enemy appearance and tension building
+- **Item_Drop**: Item discovery location and appearance
+
+**Returns**: Narrative text string
+
+#### `requestStatBoost(context: LLMContext): { statType, baseValue }`
+For Environmental events, determines stat modification:
+- Analyzes character health percentage
+- Chooses stat to modify (health, attack, defense)
+- Returns base value (-5 to +15 for health, -3 to +4 for attack/defense)
+- LLM output validated and clamped to ranges
+- Falls back to intelligent defaults if LLM fails
+
+**Example Output**:
+```json
+{
+  "statType": "health",
+  "baseValue": 12
+}
 ```
-1-4:   Critical Failure
-5-15:  Regular
-16-20: Critical Success
+
+**Smart Defaults**:
+- HP < 50% → Prioritize health boost
+- HP > 70% → Random attack/defense boost
+- 20% chance of negative effect (curse/hazard)
+
+### Backend Service (`backend.service.ts`)
+
+**Purpose**: Database abstraction layer - all SQL operations
+
+**Categories**:
+
+#### Character Operations
+- `getCharacter(characterId)` - Get by ID
+- `getCharacterByCampaign(campaignId)` - Get by campaign
+- `getCharacterWithFullData(campaignId)` - Load character + equipment + inventory
+- `updateCharacter(characterId, updates)` - Update stats/equipment
+
+#### Equipment Management
+- `getWeapon/Armour/Shield(id)` - Get specific equipment
+- `equipWeapon/Armour/Shield(characterId, itemId)` - Equip item
+- `unequipWeapon/Armour/Shield(characterId)` - Remove equipment
+
+#### Rarity-Based Item Selection
+- `getItemByRarity(targetRarity, variance)` - Find item near rarity ±5
+- `getWeaponByRarity(targetRarity, variance)` - Combat rewards
+- `getArmourByRarity(targetRarity, variance)` - Combat rewards  
+- `getShieldByRarity(targetRarity, variance)` - Combat rewards
+
+Uses formula: `ORDER BY ABS(rarity - target) ASC, RAND()` for closest match with randomness
+
+#### Enemy Operations
+- `getEnemy(enemyId)` - Get by ID
+- `getEnemyByDifficulty(targetDifficulty, variance, excludeBosses)` - Find enemy near difficulty ±3
+- `getBossEnemy()` - Random boss (difficulty ≥ 1000)
+
+#### Inventory Management
+- `getInventory(characterId)` - Get all items
+- `addItemToInventory(characterId, itemId)` - Add item
+- `removeItemFromInventory(characterId, itemId)` - Remove ONE instance
+
+**Important**: Removes only ONE item even if duplicates exist (supports stacking)
+
+#### Campaign Operations
+- `getCampaign(campaignId)` - Get campaign info
+- `updateCampaign(campaignId, { state })` - Update state (active/game_over/completed)
+
+#### Event Logging
+- `saveEvent(campaignId, message, eventType, eventData)` - Log event to database
+  - Auto-generates sequential event_number
+  - Stores JSON eventData (combat info, item IDs, stat changes)
+  
+- `getRecentEvents(campaignId, limit)` - Fetch recent events
+  - Default limit: 10 (now uses 1000 in game service for full history)
+  - Orders by event_number DESC (newest first)
+
+**Database Field Mapping**:
+```
+Database (snake_case)  →  TypeScript (camelCase)
+current_health         →  currentHealth
+max_health             →  maxHealth
+stat_modified          →  statModified
+stat_value             →  statValue
+sprite_path            →  spritePath
 ```
 
-#### Stat Calc (`lib/services/Stat_calc.ts`)
+### Utility Services
 
-**Purpose**: Apply dice roll modifiers to stat values
-
-**Method**:
-
-- `applyRoll(rollValue, statType, initValue)` - Returns modified stat value
-
-**Formula**:
-
+#### Dice Roll (`diceRoll.ts`)
 ```typescript
-Critical Failure (1-4):   finalValue = 0
-Regular (5-15):          finalValue = initValue * (1 + (rollValue - 10) / 10)
-Critical Success (16-20): finalValue = initValue * 2
+Dice_Roll.roll(): number  // Returns 1-20
+
+Dice_Roll.classifyRoll(value): RollClassification
+// Returns: "critical_failure" (1-4)
+//          "regular" (5-15)
+//          "critical_success" (16-20)
 ```
 
-**Example**:
+#### Stat Calculator (`statCalc.ts`)
+```typescript
+Stat_Calc.applyRoll(rollValue, statType, initValue): number
 
-```
-LLM says: +10 health
-Roll: 18 (Critical Success)
-Result: 10 * 2 = +20 health 🎉
-```
+// Critical Failure (1-4):   finalValue = 0
+// Regular (5-15):           finalValue = initValue × (1 + (rollValue - 10) / 10)
+// Critical Success (16-20): finalValue = initValue × 2
 
----
-
-## Two-Phase Event System
-
-### Overview
-
-Events are processed in two distinct phases to allow user acceptance/rejection before effects are applied.
-
-### Phase 1: Event Type Generation
-
-```
-1. User clicks action button (Continue, Search, etc.)
-   │
-2. GameService.handleExplorationAction()
-   │
-   ├─→ LLMService.generateEventType(context)
-   │   └─→ Returns: EventTypeString ("Combat", "Environmental", etc.)
-   │
-   ├─→ Check Descriptive counter (reject if >1)
-   │
-   ├─→ BackendService.setPendingEvent(campaignId, eventType)
-   │
-   └─→ Return: { currentPhase: "event_choice", choices: ["Accept", "Reject"] }
-
-3. Frontend shows event preview with Accept/Reject buttons
+// Examples:
+applyRoll(3, "HEALTH", 10)  → 0    (critical failure)
+applyRoll(10, "ATTACK", 5)  → 5    (average roll, 1x multiplier)
+applyRoll(14, "DEFENSE", 10) → 14  (good roll, 1.4x multiplier)
+applyRoll(18, "HEALTH", 15) → 30   (critical success, 2x multiplier)
 ```
 
-### Phase 2: Event Processing (on Accept)
-
-```
-1. User clicks "Accept"
-   │
-2. GameService.handleEventChoice(action: "accept_event")
-   │
-   ├─→ Fetch pending event type
-   │
-   ├─→ EventType.trigger(eventType)
-   │
-   ├─→ LLMService.generateDescription(eventType, context)
-   │
-   ├─→ Process event based on type:
-   │   │
-   │   ├─→ Environmental:
-   │   │   ├─→ LLMService.requestStatBoost()
-   │   │   ├─→ Dice_Roll.roll()
-   │   │   ├─→ Stat_Calc.applyRoll(rollValue, statType, baseValue)
-   │   │   └─→ Apply to character
-   │   │
-   │   ├─→ Combat:
-   │   │   ├─→ BackendService.getRandomEnemy()
-   │   │   ├─→ BackendService.setCurrentEnemy()
-   │   │   └─→ Transition to combat phase
-   │   │
-   │   ├─→ Item_Drop:
-   │   │   ├─→ LLMService.RequestItemDrop()
-   │   │   ├─→ Create item in database
-   │   │   └─→ Add to inventory
-   │   │
-   │   └─→ Descriptive:
-   │       └─→ No mechanical effects
-   │
-   ├─→ BackendService.saveEvent(message, eventType, eventData)
-   │
-   ├─→ BackendService.clearPendingEvent()
-   │
-   └─→ Return updated game state
+#### Event Type (`eventType.ts`)
+Tracks consecutive descriptive events to prevent boring gameplay:
+```typescript
+EventType.getDescriptiveCount(): number
+EventType.incrementDescriptiveCount(): void
+EventType.resetDescriptiveCount(): void  // After combat
 ```
 
-### Phase 2: Rejection Flow
-
+#### Combat Snapshot (`combatSnapshot.ts`)
+In-memory storage for active combat:
+```typescript
+createCombatSnapshot(snapshot): void
+getCombatSnapshot(campaignId): CombatSnapshot | null
+updateEnemyHp(campaignId, newHp): void
+updateCharacterHp(campaignId, newHp): void
+applyTemporaryBuff(campaignId, statType, value): void
+removeItemFromSnapshot(campaignId, itemId): void
+getEffectiveAttack(snapshot): number  // base + weapon + buff
+getEffectiveDefense(snapshot): number  // base + shield + buff
+clearCombatSnapshot(campaignId): void
 ```
-1. User clicks "Reject"
-   │
-2. GameService.handleEventChoice(action: "reject_event")
-   │
-   ├─→ BackendService.clearPendingEvent()
-   │
-   ├─→ Immediately call handleExplorationAction()
-   │   └─→ Generates new event type
-   │
-   └─→ Return new event preview
+
+#### Investigation Prompt (`investigationPrompt.ts`)
+Temporary storage for pending investigation prompts:
+```typescript
+setInvestigationPrompt(campaignId, eventType, message): void
+getInvestigationPrompt(campaignId): { eventType, message } | null
+clearInvestigationPrompt(campaignId): void
+```
+
+#### Loot Formulas (`lootFormulas.ts`)
+```typescript
+calculateItemRarity(eventNumber, diceRoll): number
+calculateEnemyDifficulty(eventNumber, diceRoll): number
+calculateCombatRewardRarity(enemyDifficulty, diceRoll): number
+getRarityRange(targetRarity, variance): { min, max }
+getDifficultyRange(targetDifficulty, variance): { min, max }
+
+// Balance configuration
+BALANCE_CONFIG = {
+  ITEM_EVENT_NUMBER_WEIGHT: 1,
+  ITEM_DICE_ROLL_WEIGHT: 2,
+  ENEMY_EVENT_NUMBER_WEIGHT: 2,
+  ENEMY_DICE_ROLL_WEIGHT: 1,
+  REWARD_DIFFICULTY_WEIGHT: 0.5,
+  REWARD_DICE_ROLL_WEIGHT: 1,
+  BOSS_DIFFICULTY_THRESHOLD: 1000,
+  MAX_EVENT_NUMBER: 50,
+  BOSS_FORCED_EVENT_START: 48
+}
 ```
 
 ---
 
-## Data Flow Examples
+## Game Flow Examples
 
-### Example 1: Environmental Event (Complete Flow)
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ USER: Clicks "Continue" button                                 │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ FRONTEND: handleChatAction("Continue")                         │
-│ - Dice animation                                               │
-│ - diceRoll = 14                                                │
-│ - **CURRENT**: Calls generateLLMResponse() with mock data      │
-│ - **FUTURE**: Will call POST /api/game/action                  │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼ (Future API Integration)
-┌────────────────────────────────────────────────────────────────┐
-│ API: POST /api/game/action                                     │
-│ Body: { campaignId: 1, actionType: "continue",                 │
-│        actionData: { diceRoll: 14 } }                          │
-│ - Creates GameService                                          │
-│ - Calls processPlayerAction()                                  │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ GAME SERVICE: handleExplorationAction()                        │
-│ Phase 1: Generate Event Type                                   │
-│ ├─→ LLM: generateEventType()                                   │
-│ │   └─→ Returns: "Environmental"                               │
-│ ├─→ Backend: setPendingEvent(1, "Environmental")               │
-│ └─→ Returns: { phase: "event_choice", choices: ["Accept"...] } │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ FRONTEND: Displays "An environmental event is about to occur.."│
-│ Shows: [Accept] [Reject] buttons                               │
-└────────────────────────────────────────────────────────────────┘
-
-               │ User clicks [Accept]
-               ▼
-
-┌────────────────────────────────────────────────────────────────┐
-│ FRONTEND: Calls mock or future API                             │
-│ **FUTURE**: POST /api/game/action                              │
-│ Body: { campaignId: 1, actionType: "accept_event" }            │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ GAME SERVICE: handleEventChoice("accept_event")                │
-│ Phase 2: Process Event                                         │
-│ ├─→ Backend: getPendingEvent() → "Environmental"               │
-│ ├─→ EventType.trigger("Environmental")                         │
-│ ├─→ LLM: generateDescription("Environmental", context)         │
-│ │   └─→ "A magical mist envelops you, boosting your vitality!" │
-│ ├─→ LLM: requestStatBoost(context, "Environmental")            │
-│ │   └─→ { statType: "health", baseValue: 10 }                  │
-│ ├─→ Dice_Roll.roll() → 14                                      │
-│ ├─→ Stat_Calc.applyRoll(14, "VIT", 10)                         │
-│ │   └─→ 10 * (1 + (14-10)/10) = 10 * 1.4 = 14 health           │
-│ ├─→ Backend: updateCharacter({ currentHealth: +14 })           │
-│ ├─→ Backend: saveEvent(message, "Environmental", {health:14})  │
-│ └─→ Backend: clearPendingEvent()                               │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ FRONTEND: Updates UI                                           │
-│ - Character health: 50 → 64                                    │
-│ - New chat message: "A magical mist... (+14 HP) 🎲"           │
-│ - Choices: [Continue] [Search] [Use Item]                     │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### Example 2: Combat Event
+### Example 1: Complete Event Flow (Environmental)
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│ Phase 1: Combat Event Generated                                │
-│ LLM returns: "Combat"                                          │
-└──────────────┬─────────────────────────────────────────────────┘
-               │ User Accepts
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ GAME SERVICE: Process Combat Event                             │
-│ ├─→ LLM: generateDescription("Combat", context)                │
-│ │   └─→ "A goblin leaps from the shadows!"                     │
-│ ├─→ Backend: getRandomEnemy() → Goblin (HP:30, ATK:8, DEF:3) │
-│ ├─→ Backend: setCurrentEnemy(campaignId, goblinId)             │
-│ ├─→ Phase transition: "combat"                                 │
-│ └─→ Returns: { phase: "combat", enemy: Goblin, choices: ... } │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ FRONTEND: Combat UI                                            │
-│ Shows enemy sprite, HP bar, combat choices                     │
-│ Choices: [Attack] [Use Item]                                   │
-│ NOTE: Combat system design pending team discussion             │
-└────────────────────────────────────────────────────────────────┘
-
-               │ User clicks [Attack]
-               ▼
-
-┌────────────────────────────────────────────────────────────────┐
-│ GAME SERVICE: handleCombatAction("attack")                     │
-│ ├─→ Dice_Roll.roll() → 18 (CRITICAL! ✨)                      │
-│ ├─→ Character damage: 10 * 2 = 20 (crit multiplier)           │
-│ ├─→ Enemy damage: 8 (goblin attacks back)                      │
-│ ├─→ Update: Character HP -8, Enemy HP -20                      │
-│ ├─→ LLM: generateEvent(combatContext) → flavor text            │
-│ │   └─→ "Your blade strikes true! Critical hit!"               │
-│ └─→ Enemy HP: 30 → 10                                          │
-└──────────────┬─────────────────────────────────────────────────┘
-               │ Combat continues...
-               │ Another attack defeats goblin
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ GAME SERVICE: Enemy defeated                                   │
-│ ├─→ Backend: setCurrentEnemy(campaignId, null)                 │
-│ ├─→ EventType.resetDescriptiveCount() (if boss)                │
-│ ├─→ handlePostCombatRewards()                                  │
-│ │   ├─→ Roll for rewards: 19 (Critical Success!)               │
-│ │   ├─→ LLM: RequestItemDrop() → Rare Sword                    │
-│ │   └─→ LLM: bonusStatRequest() → +5 Attack                    │
-│ └─→ Phase transition: "exploration"                            │
-└────────────────────────────────────────────────────────────────┘
+1. User clicks "Continue Forward"
+        ↓
+2. POST /api/game/action { actionType: "continue" }
+        ↓
+3. GameService.handleContinue()
+   - Event number: 15
+   - Roll dice: 12
+        ↓
+4. LLMService.generateEventType()
+   → Returns: "Environmental"
+        ↓
+5. LLMService.generateDescription("Environmental")
+   → Returns: "You discover a mystical fountain glowing with ancient power..."
+        ↓
+6. Create investigation prompt:
+   setInvestigationPrompt(campaignId, "Environmental", description)
+        ↓
+7. Return to frontend:
+   {
+     currentPhase: "investigation_prompt",
+     message: "You discover a mystical fountain...",
+     choices: ["Investigate", "Decline"]
+   }
+        ↓
+8. User clicks "Investigate"
+        ↓
+9. POST /api/game/action { actionType: "investigate" }
+        ↓
+10. GameService.handleInvestigate()
+    - Retrieve investigation prompt
+    - Call LLMService.requestStatBoost()
+      → Returns: { statType: "health", baseValue: 10 }
+    - Roll dice: 16 (critical success!)
+    - Apply modifier: Stat_Calc.applyRoll(16, "HEALTH", 10)
+      → finalValue = 10 × 2 = 20 HP
+    - Update character: currentHealth += 20
+    - Save event to database
+        ↓
+11. Return to frontend:
+    {
+      currentPhase: "exploration",
+      message: "The fountain's waters restore 20 HP! (Critical Success)",
+      choices: ["Continue Forward"]
+    }
 ```
 
-### Example 3: Event Rejection Flow
+### Example 2: Complete Combat Flow
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│ Phase 1: User sees "A descriptive event is about to occur..."  │
-│ [Accept] [Reject]                                              │
-└────────────────────────────────────────────────────────────────┘
-
-               │ User clicks [Reject]
-               ▼
-
-┌────────────────────────────────────────────────────────────────┐
-│ GAME SERVICE: handleEventChoice("reject_event")                │
-│ ├─→ Backend: clearPendingEvent(campaignId)                     │
-│ ├─→ Immediately call: handleExplorationAction()                │
-│ │   ├─→ LLM: generateEventType() → "Environmental"             │
-│ │   └─→ Backend: setPendingEvent(1, "Environmental")           │
-│ └─→ Returns new event preview                                  │
-└──────────────┬─────────────────────────────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────────────────────────────┐
-│ FRONTEND: New event preview displayed                          │
-│ "An environmental event is about to occur..."                  │
-│ [Accept] [Reject]                                              │
-└────────────────────────────────────────────────────────────────┘
+1. User clicks "Continue Forward" (Event 25)
+        ↓
+2. GameService.handleContinue()
+   - LLM decides: "Combat"
+   - Calculate difficulty: (25 × 2) + (12 - 10) × 1 = 52
+   - Backend.getEnemyByDifficulty(52, 3)
+     → Returns: Orc Warrior (difficulty 55, HP 50, ATK 18, DEF 5)
+        ↓
+3. Start combat:
+   - Load character + equipment + inventory
+   - Create combat snapshot in memory
+   - Save combat encounter event to database
+        ↓
+4. Return to frontend:
+   {
+     currentPhase: "combat",
+     enemy: { name: "Orc Warrior", hp: 50, ... },
+     message: "An Orc Warrior emerges from the shadows!",
+     choices: ["Attack", "Flee", "Use Item"]
+   }
+        ↓
+5. User clicks "Attack"
+        ↓
+6. GameService.handleCombatAction("attack")
+   - Get snapshot from memory
+   - Calculate player attack:
+     base(15) + weapon(8) + buff(0) = 23
+   - Calculate enemy defense: 5
+   - Damage to enemy: max(23 - 5, 1) = 18
+   - Update enemy HP: 50 - 18 = 32
+        ↓
+7. Enemy counterattack:
+   - Enemy attack: 18
+   - Player defense: base(10) + shield(6) + buff(0) = 16
+   - Damage to player: max(18 - 16, 1) = 2
+   - Update player HP: 85 - 2 = 83
+        ↓
+8. Update snapshot in memory (NOT database)
+        ↓
+9. Return to frontend:
+   {
+     currentPhase: "combat",
+     enemy: { hp: 32, maxHp: 50, ... },
+     combatState: { enemyCurrentHp: 32, ... },
+     message: "You strike for 18 damage! The Orc hits back for 2 damage.",
+     choices: ["Attack", "Flee", "Use Item"]
+   }
+        ↓
+   [Combat continues...]
+        ↓
+10. After several rounds, enemy HP reaches 0
+        ↓
+11. GameService.resolveCombatEnd("victory")
+    - Roll for rewards: 18 (critical success!)
+    - Calculate reward rarity: (55 × 0.5) + (18 × 1) = 45.5
+    - Backend.getWeaponByRarity(45) → Returns: Flamebrand Sword (+13 ATK)
+    - Also get bonus item from critical success
+    - Add items to inventory (database)
+        ↓
+12. Commit combat snapshot:
+    - Update character HP in database: 83
+    - Remove used items (if any)
+    - Clear snapshot from memory
+        ↓
+13. Save combat conclusion event to database
+        ↓
+14. Return to frontend:
+    {
+      currentPhase: "exploration",
+      message: "Victory! You found: Flamebrand Sword (+13 ATK), Health Potion",
+      choices: ["Continue Forward"]
+    }
 ```
+
+### Example 3: Boss Fight and Victory
+
+```
+1. Event 48 reached
+        ↓
+2. GameService.handleContinue()
+   - checkForBossFight() → TRUE
+   - Backend.getBossEnemy()
+     → Returns: Ancient Dragon (difficulty 1003, HP 250, ATK 34, DEF 16)
+        ↓
+3. Start boss combat
+   - Create snapshot
+   - Save encounter event
+        ↓
+4. [Long combat sequence...]
+        ↓
+5. Dragon HP reaches 0
+        ↓
+6. GameService.resolveCombatEnd("victory")
+   - Detect boss victory
+   - Award legendary loot (rarity 500+)
+   - Update campaign state: "completed"
+   - Commit snapshot
+        ↓
+7. Return to frontend:
+   {
+     currentPhase: "victory",
+     message: "The Ancient Dragon falls! You have saved the realm!",
+     choices: []
+   }
+        ↓
+8. Frontend displays victory modal
+```
+
+### Example 4: Page Refresh During Combat
+
+```
+1. Player in combat, server restarts
+        ↓
+2. User refreshes page
+        ↓
+3. GET /api/game/state?campaignId=123
+        ↓
+4. API Route checks for snapshot:
+   - getCombatSnapshot(123) → null (memory cleared)
+        ↓
+5. API Route checks database:
+   - getRecentEvents(123, 10)
+   - Last event: { eventType: "Combat", eventData: { phase: "encounter", enemyId: 45 } }
+        ↓
+6. Recreate combat snapshot:
+   - Load character + equipment + inventory
+   - Load enemy from database (ID 45)
+   - Create fresh snapshot in memory
+        ↓
+7. GameService.getGameState()
+   - Detects snapshot exists
+   - Returns combat phase with snapshot data
+        ↓
+8. Frontend renders combat UI
+   - Enemy displayed correctly
+   - Inventory from snapshot (showing pre-combat state)
+   - Temporary buffs reset (expected behavior)
+```
+
+---
+
+## Database Schema
+
+### Key Tables
+
+#### `campaigns`
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+account_id INT
+name VARCHAR(255)
+description TEXT
+state VARCHAR(50) DEFAULT 'active'  -- 'active', 'game_over', 'completed'
+created_at TIMESTAMP
+updated_at TIMESTAMP
+```
+
+#### `characters`
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+race_id INT
+class_id INT
+campaign_id INT UNIQUE
+name VARCHAR(100)
+current_health INT
+max_health INT
+attack INT
+defense INT
+sprite_path VARCHAR(255)
+armour_id INT NULL
+weapon_id INT NULL
+shield_id INT NULL
+```
+
+#### `logs` (Event History)
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+campaign_id INT
+message TEXT NOT NULL
+event_number INT NOT NULL
+event_type VARCHAR(50)  -- 'Descriptive', 'Environmental', 'Combat', 'Item_Drop'
+event_data JSON
+created_at TIMESTAMP
+UNIQUE (campaign_id, event_number)
+```
+
+**Example event_data**:
+```json
+// Combat encounter
+{
+  "phase": "encounter",
+  "enemyId": 45,
+  "enemyName": "Orc Warrior"
+}
+
+// Combat conclusion
+{
+  "phase": "victory",
+  "enemyId": 45,
+  "lootReceived": [67, 23]  // Item/equipment IDs
+}
+
+// Environmental event
+{
+  "statType": "health",
+  "baseValue": 10,
+  "finalValue": 20,
+  "diceRoll": 16
+}
+```
+
+#### `items`
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+name VARCHAR(255) UNIQUE
+rarity INT
+stat_modified VARCHAR(50)  -- 'health', 'attack', 'defense'
+stat_value INT  -- Can be negative for curses
+description TEXT
+sprite_path VARCHAR(255)
+INDEX idx_rarity (rarity)
+```
+
+#### `weapons`, `armours`, `shields`
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+name VARCHAR(100)
+rarity INT
+attack/health/defense INT  -- Depending on type
+description TEXT
+sprite_path VARCHAR(255)
+INDEX idx_rarity (rarity)
+```
+
+#### `enemies`
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+name VARCHAR(100)
+difficulty INT
+health INT
+attack INT
+defense INT
+sprite_path VARCHAR(255)
+INDEX idx_difficulty (difficulty)
+```
+
+**Difficulty Ranges**:
+- 0-30: Low (Rats, Zombies, Goblins)
+- 31-70: Mid (Orcs, Dark Wizards, Centaurs)
+- 71-110: High (Trolls, Vampires, Minotaurs)
+- 1000+: Bosses (Griffin, Dragon)
+
+#### `character_items` (Inventory)
+```sql
+id INT PRIMARY KEY AUTO_INCREMENT
+character_id INT
+item_id INT
+created_at TIMESTAMP
+FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE RESTRICT
+```
+
+**Note**: Supports item stacking - multiple rows with same character_id + item_id
 
 ---
 
 ## Integration Points
 
-### Frontend ↔ API Endpoint (Future Integration)
+### Frontend ↔ API Routes
 
-**Interface**: HTTP POST
-
-**Current Status**: Frontend uses local mock data. API integration planned for future sprint.
-
-**Future Contract**:
+**Contract**:
 
 ```typescript
-POST /api/game/action
-Request Body:
-{
+// GET /api/game/state?campaignId={id}
+Response: GameState
+
+// POST /api/game/action
+Request: {
   campaignId: number,
-  actionType: ActionType,  // "continue" | "search" | "attack" | "use_item" | ...
+  actionType: "continue" | "investigate" | "decline" | "attack" | "flee" | "use_item_combat",
   actionData?: {
-    itemId?: number,
-    targetId?: number,
-    diceRoll?: number
+    itemId?: number  // For use_item_combat
   }
 }
 
-Response:
-GameServiceResponse {
+Response: GameServiceResponse {
   success: boolean,
   gameState: GameState,
   message: string,
   choices?: string[],
-  combatResult?: CombatResult,
   error?: string
 }
 ```
 
-**Responsibilities**:
-
-- Frontend: Build request payload, handle response, update UI
-- API Endpoint: HTTP server, JSON parsing, error handling, GameService instantiation
-
----
-
-### API Endpoint ↔ Game Service
-
-**Interface**: Direct TypeScript class instantiation
+### API Routes ↔ Game Service
 
 **Contract**:
-
 ```typescript
-const gameService = new GameService(apiKey);
-const response = await gameService.processPlayerAction(playerAction);
+const gameService = new GameService(process.env.GEMINI_API_KEY);
+const response = await gameService.processPlayerAction(action);
 ```
-
-**Responsibilities**:
-
-- API Endpoint: Service instantiation, error handling
-- Game Service: All game logic, orchestration
-
----
 
 ### Game Service ↔ LLM Service
 
-**Interface**: Direct TypeScript class method calls
-
 **Contract**:
-
 ```typescript
-// Event type generation
 const eventType = await llmService.generateEventType(context);
-
-// Description generation
 const description = await llmService.generateDescription(eventType, context);
-
-// Stat boost request
-const statBoost = await llmService.requestStatBoost(context, eventType);
+const statBoost = await llmService.requestStatBoost(context);
 ```
-
-**Responsibilities**:
-
-- Game Service: Build LLMGameContext, handle responses
-- LLM Service: API calls, prompt engineering, schema validation
-
----
 
 ### Game Service ↔ Backend Service
 
-**Interface**: Direct TypeScript function calls (exported functions)
-
 **Contract**:
-
 ```typescript
-// Character operations
-const character = await BackendService.getCharacter(id);
-await BackendService.updateCharacter(id, { currentHealth: 100 });
+// Character
+const { character, equipment, inventory } = 
+  await BackendService.getCharacterWithFullData(campaignId);
+await BackendService.updateCharacter(charId, { currentHealth: 100 });
 
-// Event operations
-await BackendService.setPendingEvent(campaignId, "Combat");
-const eventType = await BackendService.getPendingEvent(campaignId);
-await BackendService.clearPendingEvent(campaignId);
+// Items/Equipment
+const item = await BackendService.getItemByRarity(targetRarity, 5);
+await BackendService.addItemToInventory(charId, itemId);
 
-// Event logging
+// Enemies
+const enemy = await BackendService.getEnemyByDifficulty(difficulty, 3);
+
+// Events
 await BackendService.saveEvent(campaignId, message, eventType, eventData);
+const events = await BackendService.getRecentEvents(campaignId, 1000);
+
+// Campaign
+await BackendService.updateCampaign(campaignId, { state: "completed" });
 ```
-
-**Responsibilities**:
-
-- Game Service: Orchestrate when to call, what data to pass
-- Backend Service: Database operations, data mapping
-
----
-
-### Game Service ↔ Event Type Service
-
-**Interface**: Direct TypeScript class static methods
-
-**Contract**:
-
-```typescript
-// Trigger event type (increments descriptive counter)
-await EventType.trigger(eventType);
-
-// Check counter
-const count = EventType.getDescriptiveCount();
-
-// Reset counter (after boss fight)
-EventType.resetDescriptiveCount();
-```
-
-**Responsibilities**:
-
-- Game Service: Call at appropriate times, check counter before accepting descriptive events
-- Event Type: Track counter, trigger type-specific logic
-
----
-
-### Game Service ↔ Utility Services
-
-**Interface**: Direct TypeScript class static methods
-
-**Contract**:
-
-```typescript
-// Roll dice
-const rollValue = Dice_Roll.roll(); // 1-20
-const tier = Dice_Roll.classifyRoll(rollValue); // "critical_success"
-
-// Apply roll to stat
-const finalValue = Stat_Calc.applyRoll(rollValue, "VIT", 10); // 20
-```
-
-**Responsibilities**:
-
-- Game Service: Call when processing environmental events or combat
-- Utilities: Pure calculation logic
 
 ---
 
@@ -926,45 +909,44 @@ const finalValue = Stat_Calc.applyRoll(rollValue, "VIT", 10); // 20
 
 ### Key Design Principles
 
-1. **Separation of Concerns**: Each layer has a single, well-defined responsibility
-2. **Type Safety**: TypeScript interfaces enforce contracts between layers
-3. **Orchestration Pattern**: Game Service coordinates, doesn't duplicate logic
-4. **Two-Phase Events**: User approval before effects for better UX
-5. **Multi-Call LLM**: Separate calls for type, description, effects (not monolithic)
-6. **Database Abstraction**: Backend Service provides clean interface to database
-7. **Stateless API**: Each request is self-contained with campaign ID
+1. **Forced Engagement**: Players must engage with events through investigation prompts (no simple accept/reject)
 
-### Data Flow Summary
+2. **Combat Snapshot System**: Preserve combat state across server restarts, track temporary buffs and item usage
 
-**Current (Mock Data)**:
+3. **Progressive Difficulty**: Loot and enemies scale with event progression using mathematical formulas
 
-```
-User Action → Frontend (generateLLMResponse) → UI Update
-```
+4. **Two-Phase Logging**: Combat creates two logs (encounter + conclusion) for accurate history
 
-**Future (With API Integration)**:
+5. **LLM Integration**: Separate calls for event type, description, and stat modifications (not monolithic)
 
-```
-User Action → Frontend → API Endpoint → Game Service
-                                            ↓
-                             ┌──────────────┼──────────────┐
-                             ↓              ↓              ↓
-                        LLM Service   Backend Service  Event Type
-                             ↓              ↓              ↓
-                        Gemini API    MySQL DB      Dice/Stat Calc
-                             ↓              ↓              ↓
-                             └──────────────┴──────────────┘
-                                            ↓
-              Game Service Response → API Endpoint → Frontend → UI Update
-```
+6. **Boss Fight Trigger**: Automatic boss encounters starting at event 48
 
-### Phase Management
+7. **Temporary vs Permanent**: Items give temporary combat buffs, environmental events give permanent stat changes
 
-The system operates in three distinct phases:
+8. **Inventory Management**: Items can stack, but each use removes only ONE instance
 
-1. **Exploration**: Player navigates dungeon, triggers events
-2. **Event Choice**: Player accepts or rejects proposed event
-3. **Combat**: Player fights enemy until victory or defeat
+9. **Phase-Based Validation**: Actions are validated against current game phase to prevent invalid states
 
-Each phase has its own action handlers and available choices, ensuring clean state management and preventing invalid actions
+10. **Database Abstraction**: Backend service provides clean camelCase interface to snake_case database
+
+### Current Status
+
+**Fully Implemented**:
+- Complete event generation system
+- Investigation prompt mechanics
+- Combat system with snapshots
+- Item and equipment management
+- Boss fight triggers
+- Victory/defeat conditions
+- LLM integration for all narrative content
+- Loot formula scaling
+- Database persistence
+
+**Active Routes**:
+- `/api/game/state` (GET) - Load game state
+- `/api/game/action` (POST) - Process all player actions
+
 ---
+
+**Last Updated**: November 2024
+**Version**: 2.0 (Complete Rewrite)
