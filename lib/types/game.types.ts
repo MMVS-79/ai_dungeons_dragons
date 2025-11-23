@@ -26,7 +26,6 @@ export interface Item {
 interface Equipment {
   id: number;
   name: string;
-  health: number;
   image?: string;
   description?: string;
   rarity?: number;

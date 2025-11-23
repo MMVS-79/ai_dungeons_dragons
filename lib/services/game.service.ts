@@ -297,7 +297,7 @@ export class GameService {
         gameState.character.vitality * HEALTH_PER_VITALITY,
         gameState.character.currentHealth + item.health
       );
-      await BackendService.updateCharacter(gameState.character.id, {
+      await BackendService.BackendService.updateCharacter(gameState.character.id, {
         currentHealth: newHealth
       });
     }
@@ -752,7 +752,7 @@ export class GameService {
     const newAttack = Math.max(0, character.attack + changes.attack);
     const newDefense = Math.max(0, character.defense + changes.defense);
 
-    await BackendService.updateCharacter(character.id, {
+    await BackendService.BackendService.updateCharacter(character.id, {
       currentHealth: newHealth,
       attack: newAttack,
       defense: newDefense
