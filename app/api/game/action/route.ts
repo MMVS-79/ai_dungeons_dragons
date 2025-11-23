@@ -22,13 +22,10 @@ export async function POST(request: NextRequest) {
 
     const campaignId = Number(body.campaignId);
 
-    console.log(`[API] Processing action: ${body.actionType} for campaign ${campaignId}`);
-
     // CHECK: Is campaign completed or game over?
     const campaign = await BackendService.getCampaign(campaignId);
     
     if (campaign.state === "game_over" || campaign.state === "completed") {
-      console.log(`[API] Campaign ${campaignId} is ${campaign.state}, loading final state`);
       
       const gameState = await gameService.getGameState(campaignId);
       
@@ -47,7 +44,6 @@ export async function POST(request: NextRequest) {
     if (body.actionType === "continue") {
       const storedPrompt = gameService.getStoredInvestigationPrompt(campaignId);
       if (storedPrompt) {
-        console.log(`[API] Investigation prompt detected, auto-declining on refresh`);
         body.actionType = "decline";
       }
     }
@@ -81,14 +77,11 @@ export async function POST(request: NextRequest) {
 
     const result: GameServiceResponse = await gameService.processPlayerAction(action);
 
-    console.log(`[API] Action result: success=${result.success}, phase=${result.gameState.currentPhase}`);
-
     return NextResponse.json(result, {
       status: result.success ? 200 : 500,
     });
 
   } catch (error) {
-    console.error("[API] Game action error:", error);
     
     return NextResponse.json(
       { 
@@ -124,7 +117,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("[API] Game state fetch error:", error);
     
     return NextResponse.json(
       { 
