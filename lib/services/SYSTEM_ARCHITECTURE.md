@@ -294,7 +294,7 @@ requestStatBoost(context: LLMGameContext, eventType: EventTypeString): Promise<S
 
 ```typescript
 RequestItemDrop(context?: LLMGameContext): Promise<{ 
-  itemType: string,        // "weapon" | "armor" | "shield" | "potion"
+  itemType: string,        // "weapon" | "armour" | "shield" | "potion"
   itemName: string, 
   itemStats: Record<string, number> 
 }>
@@ -381,7 +381,7 @@ bonusStatRequest(context?: LLMGameContext): Promise<{
 - `addItemToInventory(characterId, item)` - ⚠️ **ROUTING LOGIC IMPLEMENTED** (needs SQL queries)
   - **Item Routing** (switch-case by itemType):
     - `weapon` → inserts into `weapons` table, updates character.weapon_id
-    - `armor` → inserts into `armours` table, updates character.armour_id
+    - `armour` → inserts into `armours` table, updates character.armour_id
     - `shield` → inserts into `shields` table, updates character.shield_id
     - `potion` → inserts into `items` table, adds to `character_items` join table
   - Currently logs placeholder messages, ready for database implementation
@@ -623,7 +623,7 @@ Events are processed in two distinct phases to allow user acceptance/rejection b
                ▼ (Future API Integration)
 ┌────────────────────────────────────────────────────────────────┐
 │ API: POST /api/game/action                                     │
-│ Body: { campaignId: 1, actionType: "continue",                │
+│ Body: { campaignId: 1, actionType: "continue",                 │
 │        actionData: { diceRoll: 14 } }                          │
 │ - Creates GameService                                          │
 │ - Calls processPlayerAction()                                  │
@@ -636,7 +636,7 @@ Events are processed in two distinct phases to allow user acceptance/rejection b
 │ ├─→ LLM: generateEventType()                                   │
 │ │   └─→ Returns: "Environmental"                               │
 │ ├─→ Backend: setPendingEvent(1, "Environmental")               │
-│ └─→ Returns: { phase: "event_choice", choices: ["Accept"...] }│
+│ └─→ Returns: { phase: "event_choice", choices: ["Accept"...] } │
 └──────────────┬─────────────────────────────────────────────────┘
                │
                ▼
@@ -651,7 +651,7 @@ Events are processed in two distinct phases to allow user acceptance/rejection b
 ┌────────────────────────────────────────────────────────────────┐
 │ FRONTEND: Calls mock or future API                             │
 │ **FUTURE**: POST /api/game/action                              │
-│ Body: { campaignId: 1, actionType: "accept_event" }           │
+│ Body: { campaignId: 1, actionType: "accept_event" }            │
 └──────────────┬─────────────────────────────────────────────────┘
                │
                ▼
@@ -661,14 +661,14 @@ Events are processed in two distinct phases to allow user acceptance/rejection b
 │ ├─→ Backend: getPendingEvent() → "Environmental"               │
 │ ├─→ EventType.trigger("Environmental")                         │
 │ ├─→ LLM: generateDescription("Environmental", context)         │
-│ │   └─→ "A magical mist envelops you, boosting your vitality!"│
+│ │   └─→ "A magical mist envelops you, boosting your vitality!" │
 │ ├─→ LLM: requestStatBoost(context, "Environmental")            │
-│ │   └─→ { statType: "health", baseValue: 10 }                 │
+│ │   └─→ { statType: "health", baseValue: 10 }                  │
 │ ├─→ Dice_Roll.roll() → 14                                      │
-│ ├─→ Stat_Calc.applyRoll(14, "VIT", 10)                        │
-│ │   └─→ 10 * (1 + (14-10)/10) = 10 * 1.4 = 14 health 🎲      │
+│ ├─→ Stat_Calc.applyRoll(14, "VIT", 10)                         │
+│ │   └─→ 10 * (1 + (14-10)/10) = 10 * 1.4 = 14 health           │
 │ ├─→ Backend: updateCharacter({ currentHealth: +14 })           │
-│ ├─→ Backend: saveEvent(message, "Environmental", {health:14}) │
+│ ├─→ Backend: saveEvent(message, "Environmental", {health:14})  │
 │ └─→ Backend: clearPendingEvent()                               │
 └──────────────┬─────────────────────────────────────────────────┘
                │
