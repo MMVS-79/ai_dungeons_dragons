@@ -2,6 +2,7 @@ name: Code Quality Checks
 
 permissions:
   contents: write
+  pull-requests: write
 
 on:
   pull_request:
@@ -19,7 +20,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -108,17 +110,31 @@ jobs:
           echo "---- DIFF ----"
           git -c color.ui=false --no-pager diff || true
 
-      - name: Commit & push formatted changes (if any)
-        if: steps.autofix.outcome == 'success' && steps.find_files.outputs.has_files == 'true'
-        uses: EndBug/add-and-commit@v9
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "chore: auto-format source files (Prettier + ESLint)"
+          git push
+
+      - name: Comment on PR
+        if: steps.git-check.outputs.changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
-          author_name: "github-actions[bot]"
-          author_email: "41898282+github-actions[bot]@users.noreply.github.com"
-          message: "chore: auto-format source files (CI)"
-          add: "app lib src package.json package-lock.json yarn.lock"
-          push: "true"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✨ Code has been auto-formatted with Prettier and ESLint!'
+            })
 
   lint:
     name: ESLint (source-only, warnings ignored)
@@ -129,7 +145,7 @@ jobs:
       - name: Checkout code (sync latest branch)
         uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - name: Ensure latest branch (pick up formatting commit if pushed)
@@ -176,7 +192,14 @@ jobs:
       - name: Run ESLint (errors fail, warnings ignored)
         if: steps.find_lint_files.outputs.has_files == 'true'
         run: |
-          cat lint-files.txt | xargs npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
+          echo "Linting $(wc -l < lint-files.txt) files..."
+          
+          if cat lint-files.txt | xargs npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern; then
+            echo "✅ ESLint passed - no errors found!"
+          else
+            echo "❌ ESLint failed - errors found above"
+            exit 1
+          fi
 
       - name: Skip lint if no source files found
         if: steps.find_lint_files.outputs.has_files == 'false'
@@ -191,7 +214,7 @@ jobs:
       - name: Checkout code (sync latest branch)
         uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - name: Ensure latest branch (pick up formatting commit if pushed)
@@ -213,5 +236,4 @@ jobs:
         run: npm test
         env:
           CI: true
-
           
