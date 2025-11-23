@@ -91,6 +91,26 @@
   color: white;
 }
 
+/* Disabled step styles */
+.disabledStep {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+}
+
+.disabledStep:hover {
+  background: transparent !important;
+}
+
+.disabledStep .stepNumber {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.disabledStep .stepLabel {
+  color: rgba(255, 255, 255, 0.3);
+}
+
 /* Main Content */
 .mainContent {
   margin-left: 300px;
