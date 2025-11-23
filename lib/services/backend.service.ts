@@ -28,6 +28,9 @@ import { pool } from "../db";
 import type { RowDataPacket } from "mysql2";
 import { LLMService } from "@/lib/services/llm.service";
 import type { LLMGameContext } from "@/lib/types/llm.types";
+import { BackgroundMusicService } from "@/lib/services/background-music.service";
+
+BackgroundMusicService.play("..lib/music/rpg-city-8381.mp3");
 
 // Initialize LLM service for combat rewards (item drops and bonus stats)
 const llmService = new LLMService({
