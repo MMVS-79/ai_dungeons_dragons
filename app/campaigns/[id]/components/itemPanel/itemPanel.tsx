@@ -196,7 +196,7 @@ export default function ItemPanel({
 
             {/* Items Section */}
             <div className={styles.expandedSection}>
-              <h3 className={styles.expandedSectionHeader}>📦 Items ({inventory.length}/{MAX_INVENTORY_SLOTS})</h3>
+              <h3 className={styles.expandedSectionHeader}>🧪 Items ({inventory.length}/{MAX_INVENTORY_SLOTS})</h3>
               <div className={styles.expandedItemsGrid}>
                 {inventorySlots.map((item, index) => (
                   <div 
@@ -265,9 +265,9 @@ export default function ItemPanel({
               <h3 className={styles.detailTitle}>{selectedItem.name}</h3>
               <p className={styles.detailDescription}>{selectedItem.description}</p>
               <p className={styles.detailStats}>
-                {selectedItem.statModified === 'health' && '❤️'}
-                {selectedItem.statModified === 'attack' && '⚔️'}
-                {selectedItem.statModified === 'defense' && '🛡️'}
+                {selectedItem.statModified === 'health' }
+                {selectedItem.statModified === 'attack' }
+                {selectedItem.statModified === 'defense' }
                 {' '}
                 {selectedItem.statValue > 0 ? '+' : ''}{selectedItem.statValue} {selectedItem.statModified}
               </p>

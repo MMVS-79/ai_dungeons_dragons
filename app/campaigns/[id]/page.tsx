@@ -21,6 +21,33 @@ interface Item {
   spritePath?: string;
 }
 
+export interface Weapon {
+  id: number;
+  name: string;
+  rarity: number;
+  attack: number;
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Armour {
+  id: number;
+  name: string;
+  rarity: number;
+  health: number;
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Shield {
+  id: number;
+  name: string;
+  rarity: number;
+  defense: number;
+  description?: string;
+  spritePath?: string;
+}
+
 interface Equipment {
   weapon?: {
     id: number;
@@ -82,7 +109,7 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(true);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [enemyState, setEnemyState] = useState<EnemyState | null>(null);
-  const [itemFound, setItemFound] = useState<Item | Equipment | null>(null);
+  const [itemFound, setItemFound] = useState<Weapon | Armour | Shield | Item | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);

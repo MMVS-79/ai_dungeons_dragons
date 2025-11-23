@@ -21,20 +21,36 @@ interface Item {
   spritePath?: string;
 }
 
-interface Equipment {
+export interface Weapon {
   id: number;
   name: string;
   rarity: number;
-  attack?: number;
-  defense?: number;
-  health?: number;
+  attack: number;
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Armour {
+  id: number;
+  name: string;
+  rarity: number;
+  health: number;
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Shield {
+  id: number;
+  name: string;
+  rarity: number;
+  defense: number;
   description?: string;
   spritePath?: string;
 }
 
 interface EventPanelProps {
   enemy: EnemyState | null;
-  itemFound?: Item | Equipment | null;
+  itemFound?: Weapon | Armour | Shield | Item | null;
 }
 
 export default function EventPanel({ 
@@ -84,7 +100,7 @@ export default function EventPanel({
     
     return (
       <div className={styles.panel}>
-        <h2 className={styles.header}>{isEquipment ? '⚔️ Equipment Found!' : '📦 Item Found!'}</h2>
+        <h2 className={styles.header}>{isEquipment ? '⚔️ Equipment Found!' : '🧪 Item Found!'}</h2>
         <div className={styles.itemFound}>
           {/* Show actual item/equipment image */}
           <div className={styles.itemImage}>
@@ -121,9 +137,9 @@ export default function EventPanel({
               <>
                 {('statModified' in itemFound) && (
                   <div className={styles.statBadge}>
-                    {itemFound.statModified === 'health' && '❤️'}
-                    {itemFound.statModified === 'attack' && '⚔️'}
-                    {itemFound.statModified === 'defense' && '🛡️'}
+                    {itemFound.statModified === 'health'}
+                    {itemFound.statModified === 'attack'}
+                    {itemFound.statModified === 'defense'}
                     {' '}
                     {itemFound.statValue > 0 ? '+' : ''}{itemFound.statValue} {itemFound.statModified}
                     {itemFound.statModified === 'health' && ' HP'}

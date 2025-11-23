@@ -22,7 +22,6 @@ if (!global.combatSnapshots) {
  */
 export function createCombatSnapshot(snapshot: CombatSnapshot): void {
   global.combatSnapshots!.set(snapshot.campaignId, snapshot);
-  console.log(`[CombatSnapshot] Created snapshot for campaign ${snapshot.campaignId}`);
 }
 
 /**
@@ -66,7 +65,6 @@ export function applyTemporaryBuff(
   if (snapshot) {
     snapshot.temporaryBuffs[statType] += value;
     global.combatSnapshots!.set(campaignId, snapshot);
-    console.log(`[CombatSnapshot] Applied ${value} ${statType} buff`);
   }
 }
 
@@ -83,9 +81,6 @@ export function removeItemFromSnapshot(campaignId: number, itemId: number): void
       // Remove only ONE instance
       snapshot.inventorySnapshot.splice(itemIndex, 1);
       global.combatSnapshots!.set(campaignId, snapshot);
-      console.log(`[CombatSnapshot] Removed one instance of item ${itemId} from snapshot`);
-    } else {
-      console.warn(`[CombatSnapshot] Item ${itemId} not found in snapshot`);
     }
   }
 }
@@ -106,20 +101,14 @@ export function addCombatLogEntry(campaignId: number, entry: string): void {
  */
 export function clearCombatSnapshot(campaignId: number): void {
   const deleted = global.combatSnapshots!.delete(campaignId);
-  if (deleted) {
-    console.log(`[CombatSnapshot] Cleared snapshot for campaign ${campaignId}`);
-  }
 }
 
 /**
  * Get current attack with equipment and temporary buffs
  */
 export function getEffectiveAttack(snapshot: CombatSnapshot): number {
-  console.log(`[CombatSnapshot] Equipment:`, snapshot.equipment);
-  console.log(`[CombatSnapshot] Weapon:`, snapshot.equipment?.weapon);
   const weaponBonus = snapshot.equipment?.weapon?.attack || 0;
   const total = snapshot.characterSnapshot.baseAttack + weaponBonus + snapshot.temporaryBuffs.attack;
-  console.log(`[CombatSnapshot] Attack calc: base=${snapshot.characterSnapshot.baseAttack} + weapon=${weaponBonus} + buff=${snapshot.temporaryBuffs.attack} = ${total}`);
   return total;
 }
 
@@ -127,9 +116,7 @@ export function getEffectiveAttack(snapshot: CombatSnapshot): number {
  * Get current defense with equipment and temporary buffs
  */
 export function getEffectiveDefense(snapshot: CombatSnapshot): number {
-  console.log(`[CombatSnapshot] Shield:`, snapshot.equipment?.shield);
   const shieldBonus = snapshot.equipment?.shield?.defense || 0;
   const total = snapshot.characterSnapshot.baseDefense + shieldBonus + snapshot.temporaryBuffs.defense;
-  console.log(`[CombatSnapshot] Defense calc: base=${snapshot.characterSnapshot.baseDefense} + shield=${shieldBonus} + buff=${snapshot.temporaryBuffs.defense} = ${total}`);
   return total;
 }

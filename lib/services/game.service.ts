@@ -174,7 +174,7 @@ export class GameService {
           campaignIntro: true,
         }
       );
-      
+
       const updatedState = await this.getGameState(action.campaignId);
       updatedState.currentPhase = "exploration";
 
@@ -1257,7 +1257,7 @@ export class GameService {
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.05) {
+      if (rewardRoll < 0.75) {
         // EQUIPMENT REWARD (75%)
         rewardRarity = calculateCombatRewardRarity(
           snapshot.enemy.difficulty,
