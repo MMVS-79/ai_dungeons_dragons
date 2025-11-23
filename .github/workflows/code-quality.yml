@@ -48,57 +48,56 @@ jobs:
       - name: Find tracked source files
         id: find_files
         run: |
-          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
+          # Find tracked JS/TS files and save to temp file
+          git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' > files.txt || true
 
-          if [ -z "$FILES_Z" ]; then
+          if [ ! -s files.txt ]; then
             echo "No tracked source files found."
-            echo "files=" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_files=true" >> "$GITHUB_OUTPUT"
+            echo "Found $(wc -l < files.txt) source files"
           fi
 
-          FILES=$(printf "%s" "$FILES_Z" | tr '\0' '\n')
-          echo "files<<EOF" >> "$GITHUB_OUTPUT"
-          printf "%s\n" "$FILES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
       - name: Run Prettier on tracked files (if any)
-        if: steps.find_files.outputs.files != ''
+        if: steps.find_files.outputs.has_files == 'true'
         run: |
-          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
-          if [ -z "$FILES_Z" ]; then
+          if [ ! -s files.txt ]; then
             echo "No tracked files found for Prettier. Skipping."
             exit 0
           fi
 
-          echo "Running Prettier on tracked files (showing up to 10):"
-          printf "%s" "$FILES_Z" | tr '\0' '\n' | sed -n '1,10p'
+          echo "Running Prettier on tracked files (showing first 10):"
+          head -10 files.txt
 
-          printf "%s" "$FILES_Z" | xargs -0 -r npx prettier --write || true
+          # Run prettier with files from file
+          cat files.txt | xargs npx prettier --write || true
 
       - name: Run ESLint --fix (tracked files, robust)
-        if: steps.find_files.outputs.files != ''
+        if: steps.find_files.outputs.has_files == 'true'
         id: autofix
         run: |
-          set -euo pipefail
-
-          FILES=$(git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
-          if [ -z "$FILES" ]; then
+          if [ ! -s files.txt ]; then
             echo "No tracked source files to run eslint --fix on."
             exit 0
           fi
 
-          printf "%s\n" "$FILES" | xargs -r npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
+          # Try to fix all files at once first
+          cat files.txt | xargs npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
 
-          printf "%s\n" "$FILES" | while read -r file; do
-            echo "Attempting per-file fix: $file"
-            if ! npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern "$file"; then
-              echo "$file" >> eslint-failures.txt || true
+          # Then try per-file for any that failed
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "Attempting per-file fix: $file"
+              if ! npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern "$file" 2>&1; then
+                echo "$file" >> eslint-failures.txt || true
+              fi
             fi
-          done
+          done < files.txt
 
           if [ -f eslint-failures.txt ] && [ -s eslint-failures.txt ]; then
             echo "ESLint failed to auto-fix these files:"
-            sed -n '1,200p' eslint-failures.txt || true
+            head -200 eslint-failures.txt || true
             echo "::error::ESLint crashed or cannot fix some files. See eslint-failures.txt"
             exit 1
           fi
@@ -110,7 +109,7 @@ jobs:
           git -c color.ui=false --no-pager diff || true
 
       - name: Commit & push formatted changes (if any)
-        if: steps.autofix.outcome == 'success' && steps.find_files.outputs.files != ''
+        if: steps.autofix.outcome == 'success' && steps.find_files.outputs.has_files == 'true'
         uses: EndBug/add-and-commit@v9
         with:
           author_name: "github-actions[bot]"
@@ -165,23 +164,22 @@ jobs:
       - name: Find tracked source files (for lint)
         id: find_lint_files
         run: |
-          FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
-          if [ -z "$FILES_Z" ]; then
-            echo "files=" >> "$GITHUB_OUTPUT"
-            exit 0
+          git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' > lint-files.txt || true
+          
+          if [ ! -s lint-files.txt ]; then
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_files=true" >> "$GITHUB_OUTPUT"
+            echo "Found $(wc -l < lint-files.txt) source files to lint"
           fi
-          FILES=$(printf "%s" "$FILES_Z" | tr '\0' '\n')
-          echo "files<<EOF" >> "$GITHUB_OUTPUT"
-          printf "%s\n" "$FILES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Run ESLint (errors fail, warnings ignored)
-        if: steps.find_lint_files.outputs.files != ''
+        if: steps.find_lint_files.outputs.has_files == 'true'
         run: |
-          printf "%s\n" "${{ steps.find_lint_files.outputs.files }}" | xargs -r npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
+          cat lint-files.txt | xargs npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern
 
       - name: Skip lint if no source files found
-        if: steps.find_lint_files.outputs.files == ''
+        if: steps.find_lint_files.outputs.has_files == 'false'
         run: echo "No source files found (app/, lib/, src/). Skipping ESLint."
 
   test:
@@ -215,4 +213,5 @@ jobs:
         run: npm test
         env:
           CI: true
+
           
