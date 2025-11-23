@@ -1,3 +1,7 @@
+// ===================================================
+// VERSION THAT ISNT USED BY BACKEND ANYMORE
+// ===================================================
+
 // Stat_calc.ts
 // Handles applying dice roll results to player stats.
 // Only computes principal stat adjustments; bonus stats and HP penalties are handled elsewhere.

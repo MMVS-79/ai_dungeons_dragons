@@ -1,3 +1,8 @@
+// ===================================================
+// VERSION THAT ISNT USED BY BACKEND ANYMORE
+// ===================================================
+
+
 // Event_type.ts
 import { LLMService } from './llm.service';
 import { Dice_Roll } from './dice_roll';

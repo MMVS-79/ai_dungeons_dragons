@@ -4,15 +4,15 @@
  * Handles all AI-generated content for the game
  */
 
-import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
+import type { LLMServiceConfig } from "@/lib/types/llm.types";
+import type { Item, Weapon, Armour, Shield } from "../types/game.types";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 
 if (!apiKey) {
   throw new Error("GOOGLE_API_KEY is not set in environment variables");
 }
-
-const genAI = new GoogleGenerativeAI(apiKey);
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -51,18 +51,27 @@ export interface LLMContext {
 // ============================================================================
 
 export class LLMService {
-  private model: GenerativeModel;
+  private ai: GoogleGenAI;
+  private model: string;
+  private generationConfig: {
+    temperature: number;
+    topK: number;
+    topP: number;
+    maxOutputTokens: number;
+  };
 
   constructor() {
-    this.model = genAI.getGenerativeModel({
-      model: "gemini-flash-lite-latest",
-      generationConfig: {
-        temperature: 0.9,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
-    });
+    this.ai = new GoogleGenAI({ apiKey });
+
+    // match your working version defaults
+    this.model = "gemini-flash-lite-latest";
+
+    this.generationConfig = {
+      temperature: 0.9,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 1024,
+    };
   }
 
   // ==========================================================================
@@ -118,9 +127,18 @@ Do not include explanations, punctuation, or additional text.
 Your response:`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text().trim();
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        config: this.generationConfig,
+      });
+
+      let text = result?.text?.trim() ?? "";
 
       console.log(`[LLMService] Raw event type response: "${text}"`);
 
@@ -159,7 +177,8 @@ Your response:`;
    */
   public async generateDescription(
     eventType: string,
-    context: LLMContext
+    context: LLMContext,
+    lootItem?: Item | Weapon | Armour | Shield
   ): Promise<string> {
     let prompt = "";
 
@@ -174,16 +193,25 @@ Your response:`;
         prompt = this.buildCombatPrompt(context);
         break;
       case "Item_Drop":
-        prompt = this.buildItemDropPrompt(context);
+        prompt = this.buildItemDropPrompt(context, lootItem);
         break;
       default:
         prompt = `Create a brief description for: ${eventType}`;
     }
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text().trim();
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        config: this.generationConfig,
+      });
+
+      let text = result?.text?.trim() ?? "";
 
       console.log(
         `[LLMService] Generated description (${eventType}): ${text.substring(
@@ -262,24 +290,84 @@ Build excitement and drama for the encounter.
 Your description:`;
   }
 
-  private buildItemDropPrompt(context: LLMContext): string {
-    return `You are a D&D dungeon master. Create a description of discovering a consumable item.
+  /**
+   * Build item drop prompt with actual loot details, Uses item/equipment name and description directly
+   */
+  private buildItemDropPrompt(
+    context: LLMContext,
+    lootItem?: Item | Weapon | Armour | Shield
+  ): string {
+    // If no item provided (shouldn't happen), use generic prompt
+    if (!lootItem) {
+      return `You are a D&D dungeon master. Create a description of discovering loot.
 
 Character: ${context.character.name} is exploring the dungeon.
 
-Create a SHORT (2-3 sentences) description of finding a potion or consumable item:
+Create a SHORT (2-3 sentences) description of finding loot:
 - Where it's located (ancient chest, fallen adventurer, hidden alcove, ceremonial pedestal)
-- Its physical appearance (color, glow, container type)
-- A hint of its mystical properties
+- Its physical appearance (color, glow, condition)
+- A hint of its properties
 
-The exact item and its effects will be determined separately.
+Your description:`;
+    }
+
+    // Determine if it's equipment or item
+    const isEquipment =
+      "attack" in lootItem ||
+      "defense" in lootItem ||
+      ("health" in lootItem && !("statModified" in lootItem));
+
+    let lootType = "item";
+    let lootCategory = "consumable";
+
+    if (isEquipment) {
+      if ("attack" in lootItem) {
+        lootType = "weapon";
+        lootCategory = "weapon";
+      } else if ("defense" in lootItem) {
+        lootType = "shield";
+        lootCategory = "shield";
+      } else if ("health" in lootItem) {
+        lootType = "armour";
+        lootCategory = "armour piece";
+      }
+    } else {
+      lootType = "consumable item";
+      lootCategory = "potion or scroll";
+    }
+
+    // Use the actual item name and description for context
+    return `You are a D&D dungeon master. Create a description of discovering specific loot.
+
+Character: ${context.character.name} is exploring the dungeon.
+
+Loot Being Found:
+- Name: ${lootItem.name}
+- Type: ${lootType}
+- Description: ${lootItem.description || "A mysterious treasure"}
+
+Create a SHORT (2-3 sentences) description that:
+- Describes WHERE it's found (ancient chest, fallen adventurer, weapon rack, hidden alcove, ceremonial pedestal, dusty shelf)
+- Describes its APPEARANCE in a way that matches "${lootItem.name}"
+- Hints at what makes it special (based on the description)
+- ${
+      isEquipment
+        ? "Makes it clear this is equipment ready to be wielded/worn"
+        : "Makes it clear this is a consumable item"
+    }
+
+Important: 
+- DO NOT reveal the exact name "${lootItem.name}" in your description
+- Describe it generically as a ${lootCategory}
+- Match the tone and quality suggested by the name
 
 Your description:`;
   }
 
   private getFallbackDescription(
     eventType: string,
-    context: LLMContext
+    context: LLMContext,
+    lootItem?: Item | Weapon | Armour | Shield // NEW: Support equipment too
   ): string {
     const fallbacks: Record<string, string> = {
       Descriptive:
@@ -289,8 +377,25 @@ Your description:`;
       Combat: `A ${
         context.enemy?.name || "fearsome creature"
       } emerges from the shadows, its eyes gleaming with hostile intent!`,
-      Item_Drop:
-        "Something glints in the dim light ahead—a small vial resting on a weathered stone pedestal, its contents swirling with an otherworldly glow.",
+      Item_Drop: lootItem
+        ? `Something ${
+            "attack" in lootItem ||
+            "defense" in lootItem ||
+            ("health" in lootItem && !("statModified" in lootItem))
+              ? "gleams"
+              : "glints"
+          } in the dim light ahead—${
+            lootItem.name.toLowerCase().includes("potion")
+              ? "a mystical vial"
+              : lootItem.name.toLowerCase().includes("sword")
+              ? "a finely crafted blade"
+              : lootItem.name.toLowerCase().includes("shield")
+              ? "a sturdy shield"
+              : lootItem.name.toLowerCase().includes("armour")
+              ? "protective gear"
+              : "a valuable treasure"
+          } resting on a weathered stone pedestal.`
+        : "Something glints in the dim light ahead—a small vial resting on a weathered stone pedestal, its contents swirling with an otherworldly glow.",
     };
 
     return fallbacks[eventType] || "You continue deeper into the dungeon.";
@@ -353,9 +458,18 @@ Valid baseValue ranges:
 Your JSON response:`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      let text = response.text().trim();
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        config: this.generationConfig,
+      });
+
+      let text = result?.text?.trim() ?? "";
 
       console.log(`[LLMService] Raw stat boost response: "${text}"`);
 

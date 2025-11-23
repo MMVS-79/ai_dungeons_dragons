@@ -1,3 +1,10 @@
+// ===================================================
+// VERSION THAT ISNT USED BY BACKEND ANYMORE
+// ===================================================
+
+
+
+
 // dice_roll.ts
 // Handles a single D20 roll and classification logic.
 // The result is returned to Game_Engine for orchestration decisions.

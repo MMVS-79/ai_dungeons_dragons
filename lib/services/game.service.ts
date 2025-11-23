@@ -18,8 +18,6 @@ import {
   calculateItemRarity,
   calculateEnemyDifficulty,
   calculateCombatRewardRarity,
-  getRarityRange,
-  getDifficultyRange,
   BALANCE_CONFIG,
 } from "../utils/lootFormulas";
 import {
@@ -46,10 +44,8 @@ import type {
   GameServiceResponse,
   CombatResult,
   GameValidation,
-  Character,
   Enemy,
   Item,
-  Equipment,
   CombatSnapshot,
   Weapon,
   Armour,
@@ -61,7 +57,7 @@ import {
   clearInvestigationPrompt,
 } from "../utils/investigationPrompt";
 import * as BackendService from "./backend.service";
-import pool from "../db";
+import { pool } from "../db";
 
 export class GameService {
   private llmService: LLMService;
@@ -778,6 +774,9 @@ Your introduction:`;
   // PROCESS ITEM DROP EVENT
   // ==========================================================================
 
+  /**
+   * Process Item_Drop event, equipment and items
+   */
   private async processItemDropEvent(
     campaignId: number,
     gameState: GameState,
@@ -787,34 +786,6 @@ Your introduction:`;
       `[GameService] Processing Item_Drop event with dice roll ${diceRoll}`
     );
 
-    const MAX_INVENTORY = 10;
-    if (gameState.inventory.length >= MAX_INVENTORY) {
-      console.log(
-        `[GameService] Inventory full (${gameState.inventory.length}/${MAX_INVENTORY})`
-      );
-
-      const message =
-        "You discover a valuable item, but your inventory is full! You must leave it behind...";
-
-      await BackendService.saveEvent(campaignId, message, "Item_Drop", {
-        inventoryFull: true,
-        diceRoll,
-      });
-
-      EventType.resetDescriptiveCount();
-
-      const updatedState = await this.getGameState(campaignId);
-      updatedState.currentPhase = "exploration";
-      updatedState.investigationPrompt = undefined;
-
-      return {
-        success: true,
-        gameState: updatedState,
-        message,
-        choices: ["Continue Forward"],
-      };
-    }
-
     const context = await this.buildLLMContext(gameState);
     const eventNumber =
       gameState.recentEvents.length > 0
@@ -823,37 +794,195 @@ Your introduction:`;
 
     // Calculate target rarity using formula
     const targetRarity = calculateItemRarity(eventNumber, diceRoll);
-    console.log(`[GameService] Target item rarity: ${targetRarity}`);
+    console.log(`[GameService] Target loot rarity: ${targetRarity}`);
 
-    // Get item from database by rarity
-    const item = await BackendService.getItemByRarity(targetRarity);
-
+    // 20% chance for equipment, 80% chance for items
+    const isEquipmentDrop = Math.random() < 0.2;
     console.log(
-      `[GameService] Selected item: ${item.name} (rarity ${item.rarity})`
+      `[GameService] Drop type: ${isEquipmentDrop ? "EQUIPMENT" : "ITEM"}`
     );
 
-    // Generate description
-    const description = await this.llmService.generateDescription(
-      "Item_Drop",
-      context
-    );
+    let lootItem: Item | Weapon | Armour | Shield;
+    let message: string;
 
-    // Add item to inventory
-    await BackendService.addItemToInventory(gameState.character.id, item.id);
+    if (isEquipmentDrop) {
+      // EQUIPMENT DROP
+      // Random equipment type (33.3% each)
+      const equipmentTypes = ["weapon", "armour", "shield"] as const;
+      const randomType =
+        equipmentTypes[Math.floor(Math.random() * equipmentTypes.length)];
+
+      console.log(
+        `[GameService] Selecting ${randomType} with rarity ${targetRarity}`
+      );
+
+      let equipmentSlot: "weapon" | "armour" | "shield";
+      let statBonus: string;
+
+      switch (randomType) {
+        case "weapon":
+          lootItem = await BackendService.getWeaponByRarity(targetRarity);
+          equipmentSlot = "weapon";
+          statBonus = `+${(lootItem as Weapon).attack} ATK`;
+          console.log(
+            `[GameService] Selected weapon: ${lootItem.name} (rarity ${lootItem.rarity})`
+          );
+          break;
+        case "armour":
+          lootItem = await BackendService.getArmourByRarity(targetRarity);
+          equipmentSlot = "armour";
+          statBonus = `+${(lootItem as Armour).health} Max HP`;
+          console.log(
+            `[GameService] Selected armour: ${lootItem.name} (rarity ${lootItem.rarity})`
+          );
+          break;
+        case "shield":
+          lootItem = await BackendService.getShieldByRarity(targetRarity);
+          equipmentSlot = "shield";
+          statBonus = `+${(lootItem as Shield).defense} DEF`;
+          console.log(
+            `[GameService] Selected shield: ${lootItem.name} (rarity ${lootItem.rarity})`
+          );
+          break;
+      }
+
+      // Generate description WITH the actual equipment
+      const description = await this.llmService.generateDescription(
+        "Item_Drop",
+        context,
+        lootItem
+      );
+
+      // AUTO-EQUIP the equipment (replace current equipment in that slot)
+      console.log(
+        `[GameService] Auto-equipping ${equipmentSlot}: ${lootItem.name}`
+      );
+
+      let previousEquipment: string | null = null;
+
+      switch (equipmentSlot) {
+        case "weapon":
+          if (gameState.character.weaponId) {
+            const oldWeapon = await BackendService.getWeapon(
+              gameState.character.weaponId
+            );
+            previousEquipment = oldWeapon.name;
+          }
+          await BackendService.equipWeapon(gameState.character.id, lootItem.id);
+          break;
+        case "armour":
+          if (gameState.character.armourId) {
+            const oldArmour = await BackendService.getArmour(
+              gameState.character.armourId
+            );
+            previousEquipment = oldArmour.name;
+          }
+          await BackendService.equipArmour(gameState.character.id, lootItem.id);
+          break;
+        case "shield":
+          if (gameState.character.shieldId) {
+            const oldShield = await BackendService.getShield(
+              gameState.character.shieldId
+            );
+            previousEquipment = oldShield.name;
+          }
+          await BackendService.equipShield(gameState.character.id, lootItem.id);
+          break;
+      }
+
+      // Build message
+      const replacementNote = previousEquipment
+        ? `\n\n Replaced: ${previousEquipment}. `
+        : "";
+
+      message = `${description}\n\n⚔️ You found equipment: ${
+        lootItem.name
+      }! (${statBonus})\n${
+        lootItem.description || ""
+      }${replacementNote}\n\n Your new gear is now equipped.`;
+
+      // Save event with equipment data
+      await BackendService.saveEvent(campaignId, message, "Item_Drop", {
+        diceRoll,
+        lootType: equipmentSlot,
+        equipmentId: lootItem.id,
+        equipmentName: lootItem.name,
+        equipmentRarity: lootItem.rarity,
+        autoEquipped: true,
+        replaced: previousEquipment || null,
+      });
+    } else {
+
+      // ITEM DROP
+      const MAX_INVENTORY = 10;
+      if (gameState.inventory.length >= MAX_INVENTORY) {
+        console.log(
+          `[GameService] Inventory full (${gameState.inventory.length}/${MAX_INVENTORY})`
+        );
+
+        const message =
+          "You discover a valuable item, but your inventory is full! You must leave it behind...";
+
+        await BackendService.saveEvent(campaignId, message, "Item_Drop", {
+          inventoryFull: true,
+          diceRoll,
+        });
+
+        EventType.resetDescriptiveCount();
+
+        const updatedState = await this.getGameState(campaignId);
+        updatedState.currentPhase = "exploration";
+        updatedState.investigationPrompt = undefined;
+
+        return {
+          success: true,
+          gameState: updatedState,
+          message,
+          choices: ["Continue Forward"],
+        };
+      }
+
+      lootItem = await BackendService.getItemByRarity(targetRarity);
+
+      console.log(
+        `[GameService] Selected item: ${lootItem.name} (rarity ${lootItem.rarity})`
+      );
+
+      // Generate description WITH the actual item
+      const description = await this.llmService.generateDescription(
+        "Item_Drop",
+        context,
+        lootItem
+      );
+
+      // Add item to inventory (consumables only)
+      await BackendService.addItemToInventory(
+        gameState.character.id,
+        lootItem.id
+      );
+      console.log(`[GameService] Added item ${lootItem.id} to inventory`);
+
+      // Build message for consumable item
+      const item = lootItem as Item;
+      const statInfo = `${item.statValue > 0 ? "+" : ""}${item.statValue} ${
+        item.statModified
+      }`;
+      message = `${description}\n\n 🧪 You found: ${
+        lootItem.name
+      }! (${statInfo})\n${lootItem.description || ""}`;
+
+      // Save event with item data
+      await BackendService.saveEvent(campaignId, message, "Item_Drop", {
+        diceRoll,
+        lootType: "item",
+        itemId: lootItem.id,
+        itemName: lootItem.name,
+        itemRarity: lootItem.rarity,
+      });
+    }
 
     // Reset descriptive counter
     EventType.resetDescriptiveCount();
-
-    // Build message
-    const message = `${description}\n\n📦 You found: ${item.name}! (${item.description})`;
-
-    // Save event
-    await BackendService.saveEvent(campaignId, message, "Item_Drop", {
-      diceRoll,
-      itemId: item.id,
-      itemName: item.name,
-      itemRarity: item.rarity,
-    });
 
     // Get updated state
     const updatedState = await this.getGameState(campaignId);
@@ -865,7 +994,6 @@ Your introduction:`;
       gameState: updatedState,
       message,
       choices: ["Continue Forward"],
-      itemFound: item,
     };
   }
 

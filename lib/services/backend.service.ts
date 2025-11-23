@@ -67,14 +67,14 @@ export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
 // ---------------------------------------------------------------------------
 // Backend Service
 // ---------------------------------------------------------------------------
-export class BackendService {
-  /**
-   * Fetch a character by ID from the database
-   * Includes race, class, equipment, base stats, and final stats
-   */
-  static async getCharacter(id: number): Promise<Character | null> {
-    try {
-      const sql = `
+
+/**
+ * Fetch a character by ID from the database
+ * Includes race, class, equipment, base stats, and final stats
+ */
+export async function getCharacter(id: number): Promise<Character> {
+  try {
+    const sql = `
         SELECT 
           c.id AS id,
           c.name AS name,
@@ -93,93 +93,92 @@ export class BackendService {
         WHERE c.id = ?
       `;
 
-      const [rows] = await pool.query<any[]>(sql, [id]);
-      if (rows.length === 0) return null;
+    const [rows] = await pool.query<any[]>(sql, [id]);
 
-      const row = rows[0];
-
-      // -----------------------------
-      // Compose Character object
-      // -----------------------------
-      const character: Character = {
-        id: row.id,
-        name: row.name,
-        maxHealth: row.max_health,
-        attack: row.base_attack,
-        defense: row.base_defense,
-        campaignId: row.campaign_id,
-        currentHealth: row.current_health,
-        raceId: row.race_id,
-        classId: row.class_id,
-        weaponId: row.weapon_id,
-        armourId: row.armour_id,
-        shieldId: row.shield_id,
-        spritePath: row.sprite_path
-      };
-
-      return character;
-    } catch (error) {
-      console.error(`[BackendService] getCharacter(${id}) failed:`, error);
-      return null;
+    if (rows.length === 0) {
+      throw new Error(`Character ${id} not found`);
     }
+
+    const row = rows[0];
+
+    // Compose Character object
+    const character: Character = {
+      id: row.id,
+      name: row.name,
+      maxHealth: row.max_health,
+      attack: row.base_attack,
+      defense: row.base_defense,
+      campaignId: row.campaign_id,
+      currentHealth: row.current_health,
+      raceId: row.race_id,
+      classId: row.class_id,
+      weaponId: row.weapon_id,
+      armourId: row.armour_id,
+      shieldId: row.shield_id,
+      spritePath: row.sprite_path,
+    };
+
+    return character;
+  } catch (error) {
+    console.error(`[BackendService] getCharacter(${id}) failed:`, error);
+    throw error;
   }
+}
 
-  /**
-   * Update character dynamically in the database
-   */
-  static async updateCharacter(
-    characterId: number,
-    updates: CharacterUpdates
-  ): Promise<Character | null> {
-    try {
-      // Map TypeScript keys to DB columns
-      const fieldMap: Record<string, string> = {
-        name: "name",
-        currentHealth: "current_health",
-        maxHealth: "max_health",
-        attack: "attack",
-        defense: "defense",
-        spritePath: "sprite_path",
-        campaignId: "campaign_id",
-        weapon: "weapon_id",
-        armor: "armour_id",
-        shield: "shield_id",
-      };
-  
-      const columns: string[] = [];
-      const values: (number | string | null)[] = [];
-  
-      const equipKeys = ["weapon", "armor", "shield"];
-  
-      for (const [key, value] of Object.entries(updates)) {
-        const col = fieldMap[key];
-        if (!col) continue;
-  
-        // For equipment, store only the ID (or null)
-        if (equipKeys.includes(key)) {
-          const equip = value as Weapon | Armour | Shield | null;
-          values.push(equip?.id ?? null);
-        } else {
-          values.push(value as number | string | null);
-        }
-  
-        columns.push(col);
-      }
-  
-      // Nothing to update
-      if (columns.length === 0) return await this.getCharacter(characterId);
-  
-      const setClause = columns.map(col => `${col} = ?`).join(", ");
-      const sql = `UPDATE characters SET ${setClause} WHERE id = ?`;
-      values.push(characterId);
-  
-      await pool.query(sql, values);
-  
-      return await this.getCharacter(characterId);
-    } catch (error) {
-      console.error(`[BackendService] updateCharacter(${characterId}) failed:`, error);
-      return null;
+/**
+ * Update character dynamically in the database
+ */
+export async function updateCharacter(
+  characterId: number,
+  updates: Partial<Character>
+): Promise<Character> {
+  try {
+    // Map TypeScript keys to DB columns
+    const fieldMap: Record<string, string> = {
+      name: "name",
+      currentHealth: "current_health",
+      maxHealth: "max_health",
+      attack: "attack",
+      defense: "defense",
+      spritePath: "sprite_path",
+      campaignId: "campaign_id",
+      weaponId: "weapon_id",
+      armourId: "armour_id",
+      shieldId: "shield_id",
+    };
+
+    const columns: string[] = [];
+    const values: (number | string | null)[] = [];
+
+    const equipKeys = ["weapon", "armor", "shield"];
+
+    for (const [key, value] of Object.entries(updates)) {
+      const col = fieldMap[key];
+      if (!col) continue;
+
+      values.push(value as number | string | null);
+      columns.push(col);
     }
+
+    // Nothing to update
+    if (columns.length === 0) {
+      return await getCharacter(characterId);
+    }
+
+    const setClause = columns.map((col) => `${col} = ?`).join(", ");
+
+    const sql = `UPDATE characters SET ${setClause}, updated_at = NOW() WHERE id = ?`;
+    values.push(characterId);
+
+    await pool.query(sql, values);
+
+    return await getCharacter(characterId);
+  } catch (error) {
+    console.error(
+      `[BackendService] updateCharacter(${characterId}) failed:`,
+      error
+    );
+    throw error;
   }
 }
 
@@ -730,7 +729,9 @@ export async function getEnemyByDifficulty(
   const minDifficulty = Math.max(0, targetDifficulty - variance);
   const maxDifficulty = targetDifficulty + variance;
 
-  console.log(`[BackendService] Looking for enemy: difficulty ${minDifficulty}-${maxDifficulty} (target: ${targetDifficulty})`);
+  console.log(
+    `[BackendService] Looking for enemy: difficulty ${minDifficulty}-${maxDifficulty} (target: ${targetDifficulty})`
+  );
 
   let query = `SELECT * FROM enemies WHERE difficulty BETWEEN ? AND ?`;
   const params: any[] = [minDifficulty, maxDifficulty];
@@ -774,7 +775,9 @@ export async function getEnemyByDifficulty(
   }
 
   const row = rows[0];
-  console.log(`[BackendService] Found enemy: ${row.name} (difficulty ${row.difficulty})`);
+  console.log(
+    `[BackendService] Found enemy: ${row.name} (difficulty ${row.difficulty})`
+  );
   return {
     id: row.id,
     name: row.name,
@@ -937,4 +940,3 @@ export async function getRecentEvents(
     createdAt: new Date(row.created_at),
   }));
 }
-
