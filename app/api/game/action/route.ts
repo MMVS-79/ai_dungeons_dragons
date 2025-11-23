@@ -119,9 +119,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     
     return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to fetch game state" 
+      {
+        success: false,
+        error: error instanceof Error 
+          ? error.message 
+          : "Failed to fetch game state",
       },
       { status: 500 }
     );

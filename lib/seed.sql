@@ -60,115 +60,37 @@ INSERT INTO classes (name, health, attack, defense, sprite_path) VALUES
 
 -- ============================================================================
 -- ITEMS (Rarity-based system with stat modification)
--- Formula: (event_number + dice_roll * 2)
--- Max event = 50, max dice = 20 → max rarity ≈ 90
 -- stat_modified: 'health', 'attack', 'defense'
 -- stat_value: positive = buff, negative = debuff/curse
 -- ============================================================================
 
 INSERT INTO items (name, rarity, stat_modified, stat_value, description, sprite_path) VALUES
 -- HEALTH POTIONS (0-90 rarity range)
-('Minor Health Potion', 5, 'health', 15, 'Restores 15 HP', '/items/minor_health_potion'),
+('Minor Health Potion', 5, 'health', 15, 'Restores 15 HP', '/items/minor_health_potion.png'),
 ('Health Potion', 20, 'health', 25, 'Restores 25 HP', '/items/health_potion.png'),
 ('Greater Health Potion', 40, 'health', 40, 'Restores 40 HP', '/items/greater_health_potion.png'),
 ('Superior Health Potion', 60, 'health', 60, 'Restores 60 HP', '/items/superior_health_potion.png'),
-(
-    'Ultimate Health Potion',
-    85,
-    'health',
-    100,
-    'Restores 100 HP',
-    '/items/ultimate_health_potion.png'
+('Ultimate Health Potion', 85, 'health', 100, 'Restores 100 HP', '/items/ultimate_health_potion.png'
 ),
 
 -- ATTACK BUFFS (Scrolls/Elixirs - Temporary combat boost)
-(
-    'Strength Berries',
-    10,
-    'attack',
-    3,
-    'Temporarily increases attack by 3',
-    '/items/strength_berries.png'
-),
-(
-    'Strength Scroll',
-    30,
-    'attack',
-    5,
-    'Temporarily increases attack by 5',
-    '/items/strength_scroll.png'
-),
-(
-    'Greater Strength Scroll',
-    50,
-    'attack',
-    8,
-    'Temporarily increases attack by 8',
-    '/items/greater_strength_scroll.png'
-),
-(
-    'Berserker Elixir',
-    70,
-    'attack',
-    12,
-    'Temporarily increases attack by 12',
-    '/items/berserker_potion.png'
-),
+('Strength Berries', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/strength_berries.png'),
+('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/strength_scroll.png'),
+('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/greater_strength_scroll.png'),
+('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/berserker_potion.png'),
 ('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/titan_potion.png'),
 
 -- DEFENSE BUFFS (Temporary combat boost)
-(
-    'Fortifying Ginger',
-    10,
-    'defense',
-    3,
-    'Temporarily increases defense by 3',
-    '/items/fortifying_ginger.png'
-),
-(
-    'Protection Scroll',
-    30,
-    'defense',
-    5,
-    'Temporarily increases defense by 5',
-    '/items/protection_scroll.png'
-),
-(
-    'Greater Protection Scroll',
-    50,
-    'defense',
-    8,
-    'Temporarily increases defense by 8',
-    '/items/greater_protection_scroll.png'
-),
-(
-    'Stone Skin Elixir',
-    70,
-    'defense',
-    10,
-    'Temporarily increases defense by 10',
-    '/items/sturdy_potion.png'
-),
-(
-    'Invulnerability Elixir',
-    90,
-    'defense',
-    15,
-    'Temporarily increases defense by 15',
-    '/items/invulnerability_potion.png'
-),
+('Fortifying Ginger', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/fortifying_ginger.png'),
+('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/protection_scroll.png'),
+('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/greater_protection_scroll.png'),
+('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/sturdy_potion.png'),
+('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/invulnerability_potion.png'),
 
 -- CURSED ITEMS (Negative stats - clogs inventory)
 ('Cursed Vial', 5, 'health', -10, 'A toxic vial that damages you', '/items/placeholder.png'),
 ('Weakness Curse', 15, 'attack', -5, 'Temporarily reduces attack by 3', '/items/placeholder.png'),
-(
-    'Fragility Curse',
-    15,
-    'defense',
-    -5,
-    'Temporarily reduces defense by 3',
-    '/items/placeholder.png'
-);
+('Fragility Curse', 15, 'defense', -5, 'Temporarily reduces defense by 3', '/items/fragility_curse.png');
 
 -- ============================================================================
 -- WEAPONS (Rarity-based system)

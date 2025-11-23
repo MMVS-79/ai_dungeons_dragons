@@ -33,6 +33,21 @@ import type {
   Equipment,
   EventTypeString,
 } from "../types/game.types";
+import type {
+  CharacterRow,
+  WeaponRow,
+  ArmourRow,
+  ShieldRow,
+  ItemRow,
+  EnemyRow,
+  CampaignRow,
+  LogRow,
+  RaceRow,
+  ClassRow,
+  EventData,
+  InsertResult,
+} from "../types/db.types";
+import { RowDataPacket } from 'mysql2';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -41,19 +56,128 @@ import type {
 /**
  * Parse JSON event data safely
  */
-function parseEventData(data: any): Record<string, unknown> | undefined {
+function parseEventData(data: unknown): EventData | undefined {
   if (!data) return undefined;
-  if (typeof data === "object" && data !== null)
-    return data as Record<string, unknown>;
+
+  if (typeof data === "object" && data !== null) return data as EventData;
+
   if (typeof data === "string") {
     try {
-      return JSON.parse(data);
+      return JSON.parse(data) as EventData;
     } catch (e) {
       console.error("[BackendService] Failed to parse event_data:", data);
       return undefined;
     }
   }
   return undefined;
+}
+
+/**
+ * Map database row to Character type
+ */
+function mapCharacterRow(row: CharacterRow): Character {
+  return {
+    id: row.id,
+    name: row.name,
+    currentHealth: row.current_health,
+    maxHealth: row.max_health,
+    attack: row.attack,
+    defense: row.defense,
+    spritePath: row.sprite_path || undefined,
+    raceId: row.race_id,
+    classId: row.class_id,
+    campaignId: row.campaign_id,
+    weaponId: row.weapon_id || undefined,
+    armourId: row.armour_id || undefined,
+    shieldId: row.shield_id || undefined,
+  };
+}
+
+/**
+ * Map database row to Weapon type
+ */
+function mapWeaponRow(row: WeaponRow): Weapon {
+  return {
+    id: row.id,
+    name: row.name,
+    rarity: row.rarity,
+    attack: row.attack,
+    description: row.description || undefined,
+    spritePath: row.sprite_path || undefined,
+  };
+}
+
+/**
+ * Map database row to Armour type
+ */
+function mapArmourRow(row: ArmourRow): Armour {
+  return {
+    id: row.id,
+    name: row.name,
+    rarity: row.rarity,
+    health: row.health,
+    description: row.description || undefined,
+    spritePath: row.sprite_path || undefined,
+  };
+}
+
+/**
+ * Map database row to Shield type
+ */
+function mapShieldRow(row: ShieldRow): Shield {
+  return {
+    id: row.id,
+    name: row.name,
+    rarity: row.rarity,
+    defense: row.defense,
+    description: row.description || undefined,
+    spritePath: row.sprite_path || undefined,
+  };
+}
+
+/**
+ * Map database row to Item type
+ */
+function mapItemRow(row: ItemRow): Item {
+  return {
+    id: row.id,
+    name: row.name,
+    rarity: row.rarity,
+    statModified: row.stat_modified,
+    statValue: row.stat_value,
+    description: row.description || undefined,
+    spritePath: row.sprite_path || undefined,
+  };
+}
+
+/**
+ * Map database row to Enemy type
+ */
+function mapEnemyRow(row: EnemyRow): Enemy {
+  return {
+    id: row.id,
+    name: row.name,
+    difficulty: row.difficulty,
+    health: row.health,
+    attack: row.attack,
+    defense: row.defense,
+    spritePath: row.sprite_path || undefined,
+  };
+}
+
+/**
+ * Map database row to Campaign type
+ */
+function mapCampaignRow(row: CampaignRow): Campaign {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    name: row.name,
+    description: row.description || undefined,
+    state: row.state,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -64,9 +188,10 @@ export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
   armor?: Partial<Armour>;
   shield?: Partial<Shield>;
 };
-// ---------------------------------------------------------------------------
-// Backend Service
-// ---------------------------------------------------------------------------
+
+// ============================================================================
+// CHARACTER OPERATIONS
+// ============================================================================
 
 /**
  * Fetch a character by ID from the database
@@ -93,32 +218,13 @@ export async function getCharacter(id: number): Promise<Character> {
         WHERE c.id = ?
       `;
 
-    const [rows] = await pool.query<any[]>(sql, [id]);
+    const [rows] = await pool.query<CharacterRow[]>(sql, [id]);
 
     if (rows.length === 0) {
       throw new Error(`Character ${id} not found`);
     }
 
-    const row = rows[0];
-
-    // Compose Character object
-    const character: Character = {
-      id: row.id,
-      name: row.name,
-      maxHealth: row.max_health,
-      attack: row.base_attack,
-      defense: row.base_defense,
-      campaignId: row.campaign_id,
-      currentHealth: row.current_health,
-      raceId: row.race_id,
-      classId: row.class_id,
-      weaponId: row.weapon_id,
-      armourId: row.armour_id,
-      shieldId: row.shield_id,
-      spritePath: row.sprite_path,
-    };
-
-    return character;
+    return mapCharacterRow(rows[0]);
   } catch (error) {
     console.error(`[BackendService] getCharacter(${id}) failed:`, error);
     throw error;
@@ -150,8 +256,6 @@ export async function updateCharacter(
     const columns: string[] = [];
     const values: (number | string | null)[] = [];
 
-    const equipKeys = ["weapon", "armor", "shield"];
-
     for (const [key, value] of Object.entries(updates)) {
       const col = fieldMap[key];
       if (!col) continue;
@@ -182,28 +286,13 @@ export async function updateCharacter(
   }
 }
 
-// ============================================================================
-// ENEMY OPERATIONS
-// ============================================================================
-
 /**
- * Fetch enemy by ID from database
- *
- * TODO: Implement database query
- *
- * Implementation:
- * 1. Query: SELECT * FROM enemies WHERE id = ?
- * 2. Map DB fields to TypeScript:
- *    - sprite_path → spritePath
- * 3. Return Enemy object
- *
- * @param enemyId - Enemy ID
- * @returns Enemy data
+ * Get Character by Campaign ID
  */
 export async function getCharacterByCampaign(
   campaignId: number
 ): Promise<Character> {
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<CharacterRow[]>(
     "SELECT * FROM characters WHERE campaign_id = ? LIMIT 1",
     [campaignId]
   );
@@ -212,22 +301,7 @@ export async function getCharacterByCampaign(
     throw new Error(`No character found for campaign ${campaignId}`);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    currentHealth: row.current_health,
-    maxHealth: row.max_health,
-    attack: row.attack,
-    defense: row.defense,
-    spritePath: row.sprite_path,
-    raceId: row.race_id,
-    classId: row.class_id,
-    campaignId: row.campaign_id,
-    weaponId: row.weapon_id,
-    armourId: row.armour_id,
-    shieldId: row.shield_id,
-  };
+  return mapCharacterRow(rows[0]);
 }
 
 /**
@@ -268,73 +342,49 @@ export async function getCharacterWithFullData(campaignId: number): Promise<{
  * Get weapon by ID
  */
 export async function getWeapon(weaponId: number): Promise<Weapon> {
-  const [rows] = await pool.query<any[]>("SELECT * FROM weapons WHERE id = ?", [
-    weaponId,
-  ]);
+  const [rows] = await pool.query<WeaponRow[]>(
+    "SELECT * FROM weapons WHERE id = ?",
+    [weaponId]
+  );
 
   if (rows.length === 0) {
     throw new Error(`Weapon ${weaponId} not found`);
   }
-
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    attack: row.attack,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapWeaponRow(rows[0]);
 }
 
 /**
  * Get armour by ID
  */
 export async function getArmour(armourId: number): Promise<Armour> {
-  const [rows] = await pool.query<any[]>("SELECT * FROM armours WHERE id = ?", [
-    armourId,
-  ]);
+  const [rows] = await pool.query<ArmourRow[]>(
+    "SELECT * FROM armours WHERE id = ?",
+    [armourId]
+  );
 
   if (rows.length === 0) {
     throw new Error(`Armour ${armourId} not found`);
   }
-
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    health: row.health,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapArmourRow(rows[0]);
 }
 
 /**
  * Get shield by ID
  */
 export async function getShield(shieldId: number): Promise<Shield> {
-  const [rows] = await pool.query<any[]>("SELECT * FROM shields WHERE id = ?", [
-    shieldId,
-  ]);
+  const [rows] = await pool.query<ShieldRow[]>(
+    "SELECT * FROM shields WHERE id = ?",
+    [shieldId]
+  );
 
   if (rows.length === 0) {
     throw new Error(`Shield ${shieldId} not found`);
   }
-
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    defense: row.defense,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapShieldRow(rows[0]);
 }
 
 // ============================================================================
-// EQUIPMENT MANAGEMENT (EQUIP TO CHARACTER)
+// EQUIPMENT MANAGEMENT
 // ============================================================================
 
 /**
@@ -384,46 +434,30 @@ export async function equipShield(
  * Get character's inventory items
  */
 export async function getInventory(characterId: number): Promise<Item[]> {
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<ItemRow[]>(
     `SELECT items.* FROM items
      JOIN character_items ON items.id = character_items.item_id
      WHERE character_items.character_id = ?`,
     [characterId]
   );
 
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    statModified: row.stat_modified as "health" | "attack" | "defense",
-    statValue: row.stat_value,
-    description: row.description,
-    spritePath: row.sprite_path,
-  }));
+  return rows.map(mapItemRow);
 }
 
 /**
  * Get single item by ID
  */
 export async function getItem(itemId: number): Promise<Item> {
-  const [rows] = await pool.query<any[]>("SELECT * FROM items WHERE id = ?", [
-    itemId,
-  ]);
+  const [rows] = await pool.query<ItemRow[]>(
+    "SELECT * FROM items WHERE id = ?",
+    [itemId]
+  );
 
   if (rows.length === 0) {
     throw new Error(`Item ${itemId} not found`);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    statModified: row.stat_modified as "health" | "attack" | "defense",
-    statValue: row.stat_value,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapItemRow(rows[0]);
 }
 
 /**
@@ -446,7 +480,7 @@ export async function removeItemFromInventory(
   characterId: number,
   itemId: number
 ): Promise<void> {
-  const result = await pool.query(
+  await pool.query(
     "DELETE FROM character_items WHERE character_id = ? AND item_id = ? LIMIT 1",
     [characterId, itemId]
   );
@@ -466,7 +500,7 @@ export async function getItemByRarity(
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
 
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<ItemRow[]>(
     `SELECT * FROM items 
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
@@ -476,7 +510,7 @@ export async function getItemByRarity(
 
   if (rows.length === 0) {
     // Fallback to closest item
-    const [fallbackRows] = await pool.query<any[]>(
+    const [fallbackRows] = await pool.query<ItemRow[]>(
       `SELECT * FROM items 
        ORDER BY ABS(rarity - ?) ASC 
        LIMIT 1`,
@@ -487,28 +521,10 @@ export async function getItemByRarity(
       throw new Error("No items found in database");
     }
 
-    const row = fallbackRows[0];
-    return {
-      id: row.id,
-      name: row.name,
-      rarity: row.rarity,
-      statModified: row.stat_modified,
-      statValue: row.stat_value,
-      description: row.description,
-      spritePath: row.sprite_path,
-    };
+    return mapItemRow(fallbackRows[0]);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    statModified: row.stat_modified,
-    statValue: row.stat_value,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapItemRow(rows[0]);
 }
 
 /**
@@ -521,7 +537,7 @@ export async function getWeaponByRarity(
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
 
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<WeaponRow[]>(
     `SELECT * FROM weapons 
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
@@ -530,7 +546,7 @@ export async function getWeaponByRarity(
   );
 
   if (rows.length === 0) {
-    const [fallbackRows] = await pool.query<any[]>(
+    const [fallbackRows] = await pool.query<WeaponRow[]>(
       "SELECT * FROM weapons ORDER BY ABS(rarity - ?) ASC LIMIT 1",
       [targetRarity]
     );
@@ -539,26 +555,10 @@ export async function getWeaponByRarity(
       throw new Error("No weapons found in database");
     }
 
-    const row = fallbackRows[0];
-    return {
-      id: row.id,
-      name: row.name,
-      rarity: row.rarity,
-      attack: row.attack,
-      description: row.description,
-      spritePath: row.sprite_path,
-    };
+    return mapWeaponRow(fallbackRows[0]);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    attack: row.attack,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapWeaponRow(rows[0]);
 }
 
 /**
@@ -571,7 +571,7 @@ export async function getArmourByRarity(
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
 
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<ArmourRow[]>(
     `SELECT * FROM armours 
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
@@ -580,7 +580,7 @@ export async function getArmourByRarity(
   );
 
   if (rows.length === 0) {
-    const [fallbackRows] = await pool.query<any[]>(
+    const [fallbackRows] = await pool.query<ArmourRow[]>(
       "SELECT * FROM armours ORDER BY ABS(rarity - ?) ASC LIMIT 1",
       [targetRarity]
     );
@@ -589,26 +589,10 @@ export async function getArmourByRarity(
       throw new Error("No armours found in database");
     }
 
-    const row = fallbackRows[0];
-    return {
-      id: row.id,
-      name: row.name,
-      rarity: row.rarity,
-      health: row.health,
-      description: row.description,
-      spritePath: row.sprite_path,
-    };
+    return mapArmourRow(fallbackRows[0]);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    health: row.health,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapArmourRow(rows[0]);
 }
 
 /**
@@ -621,7 +605,7 @@ export async function getShieldByRarity(
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
 
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<ShieldRow[]>(
     `SELECT * FROM shields 
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
@@ -630,7 +614,7 @@ export async function getShieldByRarity(
   );
 
   if (rows.length === 0) {
-    const [fallbackRows] = await pool.query<any[]>(
+    const [fallbackRows] = await pool.query<ShieldRow[]>(
       "SELECT * FROM shields ORDER BY ABS(rarity - ?) ASC LIMIT 1",
       [targetRarity]
     );
@@ -639,26 +623,10 @@ export async function getShieldByRarity(
       throw new Error("No shields found in database");
     }
 
-    const row = fallbackRows[0];
-    return {
-      id: row.id,
-      name: row.name,
-      rarity: row.rarity,
-      defense: row.defense,
-      description: row.description,
-      spritePath: row.sprite_path,
-    };
+    return mapShieldRow(fallbackRows[0]);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    rarity: row.rarity,
-    defense: row.defense,
-    description: row.description,
-    spritePath: row.sprite_path,
-  };
+  return mapShieldRow(rows[0]);
 }
 
 // ============================================================================
@@ -669,24 +637,16 @@ export async function getShieldByRarity(
  * Get enemy by ID
  */
 export async function getEnemy(enemyId: number): Promise<Enemy> {
-  const [rows] = await pool.query<any[]>("SELECT * FROM enemies WHERE id = ?", [
-    enemyId,
-  ]);
+  const [rows] = await pool.query<EnemyRow[]>(
+    "SELECT * FROM enemies WHERE id = ?",
+    [enemyId]
+  );
 
   if (rows.length === 0) {
     throw new Error(`Enemy ${enemyId} not found`);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    difficulty: row.difficulty,
-    health: row.health,
-    attack: row.attack,
-    defense: row.defense,
-    spritePath: row.sprite_path,
-  };
+  return mapEnemyRow(rows[0]);
 }
 
 /**
@@ -701,7 +661,7 @@ export async function getEnemyByDifficulty(
   const maxDifficulty = targetDifficulty + variance;
 
   let query = `SELECT * FROM enemies WHERE difficulty BETWEEN ? AND ?`;
-  const params: any[] = [minDifficulty, maxDifficulty];
+  const params: (number | string)[] = [minDifficulty, maxDifficulty];
 
   if (excludeBosses) {
     query += ` AND difficulty < 1000`;
@@ -710,7 +670,7 @@ export async function getEnemyByDifficulty(
   query += ` ORDER BY ABS(difficulty - ?) ASC, RAND() LIMIT 1`;
   params.push(targetDifficulty);
 
-  const [rows] = await pool.query<any[]>(query, params);
+  const [rows] = await pool.query<EnemyRow[]>(query, params);
 
   if (rows.length === 0) {
     // Fallback to closest enemy
@@ -721,7 +681,7 @@ export async function getEnemyByDifficulty(
     }
     fallbackQuery += " ORDER BY ABS(difficulty - ?) ASC LIMIT 1";
 
-    const [fallbackRows] = await pool.query<any[]>(fallbackQuery, [
+    const [fallbackRows] = await pool.query<EnemyRow[]>(fallbackQuery, [
       targetDifficulty,
     ]);
 
@@ -729,36 +689,17 @@ export async function getEnemyByDifficulty(
       throw new Error("No enemies found in database");
     }
 
-    const row = fallbackRows[0];
-    return {
-      id: row.id,
-      name: row.name,
-      difficulty: row.difficulty,
-      health: row.health,
-      attack: row.attack,
-      defense: row.defense,
-      spritePath: row.sprite_path,
-    };
+    return mapEnemyRow(fallbackRows[0]);
   }
 
-  const row = rows[0];
-
-  return {
-    id: row.id,
-    name: row.name,
-    difficulty: row.difficulty,
-    health: row.health,
-    attack: row.attack,
-    defense: row.defense,
-    spritePath: row.sprite_path,
-  };
+  return mapEnemyRow(rows[0]);
 }
 
 /**
  * Get random boss enemy (difficulty >= 1000)
  */
 export async function getBossEnemy(): Promise<Enemy> {
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<EnemyRow[]>(
     "SELECT * FROM enemies WHERE difficulty >= 1000 ORDER BY RAND() LIMIT 1"
   );
 
@@ -766,16 +707,7 @@ export async function getBossEnemy(): Promise<Enemy> {
     throw new Error("No boss enemies found in database");
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    name: row.name,
-    difficulty: row.difficulty,
-    health: row.health,
-    attack: row.attack,
-    defense: row.defense,
-    spritePath: row.sprite_path,
-  };
+  return mapEnemyRow(rows[0]);
 }
 
 // ============================================================================
@@ -786,7 +718,7 @@ export async function getBossEnemy(): Promise<Enemy> {
  * Get campaign by ID
  */
 export async function getCampaign(campaignId: number): Promise<Campaign> {
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<CampaignRow[]>(
     "SELECT * FROM campaigns WHERE id = ?",
     [campaignId]
   );
@@ -795,16 +727,7 @@ export async function getCampaign(campaignId: number): Promise<Campaign> {
     throw new Error(`Campaign ${campaignId} not found`);
   }
 
-  const row = rows[0];
-  return {
-    id: row.id,
-    accountId: row.account_id,
-    name: row.name,
-    description: row.description,
-    state: row.state,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  };
+  return mapCampaignRow(rows[0]);
 }
 
 /**
@@ -814,7 +737,7 @@ export async function updateCampaign(
   campaignId: number,
   updates: Partial<Campaign>
 ): Promise<Campaign> {
-  const dbUpdates: Record<string, any> = {};
+  const dbUpdates: Record<string, string | undefined> = {};
 
   if (updates.name !== undefined) dbUpdates.name = updates.name;
   if (updates.description !== undefined)
@@ -846,7 +769,11 @@ export async function updateCampaign(
  * Get next sequential event number for a campaign
  */
 async function getNextEventNumber(campaignId: number): Promise<number> {
-  const [rows] = await pool.query<any[]>(
+  interface MaxNumRow extends RowDataPacket {
+    maxNum: number | null;
+  }
+
+  const [rows] = await pool.query<MaxNumRow[]>(
     "SELECT MAX(event_number) as maxNum FROM logs WHERE campaign_id = ?",
     [campaignId]
   );
@@ -862,12 +789,12 @@ export async function saveEvent(
   campaignId: number,
   message: string,
   eventType: EventTypeString,
-  eventData?: Record<string, unknown>
+  eventData?: EventData
 ): Promise<GameEvent> {
   const eventNumber = await getNextEventNumber(campaignId);
   const eventDataJson = eventData ? JSON.stringify(eventData) : null;
 
-  const [result] = await pool.query<any>(
+  const [result] = await pool.query<InsertResult>(
     "INSERT INTO logs (campaign_id, message, event_number, event_type, event_data) VALUES (?, ?, ?, ?, ?)",
     [campaignId, message, eventNumber, eventType, eventDataJson]
   );
@@ -890,7 +817,7 @@ export async function getRecentEvents(
   campaignId: number,
   limit: number = 10
 ): Promise<GameEvent[]> {
-  const [rows] = await pool.query<any[]>(
+  const [rows] = await pool.query<LogRow[]>(
     "SELECT * FROM logs WHERE campaign_id = ? ORDER BY event_number DESC LIMIT ?",
     [campaignId, limit]
   );
@@ -900,7 +827,7 @@ export async function getRecentEvents(
     campaignId: row.campaign_id,
     message: row.message,
     eventNumber: row.event_number,
-    eventType: row.event_type as EventTypeString,
+    eventType: row.event_type,
     eventData: parseEventData(row.event_data),
     createdAt: new Date(row.created_at),
   }));

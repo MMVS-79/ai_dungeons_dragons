@@ -5,9 +5,9 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import type { Item, Weapon, Armour, Shield, GameState, GameServiceResponse } from "../types/game.types";
+import type { Item, Weapon, Armour, Shield, GameState } from "../types/game.types";
 import { pool } from "../db";
-import * as BackendService from "./backend.service";
+import type { RaceRow, ClassRow } from "../types/db.types";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 
@@ -47,6 +47,11 @@ export interface LLMContext {
   };
 }
 
+interface StatBoostResponse {
+  statType: "health" | "attack" | "defense";
+  baseValue: number;
+}
+
 // ============================================================================
 // LLM SERVICE CLASS
 // ============================================================================
@@ -83,11 +88,11 @@ export class LLMService {
   ): Promise<string> {
 
     // Get character race and class names from database
-    const [raceRows] = await pool.query<any[]>(
+    const [raceRows] = await pool.query<RaceRow[]>(
       "SELECT name FROM races WHERE id = ?",
       [gameState.character.raceId]
     );
-    const [classRows] = await pool.query<any[]>(
+    const [classRows] = await pool.query<ClassRow[]>(
       "SELECT name FROM classes WHERE id = ?",
       [gameState.character.classId]
     );
@@ -123,7 +128,7 @@ Your introduction:`;
       return result?.text?.trim() || "";
 
     } catch (error) {
-      console.error("[GameService] Error generating introduction:", error);
+      console.error("[LLMService] Error generating introduction:", error);
 
       // Fallback introduction
       const fallback = `${gameState.character.name}, a brave ${raceName} ${className}, stands at the entrance of an ancient dungeon. Deep within these cursed halls, a legendary dragon threatens the realm. Only by venturing into the darkness and facing unimaginable dangers can you hope to save the world from destruction.`;
@@ -196,7 +201,7 @@ Your response:`;
         config: this.generationConfig,
       });
 
-      let text = result?.text?.trim() ?? "";
+      const text = result?.text?.trim() ?? "";
 
       // Extract first word
       const eventType = text.split(/[\s\n,.:;]/)[0].trim();
@@ -266,7 +271,7 @@ Your response:`;
         config: this.generationConfig,
       });
 
-      let text = result?.text?.trim() ?? "";
+      const text = result?.text?.trim() ?? "";
 
       return text;
     } catch (error) {
@@ -274,7 +279,7 @@ Your response:`;
         `[LLMService] Error generating ${eventType} description:`,
         error
       );
-      return this.getFallbackDescription(eventType, context);
+      return this.getFallbackDescription(eventType, context, lootItem);
     }
   }
 
@@ -416,7 +421,7 @@ Your description:`;
   private getFallbackDescription(
     eventType: string,
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield // NEW: Support equipment too
+    lootItem?: Item | Weapon | Armour | Shield
   ): string {
     const fallbacks: Record<string, string> = {
       Descriptive:
@@ -461,7 +466,7 @@ Your description:`;
   public async requestStatBoost(
     context: LLMContext,
     eventType: string
-  ): Promise<{ statType: "health" | "attack" | "defense"; baseValue: number }> {
+  ): Promise<StatBoostResponse> {
     const healthPercent = Math.round(
       (context.character.currentHealth / context.character.maxHealth) * 100
     );
@@ -535,7 +540,10 @@ Your JSON response:`;
         return this.getIntelligentStatBoost(context);
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]) as {
+        statType: string;
+        baseValue: number;
+      };
 
       // Validate statType
       const validStatTypes: Array<"health" | "attack" | "defense"> = [
@@ -543,7 +551,7 @@ Your JSON response:`;
         "attack",
         "defense",
       ];
-      if (!validStatTypes.includes(parsed.statType)) {
+      if (!validStatTypes.includes(parsed.statType as "health" | "attack" | "defense")) {
         console.warn(
           `[LLMService] Invalid statType: "${parsed.statType}", using intelligent default`
         );
@@ -566,7 +574,10 @@ Your JSON response:`;
         baseValue = Math.max(-3, Math.min(4, Math.round(baseValue)));
       }
 
-      return { statType: parsed.statType, baseValue };
+      return {
+        statType: parsed.statType as "health" | "attack" | "defense", 
+        baseValue
+      };
     } catch (error) {
       console.error("[LLMService] Error parsing stat boost:", error);
       return this.getIntelligentStatBoost(context);
@@ -576,10 +587,8 @@ Your JSON response:`;
   /**
    * Intelligent default stat boost based on character state
    */
-  private getIntelligentStatBoost(context: LLMContext): {
-    statType: "health" | "attack" | "defense";
-    baseValue: number;
-  } {
+  private getIntelligentStatBoost(context: LLMContext): StatBoostResponse {
+
     const healthPercent =
       (context.character.currentHealth / context.character.maxHealth) * 100;
 

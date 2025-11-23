@@ -53,6 +53,22 @@ interface EventPanelProps {
   itemFound?: Weapon | Armour | Shield | Item | null;
 }
 
+// Helper function to normalize image path
+const normalizeImagePath = (path?: string): string => {
+  if (!path) return '/items/placeholder.png';
+  
+  // Add .png extension if missing
+  const normalizedPath = path.endsWith('.png') ? path : `${path}.png`;
+  
+  return normalizedPath;
+};
+
+// Helper function to handle image load errors
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  const target = e.target as HTMLImageElement;
+  target.src = '/items/placeholder.png';
+};
+
 export default function EventPanel({ 
   enemy,
   itemFound
@@ -70,6 +86,7 @@ export default function EventPanel({
             width={220}
             height={220}
             unoptimized
+            onError={handleImageError}
           />
         </div>
         
@@ -96,20 +113,24 @@ export default function EventPanel({
 
   // Show item/equipment if found
   if (itemFound) {
-    const isEquipment = 'attack' in itemFound || 'defense' in itemFound || 'health' in itemFound;
+    const isEquipment = 'attack' in itemFound || 'defense' in itemFound || 
+                        ('health' in itemFound && !('statModified' in itemFound));
+    
+    const imagePath = normalizeImagePath(itemFound.spritePath);
     
     return (
       <div className={styles.panel}>
         <h2 className={styles.header}>{isEquipment ? '⚔️ Equipment Found!' : '🧪 Item Found!'}</h2>
         <div className={styles.itemFound}>
-          {/* Show actual item/equipment image */}
+          {/* Show actual item/equipment image with error handling */}
           <div className={styles.itemImage}>
             <Image 
-              src={itemFound.spritePath || '/items/placeholder.png'} 
+              src={imagePath}
               alt={itemFound.name}
               width={180}
               height={180}
               unoptimized
+              onError={handleImageError}
             />
           </div>
           
@@ -137,9 +158,9 @@ export default function EventPanel({
               <>
                 {('statModified' in itemFound) && (
                   <div className={styles.statBadge}>
-                    {itemFound.statModified === 'health'}
-                    {itemFound.statModified === 'attack'}
-                    {itemFound.statModified === 'defense'}
+                    {itemFound.statModified === 'health' && '❤️'}
+                    {itemFound.statModified === 'attack' && '⚔️'}
+                    {itemFound.statModified === 'defense' && '🛡️'}
                     {' '}
                     {itemFound.statValue > 0 ? '+' : ''}{itemFound.statValue} {itemFound.statModified}
                     {itemFound.statModified === 'health' && ' HP'}

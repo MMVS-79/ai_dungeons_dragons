@@ -7,6 +7,9 @@ import {
   createCombatSnapshot,
 } from "@/lib/utils/combatSnapshot";
 import type { CombatSnapshot } from "@/lib/types/game.types";
+import type {
+  CombatEncounterEventData
+} from "@/lib/types/db.types";
 
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
 
@@ -28,6 +31,13 @@ export async function GET(request: NextRequest) {
 
     const id = parseInt(campaignId);
 
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid campaignId - must be a number" },
+        { status: 400 }
+      );
+    }
+
     // Single check and creation logic
     let shouldRecreateCombat = false;
     let combatEnemyId: number | null = null;
@@ -37,9 +47,6 @@ export async function GET(request: NextRequest) {
 
     if (existingSnapshot) {
       // Snapshot exists in memory - reset it
-      console.log(
-        `[API] Found active combat snapshot, resetting to fresh state`
-      );
       shouldRecreateCombat = true;
       combatEnemyId = existingSnapshot.enemy.id;
       clearCombatSnapshot(id);
@@ -53,12 +60,10 @@ export async function GET(request: NextRequest) {
         lastEvent.eventType === "Combat" &&
         lastEvent.eventData
       ) {
-        const eventData = lastEvent.eventData as any;
+        // Type guard to check if event data is a combat encounter
+        const eventData = lastEvent.eventData as CombatEncounterEventData;
 
         if (eventData.phase === "encounter" && eventData.enemyId) {
-          console.log(
-            `[API] Found incomplete combat in DB, recreating snapshot`
-          );
           shouldRecreateCombat = true;
           combatEnemyId = eventData.enemyId;
         }
@@ -70,10 +75,6 @@ export async function GET(request: NextRequest) {
       const { character, equipment, inventory } =
         await BackendService.getCharacterWithFullData(id);
       const enemy = await BackendService.getEnemy(combatEnemyId);
-
-      console.log(`[API] Creating fresh combat snapshot with equipment`);
-      console.log(`[API] Weapon:`, equipment.weapon);
-      console.log(`[API] Shield:`, equipment.shield);
 
       const freshSnapshot: CombatSnapshot = {
         campaignId: id,
@@ -98,7 +99,6 @@ export async function GET(request: NextRequest) {
       };
 
       createCombatSnapshot(freshSnapshot);
-      console.log(`[API] Snapshot equipment:`, freshSnapshot.equipment);
     }
 
     const gameState = await gameService.getGameState(id);
@@ -113,7 +113,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch game state",
+        error: error instanceof Error 
+          ? error.message 
+          : "Failed to fetch game state",
       },
       { status: 500 }
     );
