@@ -33,11 +33,8 @@ import {
   getEffectiveDefense,
 } from "../utils/combatSnapshot";
 
-import type {
-  LLMGameContext,
-  EventHistoryEntry,
-  EventTypeString,
-} from "../types/llm.types";
+import type { EventHistoryEntry, EventTypeString } from "../types/llm.types";
+import type { LLMContext } from "./llm.service";
 import type {
   PlayerAction,
   GameState,
@@ -203,9 +200,9 @@ export class GameService {
       .slice(0, 5)
       .map((e) => e.eventType);
     const eventTypeCounts = recentEventTypes.reduce((acc, type) => {
-      acc[type] = (acc[type] || 0) + 1;
+      acc[type as EventTypeString] = (acc[type as EventTypeString] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<EventTypeString, number>);
 
     // Count total descriptive events
     const allEvents = await BackendService.getRecentEvents(
@@ -229,13 +226,15 @@ export class GameService {
         "Combat",
         "Item_Drop",
       ].filter(
-        (type) => (eventTypeCounts[type] || 0) < 2 && type !== eventType
+        (type) =>
+          (eventTypeCounts[type as EventTypeString] || 0) < 2 &&
+          type !== eventType
       );
 
       if (alternatives.length > 0) {
         eventType = alternatives[
           Math.floor(Math.random() * alternatives.length)
-        ] as any;
+        ] as EventTypeString;
       }
     }
 
@@ -244,7 +243,7 @@ export class GameService {
       const alternatives = ["Environmental", "Combat", "Item_Drop"];
       eventType = alternatives[
         Math.floor(Math.random() * alternatives.length)
-      ] as any;
+      ] as EventTypeString;
     }
 
     // Route to appropriate handler
@@ -280,7 +279,7 @@ export class GameService {
   private async handleDescriptiveEvent(
     campaignId: number,
     gameState: GameState,
-    context: LLMGameContext
+    context: LLMContext
   ): Promise<GameServiceResponse> {
     // Generate description
     const description = await this.llmService.generateDescription(
@@ -485,13 +484,14 @@ export class GameService {
 
     try {
       // Log the decline event
-      const declineMessages = {
+      const declineMessages: Record<EventTypeString, string> = {
         Environmental:
           "You sense something unusual in the environment but decide to move on, wary of potential dangers.",
         Combat:
           "You hear threatening sounds ahead but decide not to investigate, avoiding a potential encounter.",
         Item_Drop:
           "You notice something interesting but decide to keep moving, prioritizing safety over curiosity.",
+        Descriptive: "You continue forward, leaving the mystery behind.",
       };
 
       const message = storedPrompt
@@ -568,9 +568,21 @@ export class GameService {
 
       // Apply dice roll modifier
       const rollClassification = Dice_Roll.classifyRoll(diceRoll);
+      type StatTypeMap = {
+        health: "HEALTH";
+        attack: "ATTACK";
+        defense: "DEFENSE";
+      };
+
+      const statTypeMap: StatTypeMap = {
+        health: "HEALTH",
+        attack: "ATTACK",
+        defense: "DEFENSE",
+      };
+
       const finalValue = Stat_Calc.applyRoll(
         diceRoll,
-        statBoost.statType.toUpperCase() as any,
+        statTypeMap[statBoost.statType],
         statBoost.baseValue
       );
 
@@ -990,6 +1002,7 @@ export class GameService {
         baseDefense: gameState.character.defense,
       },
       inventorySnapshot: [...gameState.inventory],
+      originalInventoryIds: gameState.inventory.map((item) => item.id),
       temporaryBuffs: {
         attack: 0,
         defense: 0,
@@ -1181,7 +1194,7 @@ export class GameService {
       getEffectiveAttack(snapshot) - snapshot.enemy.defense
     );
     const diceModifier = diceRoll - 10; // -9 to +10 range
-    let characterDamage = Math.max(1, baseDamage + diceModifier);
+    const characterDamage = Math.max(1, baseDamage + diceModifier);
 
     // Enemy counterattack damage
     const baseEnemyDamage = Math.max(
@@ -1632,7 +1645,7 @@ export class GameService {
   // HELPER METHODS
   // ==========================================================================
 
-  private async getGameState(campaignId: number): Promise<GameState> {
+  public async getGameState(campaignId: number): Promise<GameState> {
     const campaign = await BackendService.getCampaign(campaignId);
     const { character, equipment, inventory } =
       await BackendService.getCharacterWithFullData(campaignId);
@@ -1690,7 +1703,7 @@ export class GameService {
     };
   }
 
-  private async buildLLMContext(gameState: GameState): Promise<LLMGameContext> {
+  private async buildLLMContext(gameState: GameState): Promise<LLMContext> {
     const recentEvents = gameState.recentEvents.slice(0, 5).map((event) => ({
       eventType: event.eventType,
       message: event.message,

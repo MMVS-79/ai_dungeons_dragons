@@ -40,7 +40,7 @@ export interface EventHistoryEntry {
 export interface LLMGameContext {
   character: {
     name: string;
-    health: number;
+    currentHealth: number;
     maxHealth: number;
     attack: number;
     defense: number;
@@ -51,9 +51,10 @@ export interface LLMGameContext {
     attack: number;
     defense: number;
   };
-  recentEvents: EventHistoryEntry[]; // Previous events with stats
-  scenario?: string; // Optional: location/setting
-  trigger?: string; // Optional: what prompted this event
+  recentEvents: EventHistoryEntry[];
+  currentEventNumber: number;
+  scenario?: string;
+  trigger?: string;
 }
 
 // Output: What the LLM service returns to game engine (legacy, no longer used)

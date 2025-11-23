@@ -8,6 +8,7 @@
 // ============================================================================
 // ITEM & EQUIPMENT TYPES
 // ============================================================================
+import type { EventData } from './db.types';
 
 export interface Item {
   id: number;
@@ -196,7 +197,7 @@ export interface GameEvent {
   message: string;
   eventNumber: number;
   eventType: EventTypeString;
-  eventData?: Record<string, unknown>;
+  eventData?: EventData;
   createdAt: Date;
 }
 
