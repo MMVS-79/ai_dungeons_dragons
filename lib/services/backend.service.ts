@@ -20,7 +20,7 @@
  * - sprite_path → spritePath
  */
 
-import pool from "../db";
+import { pool } from "../db";
 import type {
   Character,
   Enemy,
@@ -56,79 +56,150 @@ function parseEventData(data: any): Record<string, unknown> | undefined {
   return undefined;
 }
 
-// ============================================================================
-// CHARACTER OPERATIONS
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Type for updates
+// ---------------------------------------------------------------------------
+export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
+  weapon?: Partial<Weapon>;
+  armor?: Partial<Armour>;
+  shield?: Partial<Shield>;
+};
+// ---------------------------------------------------------------------------
+// Backend Service
+// ---------------------------------------------------------------------------
+export class BackendService {
+  /**
+   * Fetch a character by ID from the database
+   * Includes race, class, equipment, base stats, and final stats
+   */
+  static async getCharacter(id: number): Promise<Character | null> {
+    try {
+      const sql = `
+        SELECT 
+          c.id AS id,
+          c.name AS name,
+          c.current_health AS current_health,
+          c.max_health AS max_health,
+          c.attack AS base_attack,
+          c.defense AS base_defense,
+          c.sprite_path AS sprite_path,
+          c.campaign_id AS campaign_id,
+          c.race_id AS race_id,
+          c.class_id AS class_id,
+          c.weapon_id AS weapon_id,
+          c.armour_id AS armour_id,
+          c.shield_id AS shield_id
+        FROM characters c
+        WHERE c.id = ?
+      `;
 
-/**
- * Get character by ID from database
- */
-export async function getCharacter(characterId: number): Promise<Character> {
-  const [rows] = await pool.query<any[]>(
-    "SELECT * FROM characters WHERE id = ?",
-    [characterId]
-  );
+      const [rows] = await pool.query<any[]>(sql, [id]);
+      if (rows.length === 0) return null;
 
-  if (rows.length === 0) {
-    throw new Error(`Character ${characterId} not found`);
+      const row = rows[0];
+
+      // -----------------------------
+      // Compose Character object
+      // -----------------------------
+      const character: Character = {
+        id: row.id,
+        name: row.name,
+        maxHealth: row.max_health,
+        attack: row.base_attack,
+        defense: row.base_defense,
+        campaignId: row.campaign_id,
+        currentHealth: row.current_health,
+        raceId: row.race_id,
+        classId: row.class_id,
+        weaponId: row.weapon_id,
+        armourId: row.armour_id,
+        shieldId: row.shield_id,
+        spritePath: row.sprite_path
+      };
+
+      return character;
+    } catch (error) {
+      console.error(`[BackendService] getCharacter(${id}) failed:`, error);
+      return null;
+    }
   }
 
-  const row = rows[0];
-
-  return {
-    id: row.id,
-    name: row.name,
-    currentHealth: row.current_health,
-    maxHealth: row.max_health,
-    attack: row.attack,
-    defense: row.defense,
-    spritePath: row.sprite_path,
-    raceId: row.race_id,
-    classId: row.class_id,
-    campaignId: row.campaign_id,
-    weaponId: row.weapon_id,
-    armourId: row.armour_id,
-    shieldId: row.shield_id,
-  };
-}
-
-/**
- * Update character stats in database
- */
-export async function updateCharacter(
-  characterId: number,
-  updates: Partial<Character>
-): Promise<Character> {
-  const dbUpdates: Record<string, any> = {};
-
-  if (updates.currentHealth !== undefined)
-    dbUpdates.current_health = updates.currentHealth;
-  if (updates.maxHealth !== undefined) dbUpdates.max_health = updates.maxHealth;
-  if (updates.attack !== undefined) dbUpdates.attack = updates.attack;
-  if (updates.defense !== undefined) dbUpdates.defense = updates.defense;
-  if (updates.weaponId !== undefined) dbUpdates.weapon_id = updates.weaponId;
-  if (updates.armourId !== undefined) dbUpdates.armour_id = updates.armourId;
-  if (updates.shieldId !== undefined) dbUpdates.shield_id = updates.shieldId;
-
-  if (Object.keys(dbUpdates).length === 0) {
-    return getCharacter(characterId);
+  /**
+   * Update character dynamically in the database
+   */
+  static async updateCharacter(
+    characterId: number,
+    updates: CharacterUpdates
+  ): Promise<Character | null> {
+    try {
+      // Map TypeScript keys to DB columns
+      const fieldMap: Record<string, string> = {
+        name: "name",
+        currentHealth: "current_health",
+        maxHealth: "max_health",
+        attack: "attack",
+        defense: "defense",
+        spritePath: "sprite_path",
+        campaignId: "campaign_id",
+        weapon: "weapon_id",
+        armor: "armour_id",
+        shield: "shield_id",
+      };
+  
+      const columns: string[] = [];
+      const values: (number | string | null)[] = [];
+  
+      const equipKeys = ["weapon", "armor", "shield"];
+  
+      for (const [key, value] of Object.entries(updates)) {
+        const col = fieldMap[key];
+        if (!col) continue;
+  
+        // For equipment, store only the ID (or null)
+        if (equipKeys.includes(key)) {
+          const equip = value as Weapon | Armour | Shield | null;
+          values.push(equip?.id ?? null);
+        } else {
+          values.push(value as number | string | null);
+        }
+  
+        columns.push(col);
+      }
+  
+      // Nothing to update
+      if (columns.length === 0) return await this.getCharacter(characterId);
+  
+      const setClause = columns.map(col => `${col} = ?`).join(", ");
+      const sql = `UPDATE characters SET ${setClause} WHERE id = ?`;
+      values.push(characterId);
+  
+      await pool.query(sql, values);
+  
+      return await this.getCharacter(characterId);
+    } catch (error) {
+      console.error(`[BackendService] updateCharacter(${characterId}) failed:`, error);
+      return null;
+    }
   }
-
-  const setClause = Object.keys(dbUpdates)
-    .map((key) => `${key} = ?`)
-    .join(", ");
-  const values = [...Object.values(dbUpdates), characterId];
-
-  await pool.query(
-    `UPDATE characters SET ${setClause}, updated_at = NOW() WHERE id = ?`,
-    values
-  );
-
-  return getCharacter(characterId);
 }
 
+// ============================================================================
+// ENEMY OPERATIONS
+// ============================================================================
+
 /**
- * Get character by campaign ID
+ * Fetch enemy by ID from database
+ *
+ * TODO: Implement database query
+ *
+ * Implementation:
+ * 1. Query: SELECT * FROM enemies WHERE id = ?
+ * 2. Map DB fields to TypeScript:
+ *    - sprite_path → spritePath
+ * 3. Return Enemy object
+ *
+ * @param enemyId - Enemy ID
+ * @returns Enemy data
  */
 export async function getCharacterByCampaign(
   campaignId: number
