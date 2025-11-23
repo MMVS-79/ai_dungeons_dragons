@@ -46,9 +46,6 @@ export class Stat_Calc {
     // Critical Failure (1-4): No stat gain
     if (rollValue >= 1 && rollValue <= 4) {
       finalValue = 0;
-      console.log(
-        `[Stat_Calc] Critical failure on ${statType}. Stat gain set to 0.`
-      );
     } 
     // Regular Roll (5-15): Scale stat based on formula
     else if (rollValue >= 5 && rollValue <= 15) {
@@ -58,9 +55,6 @@ export class Stat_Calc {
       // Example: Make it less punishing for low rolls
       // finalValue = initValue * (0.7 + (rollValue - 5) / 10);
       finalValue = initValue * (1 + (rollValue - 10) / 10);
-      console.log(
-        `[Stat_Calc] Regular roll on ${statType}: Roll ${rollValue}, scaled stat = ${finalValue.toFixed(1)}`
-      );
     } 
     // Critical Success (16-20): Double the stat
     else if (rollValue >= 16 && rollValue <= 20) {
@@ -68,9 +62,6 @@ export class Stat_Calc {
       
       // Example: Make crits less powerful: finalValue = initValue * 1.5;
       finalValue = initValue * 2;
-      console.log(
-        `[Stat_Calc] Critical success on ${statType}: Roll ${rollValue}, stat doubled = ${finalValue}`
-      );
     } 
     // Invalid roll value (should never happen)
     else {

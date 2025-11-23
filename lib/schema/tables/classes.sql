@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS classes;
 CREATE TABLE classes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    vitality INT NOT NULL,
+    health INT NOT NULL,
     attack INT NOT NULL,
     defense INT NOT NULL,
     sprite_path VARCHAR(255),

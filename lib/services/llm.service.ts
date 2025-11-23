@@ -5,8 +5,9 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import type { LLMServiceConfig } from "@/lib/types/llm.types";
-import type { Item, Weapon, Armour, Shield } from "../types/game.types";
+import type { Item, Weapon, Armour, Shield, GameState, GameServiceResponse } from "../types/game.types";
+import { pool } from "../db";
+import * as BackendService from "./backend.service";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 
@@ -52,7 +53,7 @@ export interface LLMContext {
 
 export class LLMService {
   private ai: GoogleGenAI;
-  private model: string;
+  protected model: string;
   private generationConfig: {
     temperature: number;
     topK: number;
@@ -62,8 +63,6 @@ export class LLMService {
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey });
-
-    // match your working version defaults
     this.model = "gemini-flash-lite-latest";
 
     this.generationConfig = {
@@ -72,6 +71,65 @@ export class LLMService {
       topP: 0.95,
       maxOutputTokens: 1024,
     };
+  }
+
+  // ==========================================================================
+  // INTRODUCTION GENERATION
+  // ==========================================================================
+
+  public async generateCampaignIntroduction(
+    campaignId: number,
+    gameState: GameState
+  ): Promise<string> {
+
+    // Get character race and class names from database
+    const [raceRows] = await pool.query<any[]>(
+      "SELECT name FROM races WHERE id = ?",
+      [gameState.character.raceId]
+    );
+    const [classRows] = await pool.query<any[]>(
+      "SELECT name FROM classes WHERE id = ?",
+      [gameState.character.classId]
+    );
+
+    const raceName = raceRows[0]?.name || "adventurer";
+    const className = classRows[0]?.name || "warrior";
+
+    const introPrompt = `You are a D&D dungeon master starting a new 48-turn campaign. Create an epic introduction.
+
+Character:
+- Name: ${gameState.character.name}
+- Race: ${raceName}
+- Class: ${className}
+
+Create a compelling introduction (3-4 sentences) that:
+- Creates a background for the character based on their name, race, and class (be creative)
+- Sets the dark, dangerous atmosphere of an ancient dungeon
+- Explains that a legendary monster boss of unknown type threatens the world
+- Describes why ${gameState.character.name} has ventured into this perilous place
+- Builds anticipation and heroic purpose
+
+Make it epic and immersive.
+
+Your introduction:`;
+
+    try {
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [{ role: "user", parts: [{ text: introPrompt }] }],
+        config: this.generationConfig,
+      });
+
+      return result?.text?.trim() || "";
+
+    } catch (error) {
+      console.error("[GameService] Error generating introduction:", error);
+
+      // Fallback introduction
+      const fallback = `${gameState.character.name}, a brave ${raceName} ${className}, stands at the entrance of an ancient dungeon. Deep within these cursed halls, a legendary dragon threatens the realm. Only by venturing into the darkness and facing unimaginable dangers can you hope to save the world from destruction.`;
+
+      return fallback;
+    }
   }
 
   // ==========================================================================
@@ -140,8 +198,6 @@ Your response:`;
 
       let text = result?.text?.trim() ?? "";
 
-      console.log(`[LLMService] Raw event type response: "${text}"`);
-
       // Extract first word
       const eventType = text.split(/[\s\n,.:;]/)[0].trim();
 
@@ -153,7 +209,6 @@ Your response:`;
         "Item_Drop",
       ];
       if (validTypes.includes(eventType as EventTypeString)) {
-        console.log(`[LLMService] Generated event type: ${eventType}`);
         return eventType as EventTypeString;
       }
 
@@ -213,12 +268,6 @@ Your response:`;
 
       let text = result?.text?.trim() ?? "";
 
-      console.log(
-        `[LLMService] Generated description (${eventType}): ${text.substring(
-          0,
-          100
-        )}...`
-      );
       return text;
     } catch (error) {
       console.error(
@@ -471,8 +520,6 @@ Your JSON response:`;
 
       let text = result?.text?.trim() ?? "";
 
-      console.log(`[LLMService] Raw stat boost response: "${text}"`);
-
       // Remove markdown code blocks if present
       text = text
         .replace(/```json\s*/gi, "")
@@ -519,9 +566,6 @@ Your JSON response:`;
         baseValue = Math.max(-3, Math.min(4, Math.round(baseValue)));
       }
 
-      console.log(
-        `[LLMService] ✓ Validated stat boost: ${parsed.statType} ${baseValue}`
-      );
       return { statType: parsed.statType, baseValue };
     } catch (error) {
       console.error("[LLMService] Error parsing stat boost:", error);
@@ -538,12 +582,6 @@ Your JSON response:`;
   } {
     const healthPercent =
       (context.character.currentHealth / context.character.maxHealth) * 100;
-
-    console.log(
-      `[LLMService] Using intelligent default based on ${healthPercent.toFixed(
-        1
-      )}% HP`
-    );
 
     // 20% chance of negative effect
     const isNegative = Math.random() < 0.2;

@@ -22,7 +22,6 @@ export class Dice_Roll {
    */
   public static roll(): number {
     const rollValue = Math.floor(Math.random() * 20) + 1;
-    console.log(`[Dice_Roll] Rolled a D20: ${rollValue}`);
     return rollValue;
   }
 

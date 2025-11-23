@@ -52,7 +52,6 @@ export class EventType {
    */
   public static incrementDescriptiveCount(): void {
     EventType.descriptiveCount++;
-    console.log(`[EventType] Descriptive count incremented to: ${EventType.descriptiveCount}`);
   }
 
   /**
@@ -61,7 +60,6 @@ export class EventType {
    * Allows descriptive events to occur again naturally
    */
   public static resetDescriptiveCount(): void {
-    console.log(`[EventType] Descriptive count reset from ${EventType.descriptiveCount} to 0`);
     EventType.descriptiveCount = 0;
   }
 
@@ -120,7 +118,6 @@ export class EventType {
    */
   private handleDescriptive(): void {
     EventType.incrementDescriptiveCount();
-    console.log(`[EventType] Descriptive event triggered. Count: ${EventType.descriptiveCount}`);
   }
 
   /**
@@ -130,10 +127,8 @@ export class EventType {
    */
   private handleEnvironmental(): void {
     if (EventType.descriptiveCount > 0) {
-      console.log(`[EventType] Environmental event - resetting descriptive counter`);
       EventType.descriptiveCount = 0;
     }
-    console.log(`[EventType] Environmental event triggered`);
   }
 
   /**
@@ -143,10 +138,8 @@ export class EventType {
    */
   private handleCombat(): void {
     if (EventType.descriptiveCount > 0) {
-      console.log(`[EventType] Combat event - resetting descriptive counter`);
       EventType.descriptiveCount = 0;
     }
-    console.log(`[EventType] Combat event triggered`);
   }
 
   /**
@@ -156,10 +149,8 @@ export class EventType {
    */
   private handleItemDrop(): void {
     if (EventType.descriptiveCount > 0) {
-      console.log(`[EventType] Item_Drop event - resetting descriptive counter`);
       EventType.descriptiveCount = 0;
     }
-    console.log(`[EventType] Item_Drop event triggered`);
   }
 
   /**

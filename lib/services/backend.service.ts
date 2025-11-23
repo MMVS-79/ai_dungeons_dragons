@@ -257,10 +257,6 @@ export async function getCharacterWithFullData(campaignId: number): Promise<{
 
   const inventory = await getInventory(character.id);
 
-  console.log(
-    `[BackendService] Loaded full character data for campaign ${campaignId}`
-  );
-
   return { character, equipment, inventory };
 }
 
@@ -352,10 +348,6 @@ export async function equipWeapon(
     "UPDATE characters SET weapon_id = ?, updated_at = NOW() WHERE id = ?",
     [weaponId, characterId]
   );
-
-  console.log(
-    `[BackendService] Equipped weapon ${weaponId} to character ${characterId}`
-  );
 }
 
 /**
@@ -369,10 +361,6 @@ export async function equipArmour(
     "UPDATE characters SET armour_id = ?, updated_at = NOW() WHERE id = ?",
     [armourId, characterId]
   );
-
-  console.log(
-    `[BackendService] Equipped armour ${armourId} to character ${characterId}`
-  );
 }
 
 /**
@@ -385,10 +373,6 @@ export async function equipShield(
   await pool.query(
     "UPDATE characters SET shield_id = ?, updated_at = NOW() WHERE id = ?",
     [shieldId, characterId]
-  );
-
-  console.log(
-    `[BackendService] Equipped shield ${shieldId} to character ${characterId}`
   );
 }
 
@@ -453,10 +437,6 @@ export async function addItemToInventory(
     "INSERT INTO character_items (character_id, item_id) VALUES (?, ?)",
     [characterId, itemId]
   );
-
-  console.log(
-    `[BackendService] Added item ${itemId} to character ${characterId}`
-  );
 }
 
 /**
@@ -466,18 +446,9 @@ export async function removeItemFromInventory(
   characterId: number,
   itemId: number
 ): Promise<void> {
-  console.log(
-    `[BackendService] Removing item ${itemId} from character ${characterId} inventory`
-  );
-
   const result = await pool.query(
     "DELETE FROM character_items WHERE character_id = ? AND item_id = ? LIMIT 1",
     [characterId, itemId]
-  );
-
-  console.log(`[BackendService] Delete result:`, result);
-  console.log(
-    `[BackendService] Removed item ${itemId} from character ${characterId}`
   );
 }
 
@@ -729,10 +700,6 @@ export async function getEnemyByDifficulty(
   const minDifficulty = Math.max(0, targetDifficulty - variance);
   const maxDifficulty = targetDifficulty + variance;
 
-  console.log(
-    `[BackendService] Looking for enemy: difficulty ${minDifficulty}-${maxDifficulty} (target: ${targetDifficulty})`
-  );
-
   let query = `SELECT * FROM enemies WHERE difficulty BETWEEN ? AND ?`;
   const params: any[] = [minDifficulty, maxDifficulty];
 
@@ -775,9 +742,7 @@ export async function getEnemyByDifficulty(
   }
 
   const row = rows[0];
-  console.log(
-    `[BackendService] Found enemy: ${row.name} (difficulty ${row.difficulty})`
-  );
+
   return {
     id: row.id,
     name: row.name,

@@ -73,91 +73,6 @@ export class GameService {
     return getInvestigationPrompt(campaignId);
   }
 
-  private async generateCampaignIntroduction(
-    campaignId: number,
-    gameState: GameState
-  ): Promise<GameServiceResponse> {
-    console.log(`[GameService] Generating campaign introduction`);
-
-    // Get character race and class names from database
-    const [raceRows] = await pool.query<any[]>(
-      "SELECT name FROM races WHERE id = ?",
-      [gameState.character.raceId]
-    );
-    const [classRows] = await pool.query<any[]>(
-      "SELECT name FROM classes WHERE id = ?",
-      [gameState.character.classId]
-    );
-
-    const raceName = raceRows[0]?.name || "adventurer";
-    const className = classRows[0]?.name || "warrior";
-
-    const introPrompt = `You are a D&D dungeon master starting a new 48-turn campaign. Create an epic introduction.
-
-Character:
-- Name: ${gameState.character.name}
-- Race: ${raceName}
-- Class: ${className}
-
-Create a compelling introduction (3-4 sentences) that:
-- Creates a background for the character based on their name, race, and class (be creative)
-- Sets the dark, dangerous atmosphere of an ancient dungeon
-- Explains that a legendary monster boss of unknown type threatens the world
-- Describes why ${gameState.character.name} has ventured into this perilous place
-- Builds anticipation and heroic purpose
-
-Make it epic and immersive.
-
-Your introduction:`;
-
-    try {
-      const result = await this.llmService.model.generateContent(introPrompt);
-      const response = await result.response;
-      const introduction = response.text().trim();
-
-      console.log(
-        `[GameService] Generated introduction: ${introduction.substring(
-          0,
-          100
-        )}...`
-      );
-
-      // Save as first event
-      await BackendService.saveEvent(campaignId, introduction, "Descriptive", {
-        campaignIntro: true,
-      });
-
-      const updatedState = await this.getGameState(campaignId);
-      updatedState.currentPhase = "exploration";
-
-      return {
-        success: true,
-        gameState: updatedState,
-        message: introduction,
-        choices: ["Continue Forward"],
-      };
-    } catch (error) {
-      console.error("[GameService] Error generating introduction:", error);
-
-      // Fallback introduction
-      const fallback = `${gameState.character.name}, a brave ${raceName} ${className}, stands at the entrance of an ancient dungeon. Deep within these cursed halls, a legendary dragon threatens the realm. Only by venturing into the darkness and facing unimaginable dangers can you hope to save the world from destruction.`;
-
-      await BackendService.saveEvent(campaignId, fallback, "Descriptive", {
-        campaignIntro: true,
-      });
-
-      const updatedState = await this.getGameState(campaignId);
-      updatedState.currentPhase = "exploration";
-
-      return {
-        success: true,
-        gameState: updatedState,
-        message: fallback,
-        choices: ["Continue Forward"],
-      };
-    }
-  }
-
   // ==========================================================================
   // MAIN ORCHESTRATION
   // ==========================================================================
@@ -238,35 +153,41 @@ Your introduction:`;
     action: PlayerAction,
     gameState: GameState
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] handleContinue - Generating next event`);
-
     const currentEventNumber =
       gameState.recentEvents.length > 0
         ? gameState.recentEvents[0].eventNumber
         : 0;
     const nextEventNumber = currentEventNumber + 1;
 
-    console.log(
-      `[GameService] Recent events count: ${gameState.recentEvents.length}`
-    );
-    console.log(
-      `[GameService] Current event number from DB: ${currentEventNumber}`
-    );
-    console.log(`[GameService] Next event number: ${nextEventNumber}`);
-
     // First event is campaign introduction
     if (nextEventNumber === 1) {
-      return await this.generateCampaignIntroduction(
+      const introText = await this.llmService.generateCampaignIntroduction(
         action.campaignId,
         gameState
       );
+
+      await BackendService.saveEvent(
+        action.campaignId,
+        introText,
+        "Descriptive",
+        {
+          campaignIntro: true,
+        }
+      );
+      
+      const updatedState = await this.getGameState(action.campaignId);
+      updatedState.currentPhase = "exploration";
+
+      return {
+        success: true,
+        gameState: updatedState,
+        message: introText,
+        choices: ["Continue Forward"],
+      };
     }
 
     // Check boss encounter (event 48)
     if (nextEventNumber >= BALANCE_CONFIG.BOSS_FORCED_EVENT_START) {
-      console.log(
-        `[GameService] Boss encounter triggered at event ${nextEventNumber}`
-      );
       return await this.generateBossEncounter(
         action.campaignId,
         gameState,
@@ -295,19 +216,12 @@ Your introduction:`;
       (e) => e.eventType === "Descriptive"
     ).length;
 
-    console.log(`[GameService] Event distribution - Recent:`, eventTypeCounts);
-    console.log(`[GameService] Total Descriptive events: ${totalDescriptive}`);
-
     // Generate event type
     let eventType = await this.llmService.generateEventType(context);
 
     // Enforce distribution rules
     // Rule 1: Max 2 of same type in last 5 events
     if (eventTypeCounts[eventType] >= 2) {
-      console.log(
-        `[GameService] ${eventType} appears ${eventTypeCounts[eventType]} times in recent history, selecting alternative`
-      );
-
       // Find alternative event types
       const alternatives = [
         "Descriptive",
@@ -322,23 +236,16 @@ Your introduction:`;
         eventType = alternatives[
           Math.floor(Math.random() * alternatives.length)
         ] as any;
-        console.log(`[GameService] Selected alternative: ${eventType}`);
       }
     }
 
     // Rule 2: Max 10 Descriptive events total
     if (eventType === "Descriptive" && totalDescriptive >= 10) {
-      console.log(
-        `[GameService] Max Descriptive events (10) reached, forcing alternative`
-      );
       const alternatives = ["Environmental", "Combat", "Item_Drop"];
       eventType = alternatives[
         Math.floor(Math.random() * alternatives.length)
       ] as any;
-      console.log(`[GameService] Selected alternative: ${eventType}`);
     }
-
-    console.log(`[GameService] Final event type: ${eventType}`);
 
     // Route to appropriate handler
     switch (eventType) {
@@ -375,8 +282,6 @@ Your introduction:`;
     gameState: GameState,
     context: LLMGameContext
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] Processing Descriptive event`);
-
     // Generate description
     const description = await this.llmService.generateDescription(
       "Descriptive",
@@ -411,8 +316,6 @@ Your introduction:`;
     campaignId: number,
     gameState: GameState
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] Environmental investigation prompt`);
-
     const message =
       "The environment around you begins to shift... Do you want to investigate?";
 
@@ -442,8 +345,6 @@ Your introduction:`;
     campaignId: number,
     gameState: GameState
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] Item Drop investigation prompt`);
-
     const message =
       "You notice something shiny nearby... Do you want to investigate?";
 
@@ -474,8 +375,6 @@ Your introduction:`;
     gameState: GameState,
     eventNumber: number
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] Combat investigation prompt`);
-
     const message = "You sense danger nearby... Do you want to investigate?";
 
     // Store in memory
@@ -504,8 +403,6 @@ Your introduction:`;
     action: PlayerAction,
     gameState: GameState
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] handleInvestigate - START`);
-
     // Get stored investigation prompt
     const storedPrompt = getInvestigationPrompt(action.campaignId);
 
@@ -520,17 +417,14 @@ Your introduction:`;
     }
 
     const eventType = storedPrompt.eventType;
-    console.log(`[GameService] Investigating ${eventType} event`);
 
     try {
       const diceRoll = action.actionData?.diceRoll || Dice_Roll.roll();
-      console.log(`[GameService] Dice roll: ${diceRoll}`);
 
       let result: GameServiceResponse;
 
       switch (eventType) {
         case "Environmental":
-          console.log("[GameService] Processing Environmental event...");
           result = await this.processEnvironmentalEvent(
             action.campaignId,
             gameState,
@@ -539,7 +433,6 @@ Your introduction:`;
           break;
 
         case "Item_Drop":
-          console.log("[GameService] Processing Item_Drop event...");
           result = await this.processItemDropEvent(
             action.campaignId,
             gameState,
@@ -548,7 +441,6 @@ Your introduction:`;
           break;
 
         case "Combat":
-          console.log("[GameService] Processing Combat event...");
           result = await this.processCombatEvent(
             action.campaignId,
             gameState,
@@ -585,8 +477,6 @@ Your introduction:`;
     action: PlayerAction,
     gameState: GameState
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] handleDecline - Player declined investigation`);
-
     // Get the prompt that was declined
     const storedPrompt = getInvestigationPrompt(action.campaignId);
 
@@ -622,8 +512,6 @@ Your introduction:`;
         }
       );
 
-      console.log(`[GameService] Decline event logged as ${eventTypeToLog}`);
-
       // Get updated state
       const updatedState = await this.getGameState(action.campaignId);
       updatedState.currentPhase = "exploration";
@@ -650,9 +538,6 @@ Your introduction:`;
     gameState: GameState,
     diceRoll: number
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] processEnvironmentalEvent - START`);
-    console.log(`[GameService] Campaign: ${campaignId}, Dice: ${diceRoll}`);
-
     try {
       const context = await this.buildLLMContext(gameState);
 
@@ -666,9 +551,6 @@ Your introduction:`;
       const statBoost = await this.llmService.requestStatBoost(
         context,
         "Environmental"
-      );
-      console.log(
-        `[GameService] Stat boost requested: ${statBoost.statType} ${statBoost.baseValue}`
       );
 
       // Ensure baseValue is not 0, use defaults if needed
@@ -692,10 +574,6 @@ Your introduction:`;
         statBoost.baseValue
       );
 
-      console.log(
-        `[GameService] Roll ${diceRoll} (${rollClassification}): base ${statBoost.baseValue} -> final ${finalValue}`
-      );
-
       // Update character stats
       if (statBoost.statType === "health") {
         // Calculate actual max HP (base + armour)
@@ -704,31 +582,19 @@ Your introduction:`;
         const currentHp = gameState.character.currentHealth;
         const newHealth = Math.min(actualMaxHp, currentHp + finalValue);
 
-        console.log(
-          `[GameService] Health calculation: current=${currentHp}, change=+${finalValue}, new=${newHealth}, trueMax=${actualMaxHp}`
-        );
-
         await BackendService.updateCharacter(gameState.character.id, {
           currentHealth: newHealth,
         });
-
-        console.log(`[GameService] Health updated in database`);
       } else if (statBoost.statType === "attack") {
         const newAttack = gameState.character.attack + finalValue;
         await BackendService.updateCharacter(gameState.character.id, {
           attack: newAttack,
         });
-        console.log(
-          `[GameService] Attack updated: ${gameState.character.attack} -> ${newAttack}`
-        );
       } else if (statBoost.statType === "defense") {
         const newDefense = gameState.character.defense + finalValue;
         await BackendService.updateCharacter(gameState.character.id, {
           defense: newDefense,
         });
-        console.log(
-          `[GameService] Defense updated: ${gameState.character.defense} -> ${newDefense}`
-        );
       }
 
       // Reset descriptive counter
@@ -782,10 +648,6 @@ Your introduction:`;
     gameState: GameState,
     diceRoll: number
   ): Promise<GameServiceResponse> {
-    console.log(
-      `[GameService] Processing Item_Drop event with dice roll ${diceRoll}`
-    );
-
     const context = await this.buildLLMContext(gameState);
     const eventNumber =
       gameState.recentEvents.length > 0
@@ -794,13 +656,9 @@ Your introduction:`;
 
     // Calculate target rarity using formula
     const targetRarity = calculateItemRarity(eventNumber, diceRoll);
-    console.log(`[GameService] Target loot rarity: ${targetRarity}`);
 
     // 20% chance for equipment, 80% chance for items
     const isEquipmentDrop = Math.random() < 0.2;
-    console.log(
-      `[GameService] Drop type: ${isEquipmentDrop ? "EQUIPMENT" : "ITEM"}`
-    );
 
     let lootItem: Item | Weapon | Armour | Shield;
     let message: string;
@@ -812,10 +670,6 @@ Your introduction:`;
       const randomType =
         equipmentTypes[Math.floor(Math.random() * equipmentTypes.length)];
 
-      console.log(
-        `[GameService] Selecting ${randomType} with rarity ${targetRarity}`
-      );
-
       let equipmentSlot: "weapon" | "armour" | "shield";
       let statBonus: string;
 
@@ -824,25 +678,16 @@ Your introduction:`;
           lootItem = await BackendService.getWeaponByRarity(targetRarity);
           equipmentSlot = "weapon";
           statBonus = `+${(lootItem as Weapon).attack} ATK`;
-          console.log(
-            `[GameService] Selected weapon: ${lootItem.name} (rarity ${lootItem.rarity})`
-          );
           break;
         case "armour":
           lootItem = await BackendService.getArmourByRarity(targetRarity);
           equipmentSlot = "armour";
           statBonus = `+${(lootItem as Armour).health} Max HP`;
-          console.log(
-            `[GameService] Selected armour: ${lootItem.name} (rarity ${lootItem.rarity})`
-          );
           break;
         case "shield":
           lootItem = await BackendService.getShieldByRarity(targetRarity);
           equipmentSlot = "shield";
           statBonus = `+${(lootItem as Shield).defense} DEF`;
-          console.log(
-            `[GameService] Selected shield: ${lootItem.name} (rarity ${lootItem.rarity})`
-          );
           break;
       }
 
@@ -854,10 +699,6 @@ Your introduction:`;
       );
 
       // AUTO-EQUIP the equipment (replace current equipment in that slot)
-      console.log(
-        `[GameService] Auto-equipping ${equipmentSlot}: ${lootItem.name}`
-      );
-
       let previousEquipment: string | null = null;
 
       switch (equipmentSlot) {
@@ -912,14 +753,9 @@ Your introduction:`;
         replaced: previousEquipment || null,
       });
     } else {
-
       // ITEM DROP
       const MAX_INVENTORY = 10;
       if (gameState.inventory.length >= MAX_INVENTORY) {
-        console.log(
-          `[GameService] Inventory full (${gameState.inventory.length}/${MAX_INVENTORY})`
-        );
-
         const message =
           "You discover a valuable item, but your inventory is full! You must leave it behind...";
 
@@ -944,10 +780,6 @@ Your introduction:`;
 
       lootItem = await BackendService.getItemByRarity(targetRarity);
 
-      console.log(
-        `[GameService] Selected item: ${lootItem.name} (rarity ${lootItem.rarity})`
-      );
-
       // Generate description WITH the actual item
       const description = await this.llmService.generateDescription(
         "Item_Drop",
@@ -960,7 +792,6 @@ Your introduction:`;
         gameState.character.id,
         lootItem.id
       );
-      console.log(`[GameService] Added item ${lootItem.id} to inventory`);
 
       // Build message for consumable item
       const item = lootItem as Item;
@@ -1006,9 +837,6 @@ Your introduction:`;
     gameState: GameState,
     diceRoll: number
   ): Promise<GameServiceResponse> {
-    console.log(`[GameService] processCombatEvent - START`);
-    console.log(`[GameService] Campaign: ${campaignId}, Dice: ${diceRoll}`);
-
     try {
       //  Use actual event number from most recent event, not array length
       const eventNumber =
@@ -1016,31 +844,18 @@ Your introduction:`;
           ? gameState.recentEvents[0].eventNumber + 1
           : 1;
 
-      console.log(`[GameService] Event number: ${eventNumber}`);
-      console.log(
-        `[GameService] Recent events:`,
-        gameState.recentEvents.map((e) => e.eventNumber)
-      );
-
       // Calculate target difficulty using formula
       const targetDifficulty = calculateEnemyDifficulty(eventNumber, diceRoll);
-      console.log(`[GameService] Target enemy difficulty: ${targetDifficulty}`);
 
       // Get enemy from database by difficulty
-      console.log(`[GameService] Fetching enemy from database...`);
       const enemy = await BackendService.getEnemyByDifficulty(
         targetDifficulty,
         3,
         true
       );
-      console.log(
-        `[GameService] Selected enemy: ${enemy.name} (difficulty ${enemy.difficulty})`
-      );
 
       // Generate encounter description
-      console.log(`[GameService] Building LLM context...`);
       const context = await this.buildLLMContext(gameState);
-      console.log(`[GameService] Generating encounter description...`);
 
       const encounterDescription = await this.llmService.generateDescription(
         "Combat",
@@ -1054,12 +869,6 @@ Your introduction:`;
           },
         }
       );
-      console.log(
-        `[GameService] Description generated: ${encounterDescription.substring(
-          0,
-          50
-        )}...`
-      );
 
       // Reset descriptive counter
       EventType.resetDescriptiveCount();
@@ -1068,7 +877,6 @@ Your introduction:`;
       const encounterMessage = `${encounterDescription}\n\n⚔️ ${enemy.name} appears! (HP: ${enemy.health}, ATK: ${enemy.attack}, DEF: ${enemy.defense})`;
 
       // LOG #1: Combat encounter
-      console.log(`[GameService] Saving combat encounter event...`);
       await BackendService.saveEvent(campaignId, encounterMessage, "Combat", {
         phase: "encounter",
         enemyId: enemy.id,
@@ -1078,7 +886,6 @@ Your introduction:`;
       });
 
       // Create combat snapshot
-      console.log(`[GameService] Creating combat snapshot...`);
       const snapshot: CombatSnapshot = {
         campaignId,
         enemy,
@@ -1102,10 +909,8 @@ Your introduction:`;
       };
 
       createCombatSnapshot(snapshot);
-      console.log(`[GameService] Combat snapshot created`);
 
       // Get updated state
-      console.log(`[GameService] Getting updated game state...`);
       const updatedState = await this.getGameState(campaignId);
       updatedState.currentPhase = "combat";
       updatedState.investigationPrompt = undefined;
@@ -1118,7 +923,6 @@ Your introduction:`;
         },
       };
 
-      console.log(`[GameService] processCombatEvent - SUCCESS`);
       return {
         success: true,
         gameState: updatedState,
@@ -1143,16 +947,8 @@ Your introduction:`;
     gameState: GameState,
     eventNumber: number
   ): Promise<GameServiceResponse> {
-    console.log(
-      `[GameService] Generating forced boss encounter at event ${eventNumber}`
-    );
-
     // Get random boss
     const boss = await BackendService.getBossEnemy();
-
-    console.log(
-      `[GameService] Selected boss: ${boss.name} (difficulty ${boss.difficulty})`
-    );
 
     // Generate encounter description
     const context = await this.buildLLMContext(gameState);
@@ -1253,10 +1049,6 @@ Your introduction:`;
 
     if (combatAction === "flee") {
       if (isBoss) {
-        console.log(
-          `[GameService] Cannot flee from boss: ${snapshot.enemy.name}`
-        );
-
         // Add to combat log
         addCombatLogEntry(
           action.campaignId,
@@ -1391,10 +1183,6 @@ Your introduction:`;
     const diceModifier = diceRoll - 10; // -9 to +10 range
     let characterDamage = Math.max(1, baseDamage + diceModifier);
 
-    console.log(
-      `[GameService] Damage calc: base=${baseDamage}, dice mod=${diceModifier}, final=${characterDamage}`
-    );
-
     // Enemy counterattack damage
     const baseEnemyDamage = Math.max(
       0,
@@ -1402,10 +1190,6 @@ Your introduction:`;
     );
     const enemyDiceModifier = -(diceRoll - 10); // Inverse for defense (high roll = less damage taken)
     const enemyDamage = Math.max(1, baseEnemyDamage + enemyDiceModifier);
-
-    console.log(
-      `[GameService] Enemy damage calc: base=${baseEnemyDamage}, dice mod=${enemyDiceModifier}, final=${enemyDamage}`
-    );
 
     // Apply damage to enemy
     const newEnemyHp = Math.max(0, snapshot.enemyCurrentHp - characterDamage);
@@ -1433,7 +1217,6 @@ Your introduction:`;
 
       if (isBoss) {
         // BOSS: No rewards, just victory
-        console.log(`[GameService] Boss defeated! No combat rewards.`);
 
         // Update campaign to completed
         await BackendService.updateCampaign(action.campaignId, {
@@ -1496,14 +1279,7 @@ Your introduction:`;
         // Use snapshot inventory count (reflects items used during combat)
         const currentInventoryCount = snapshot.inventorySnapshot.length;
 
-        console.log(
-          `[GameService] Inventory check: ${currentInventoryCount}/${MAX_INVENTORY} (snapshot)`
-        );
-
         if (currentInventoryCount >= MAX_INVENTORY) {
-          console.log(
-            `[GameService] Inventory full, cannot add combat reward item`
-          );
           rewardMessage = `💰 Victory Rewards:\nYou found an item, but your inventory is full!`;
           rewardRarity = 0;
         } else {
@@ -1662,8 +1438,6 @@ Your introduction:`;
       };
     }
 
-    console.log(`[GameService] Using item ${itemId} in combat`);
-
     // Find item in snapshot inventory
     const item = snapshot.inventorySnapshot.find((i) => i.id === itemId);
     if (!item) {
@@ -1674,8 +1448,6 @@ Your introduction:`;
         error: "Invalid item ID",
       };
     }
-
-    console.log(`[GameService] Using item ${item.name} in combat`);
 
     // Apply item effect
     let message = "";
@@ -1692,9 +1464,6 @@ Your introduction:`;
 
       updateCharacterHp(action.campaignId, newHp);
       message = `You used ${item.name} and restored ${item.statValue} HP!`;
-      console.log(
-        `[GameService] Healed: ${snapshot.characterSnapshot.currentHealth} -> ${newHp} (true max: ${trueMaxHp})`
-      );
     } else if (item.statModified === "attack") {
       // Temporary attack buff
       applyTemporaryBuff(action.campaignId, "attack", item.statValue);
@@ -1711,7 +1480,6 @@ Your introduction:`;
 
     // Remove item from snapshot ONLY (not from database during combat)
     removeItemFromSnapshot(action.campaignId, itemId);
-    console.log(`[GameService] Item ${itemId} removed from combat snapshot`);
 
     // Add to combat log
     addCombatLogEntry(action.campaignId, message);
@@ -1759,10 +1527,6 @@ Your introduction:`;
     message: string;
     equipment: Weapon | Armour | Shield;
   }> {
-    console.log(
-      `[GameService] Processing combat rewards with rarity ${rewardRarity}`
-    );
-
     // Determine reward type randomly (weighted)
     const rewardRoll = Math.random();
 
@@ -1806,10 +1570,6 @@ Your introduction:`;
   // ==========================================================================
 
   private async commitCombatSnapshot(snapshot: CombatSnapshot): Promise<void> {
-    console.log(
-      `[GameService] Committing combat snapshot for campaign ${snapshot.campaignId}`
-    );
-
     try {
       // Update character health in database
       await BackendService.updateCharacter(snapshot.characterSnapshot.id, {
@@ -1821,22 +1581,8 @@ Your introduction:`;
         console.warn(
           `[GameService] Old snapshot format detected, no originalInventoryIds`
         );
-        console.log(
-          `[GameService] Combat snapshot committed successfully (legacy format)`
-        );
         return;
       }
-
-      console.log(
-        `[GameService] Original inventory IDs: ${snapshot.originalInventoryIds.join(
-          ", "
-        )}`
-      );
-      console.log(
-        `[GameService] Current snapshot inventory IDs: ${snapshot.inventorySnapshot
-          .map((i) => i.id)
-          .join(", ")}`
-      );
 
       // Count occurrences of each item ID
       const originalCounts = snapshot.originalInventoryIds.reduce((acc, id) => {
@@ -1849,9 +1595,6 @@ Your introduction:`;
         return acc;
       }, {} as Record<number, number>);
 
-      console.log(`[GameService] Original counts:`, originalCounts);
-      console.log(`[GameService] Current counts:`, currentCounts);
-
       // Find items that were used (compare counts)
       const itemsToRemove: number[] = [];
       for (const [itemIdStr, originalCount] of Object.entries(originalCounts)) {
@@ -1860,9 +1603,6 @@ Your introduction:`;
         const usedCount = originalCount - currentCount;
 
         if (usedCount > 0) {
-          console.log(
-            `[GameService] Item ${itemId}: used ${usedCount} times (had ${originalCount}, now ${currentCount})`
-          );
           // Add itemId 'usedCount' times to removal list
           for (let i = 0; i < usedCount; i++) {
             itemsToRemove.push(itemId);
@@ -1870,33 +1610,18 @@ Your introduction:`;
         }
       }
 
-      console.log(
-        `[GameService] Items to remove: ${
-          itemsToRemove.length > 0 ? itemsToRemove.join(", ") : "none"
-        }`
-      );
-
       // Remove used items from database
       for (const itemId of itemsToRemove) {
-        console.log(`[GameService] Removing item ${itemId} from database...`);
         await BackendService.removeItemFromInventory(
           snapshot.characterSnapshot.id,
           itemId
         );
-        console.log(`[GameService] ✓ Removed item ${itemId} from database`);
       }
 
       // Verify items were removed
       const finalInventory = await BackendService.getInventory(
         snapshot.characterSnapshot.id
       );
-      console.log(
-        `[GameService] Final DB inventory after commit: ${finalInventory
-          .map((i) => i.id)
-          .join(", ")}`
-      );
-
-      console.log(`[GameService] Combat snapshot committed successfully`);
     } catch (error) {
       console.error(`[GameService] Error committing combat snapshot:`, error);
       throw error;
