@@ -101,6 +101,15 @@ interface Message {
   choices?: string[];
 }
 
+interface GameEvent {
+  id: number;
+  campaignId: number;
+  message: string;
+  eventNumber: number;
+  eventType: string;
+  createdAt: Date;
+}
+
 export default function CampaignPage() {
   const params = useParams();
   const router = useRouter();
@@ -199,7 +208,7 @@ export default function CampaignPage() {
       const logMessages = result.recentEvents
         .slice()
         .reverse()
-        .map((event: any) => ({
+        .map((event: GameEvent) => ({
           id: generateMessageId(),
           text: event.message,
           choices: [],
