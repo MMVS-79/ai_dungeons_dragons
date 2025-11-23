@@ -28,14 +28,14 @@ import { Dice_Roll } from "@/lib/services/dice_roll";
 import type {
   LLMGameContext,
   EventHistoryEntry,
-  EventTypeString
+  EventTypeString,
 } from "@/lib/types/llm.types";
 import type {
   PlayerAction,
   GameState,
   GameServiceResponse,
   CombatResult,
-  GameValidation
+  GameValidation,
 } from "@/lib/types/game.types";
 import * as BackendService from "@/lib/services/backend.service";
 import { HEALTH_PER_VITALITY } from "../contants";
@@ -51,7 +51,7 @@ export class GameService {
     this.llmService = new LLMService({
       apiKey: llmApiKey,
       model: "gemini-2.5-flash-lite",
-      temperature: 0.8
+      temperature: 0.8,
     });
   }
 
@@ -67,7 +67,7 @@ export class GameService {
    * @returns Game state response with updated state and messages
    */
   async processPlayerAction(
-    action: PlayerAction
+    action: PlayerAction,
   ): Promise<GameServiceResponse> {
     try {
       // 1. Get current game state from backend
@@ -80,7 +80,7 @@ export class GameService {
           success: false,
           gameState,
           message: validation.errors.join(", "),
-          error: "Invalid action"
+          error: "Invalid action",
         };
       }
 
@@ -114,7 +114,7 @@ export class GameService {
             success: false,
             gameState,
             message: "Unknown action type",
-            error: "Invalid action type"
+            error: "Invalid action type",
           };
       }
     } catch (error) {
@@ -127,7 +127,7 @@ export class GameService {
         success: false,
         gameState,
         message: "An error occurred processing your action",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -154,8 +154,8 @@ export class GameService {
         gameState: {
           isGameOver: true,
           isVictory: false,
-          reason: "Character has been defeated"
-        }
+          reason: "Character has been defeated",
+        },
       };
     }
 
@@ -171,8 +171,8 @@ export class GameService {
         gameState: {
           isGameOver: false,
           isVictory: true,
-          reason: "Campaign completed successfully"
-        }
+          reason: "Campaign completed successfully",
+        },
       };
     }
 
@@ -194,8 +194,8 @@ export class GameService {
       warnings,
       gameState: {
         isGameOver,
-        isVictory
-      }
+        isVictory,
+      },
     };
   }
 
@@ -210,7 +210,7 @@ export class GameService {
    */
   private async handleExplorationAction(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     // Step 1: Build LLM context
     const context = await this.buildLLMContext(gameState);
@@ -246,7 +246,7 @@ export class GameService {
       success: true,
       gameState: updatedState,
       message: displayMessage,
-      choices: ["Accept", "Reject"] // Let player decide
+      choices: ["Accept", "Reject"], // Let player decide
     };
   }
 
@@ -260,7 +260,7 @@ export class GameService {
    */
   private async handleCombatAction(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     console.log("[GameService] handleCombatAction - NOT YET IMPLEMENTED");
 
@@ -268,7 +268,7 @@ export class GameService {
       success: false,
       gameState,
       message: "Combat system not yet implemented",
-      error: "Combat pending implementation"
+      error: "Combat pending implementation",
     };
   }
 
@@ -277,7 +277,7 @@ export class GameService {
    */
   private async handleUseItem(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const itemId = action.actionData?.itemId;
     if (!itemId) {
@@ -285,7 +285,7 @@ export class GameService {
         success: false,
         gameState,
         message: "No item specified",
-        error: "Missing item ID"
+        error: "Missing item ID",
       };
     }
 
@@ -295,23 +295,26 @@ export class GameService {
     if (item.health) {
       const newHealth = Math.min(
         gameState.character.vitality * HEALTH_PER_VITALITY,
-        gameState.character.currentHealth + item.health
+        gameState.character.currentHealth + item.health,
       );
-      await BackendService.BackendService.updateCharacter(gameState.character.id, {
-        currentHealth: newHealth
-      });
+      await BackendService.BackendService.updateCharacter(
+        gameState.character.id,
+        {
+          currentHealth: newHealth,
+        },
+      );
     }
 
     // Remove item from inventory
     await BackendService.removeItemFromInventory(
       gameState.character.id,
-      itemId
+      itemId,
     );
 
     const message = `You used ${item.name}!`;
     await BackendService.saveEvent(action.campaignId, message, "Item_Drop", {
       itemId,
-      action: "use_item"
+      action: "use_item",
     });
 
     const updatedState = await this.getGameState(action.campaignId);
@@ -320,7 +323,7 @@ export class GameService {
       success: true,
       gameState: updatedState,
       message,
-      choices: this.getChoicesForPhase(updatedState.currentPhase)
+      choices: this.getChoicesForPhase(updatedState.currentPhase),
     };
   }
 
@@ -329,21 +332,21 @@ export class GameService {
    */
   private async handleItemChoice(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const itemId = action.actionData?.itemId;
 
     if (action.actionType === "pickup_item" && itemId) {
       await BackendService.assignItemToCharacter(
         gameState.character.id,
-        itemId
+        itemId,
       );
       const item = await BackendService.getItem(itemId);
 
       const message = `You picked up ${item.name}!`;
       await BackendService.saveEvent(action.campaignId, message, "Item_Drop", {
         itemId,
-        action: "pickup"
+        action: "pickup",
       });
 
       const updatedState = await this.getGameState(action.campaignId);
@@ -353,7 +356,7 @@ export class GameService {
         success: true,
         gameState: updatedState,
         message,
-        choices: ["Continue Forward", "Search Area"]
+        choices: ["Continue Forward", "Search Area"],
       };
     } else {
       const message = "You left the item behind.";
@@ -361,7 +364,7 @@ export class GameService {
         action.campaignId,
         message,
         "Descriptive",
-        { action: "reject_item" }
+        { action: "reject_item" },
       );
 
       const updatedState = await this.getGameState(action.campaignId);
@@ -371,7 +374,7 @@ export class GameService {
         success: true,
         gameState: updatedState,
         message,
-        choices: ["Continue Forward", "Search Area"]
+        choices: ["Continue Forward", "Search Area"],
       };
     }
   }
@@ -381,7 +384,7 @@ export class GameService {
    */
   private async handleEquipItem(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const itemId = action.actionData?.itemId;
     if (!itemId) {
@@ -389,7 +392,7 @@ export class GameService {
         success: false,
         gameState,
         message: "No item specified",
-        error: "Missing item ID"
+        error: "Missing item ID",
       };
     }
 
@@ -405,7 +408,7 @@ export class GameService {
         success: false,
         gameState,
         message: "Item cannot be equipped",
-        error: "Invalid item type for equipment"
+        error: "Invalid item type for equipment",
       };
     }
 
@@ -415,7 +418,7 @@ export class GameService {
     const message = `You equipped ${item.name}!`;
     await BackendService.saveEvent(action.campaignId, message, "Item_Drop", {
       itemId,
-      action: "equip"
+      action: "equip",
     });
 
     const updatedState = await this.getGameState(action.campaignId);
@@ -424,7 +427,7 @@ export class GameService {
       success: true,
       gameState: updatedState,
       message,
-      choices: this.getChoicesForPhase(updatedState.currentPhase)
+      choices: this.getChoicesForPhase(updatedState.currentPhase),
     };
   }
 
@@ -437,7 +440,7 @@ export class GameService {
    */
   private async handleEventChoice(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const pendingEvent = gameState.pendingEvent;
 
@@ -446,7 +449,7 @@ export class GameService {
         success: false,
         gameState,
         message: "No pending event to accept or reject",
-        error: "No pending event"
+        error: "No pending event",
       };
     }
 
@@ -492,7 +495,7 @@ export class GameService {
         success: true,
         gameState: updatedState,
         message: "Event completed successfully",
-        choices: this.getChoicesForPhase(updatedState.currentPhase)
+        choices: this.getChoicesForPhase(updatedState.currentPhase),
       };
     }
 
@@ -500,7 +503,7 @@ export class GameService {
       success: false,
       gameState,
       message: "Invalid event choice action",
-      error: "Unknown action type"
+      error: "Unknown action type",
     };
   }
 
@@ -531,7 +534,7 @@ export class GameService {
     if (pendingEventType) {
       pendingEvent = {
         eventType: pendingEventType,
-        displayMessage: this.getEventPreviewMessage(pendingEventType)
+        displayMessage: this.getEventPreviewMessage(pendingEventType),
       };
     }
 
@@ -541,7 +544,7 @@ export class GameService {
       enemy,
       recentEvents,
       currentPhase,
-      pendingEvent
+      pendingEvent,
     };
   }
 
@@ -557,9 +560,9 @@ export class GameService {
         effects: (event.eventData?.effects as EventHistoryEntry["effects"]) || {
           health: 0,
           attack: 0,
-          defense: 0
-        }
-      })
+          defense: 0,
+        },
+      }),
     );
 
     // Use placeholder enemy if none exists
@@ -567,7 +570,7 @@ export class GameService {
       name: "Unknown Creature",
       vitality: 10,
       attack: 10,
-      defense: 5
+      defense: 5,
     };
 
     return {
@@ -576,15 +579,15 @@ export class GameService {
         health: gameState.character.currentHealth,
         vitality: gameState.character.vitality,
         attack: gameState.character.attack,
-        defense: gameState.character.defense
+        defense: gameState.character.defense,
       },
       enemy: {
         name: enemy.name,
         health: enemy.vitality * HEALTH_PER_VITALITY,
         attack: enemy.attack,
-        defense: enemy.defense
+        defense: enemy.defense,
       },
-      recentEvents
+      recentEvents,
     };
   }
 
@@ -593,7 +596,7 @@ export class GameService {
    */
   private buildCombatContext(
     gameState: GameState,
-    combatResult: CombatResult
+    combatResult: CombatResult,
   ): LLMGameContext {
     const enemy = gameState.enemy!;
 
@@ -603,18 +606,18 @@ export class GameService {
         health: combatResult.characterHealth,
         vitality: gameState.character.vitality,
         attack: gameState.character.attack,
-        defense: gameState.character.defense
+        defense: gameState.character.defense,
       },
       enemy: {
         name: enemy.name,
         health: combatResult.enemyHealth,
         attack: enemy.attack,
-        defense: enemy.defense
+        defense: enemy.defense,
       },
       recentEvents: [],
       trigger: `combat round - dice roll: ${combatResult.diceRoll}${
         combatResult.isCritical ? " (CRITICAL!)" : ""
-      }`
+      }`,
     };
   }
 
@@ -629,7 +632,7 @@ export class GameService {
    */
   private async resolveCombat(
     character: LLMGameContext["character"],
-    enemy: LLMGameContext["enemy"]
+    enemy: LLMGameContext["enemy"],
   ): Promise<CombatResult> {
     // Use Dice_Roll service for RNG
     const diceRoll = Dice_Roll.roll();
@@ -639,21 +642,21 @@ export class GameService {
     // Note: Combat damage uses simple 2× multiplier, not three-tier system
     const characterDamageToEnemy = Math.max(
       1,
-      character.attack - enemy.defense
+      character.attack - enemy.defense,
     );
 
     // if (isCritical) characterDamageToEnemy *= 2;
 
     const enemyDamageToCharacter = Math.max(
       1,
-      enemy.attack - character.defense
+      enemy.attack - character.defense,
     );
 
     // Apply damage
     const newEnemyHealth = Math.max(0, enemy.health - characterDamageToEnemy);
     const newCharacterHealth = Math.max(
       0,
-      character.health - enemyDamageToCharacter
+      character.health - enemyDamageToCharacter,
     );
 
     // Determine outcome
@@ -669,7 +672,7 @@ export class GameService {
       diceRoll,
       isCritical,
       outcome,
-      narrative: "" // Will be filled by LLM
+      narrative: "", // Will be filled by LLM
     };
   }
 
@@ -678,7 +681,7 @@ export class GameService {
    */
   private validateAction(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): GameValidation {
     const errors: string[] = [];
 
@@ -707,7 +710,7 @@ export class GameService {
     return {
       isValid: errors.length === 0,
       errors,
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -738,7 +741,7 @@ export class GameService {
    */
   private async applyStatChanges(
     campaignId: number,
-    changes: { health: number; attack: number; defense: number }
+    changes: { health: number; attack: number; defense: number },
   ): Promise<void> {
     const character = await BackendService.getCharacterByCampaign(campaignId);
 
@@ -746,8 +749,8 @@ export class GameService {
       0,
       Math.min(
         character.vitality * HEALTH_PER_VITALITY,
-        character.currentHealth + changes.health
-      )
+        character.currentHealth + changes.health,
+      ),
     );
     const newAttack = Math.max(0, character.attack + changes.attack);
     const newDefense = Math.max(0, character.defense + changes.defense);
@@ -755,7 +758,7 @@ export class GameService {
     await BackendService.BackendService.updateCharacter(character.id, {
       currentHealth: newHealth,
       attack: newAttack,
-      defense: newDefense
+      defense: newDefense,
     });
   }
 
@@ -767,7 +770,7 @@ export class GameService {
       Descriptive: "You notice something interesting in your surroundings...",
       Environmental: "The environment around you begins to shift...",
       Combat: "You sense danger approaching...",
-      Item_Drop: "Something catches your eye nearby..."
+      Item_Drop: "Something catches your eye nearby...",
     };
 
     return messages[eventType] || `A ${eventType} event is about to occur...`;
@@ -787,7 +790,7 @@ export class GameService {
    */
   private async triggerEventType(
     gameState: GameState,
-    eventType: EventTypeString
+    eventType: EventTypeString,
   ): Promise<void> {
     const eventTypeInstance = new EventType(eventType);
     await eventTypeInstance.trigger(await this.buildLLMContext(gameState));

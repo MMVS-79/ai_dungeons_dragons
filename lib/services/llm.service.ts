@@ -22,7 +22,7 @@ import type {
   LLMEvent,
   LLMServiceConfig,
   EventTypeString,
-  StatBoostResponse
+  StatBoostResponse,
 } from "@/lib/types/llm.types";
 import { HEALTH_PER_VITALITY } from "../contants";
 
@@ -34,7 +34,7 @@ const SCENARIOS = [
   "abandoned tower",
   "underground crypt",
   "mountain pass",
-  "swampy marshland"
+  "swampy marshland",
 ];
 
 const EVENT_TRIGGERS = [
@@ -45,7 +45,7 @@ const EVENT_TRIGGERS = [
   "while checking for traps",
   "during a moment of quiet",
   "as you approach a door",
-  "while examining the area"
+  "while examining the area",
 ];
 
 export class LLMService {
@@ -68,7 +68,7 @@ export class LLMService {
    */
   private async callGemini(
     prompt: string,
-    schema?: Record<string, unknown>
+    schema?: Record<string, unknown>,
   ): Promise<string> {
     // Default schema for backwards compatibility (old single-call system)
     const defaultSchema = {
@@ -77,19 +77,19 @@ export class LLMService {
         event: { type: "string" },
         type: {
           type: "string",
-          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"]
+          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"],
         },
         effects: {
           type: "object",
           properties: {
             health: { type: "number" },
             attack: { type: "number" },
-            defense: { type: "number" }
+            defense: { type: "number" },
           },
-          required: ["health", "attack", "defense"]
-        }
+          required: ["health", "attack", "defense"],
+        },
       },
-      required: ["event", "type", "effects"]
+      required: ["event", "type", "effects"],
     };
 
     const response = await this.ai.models.generateContent({
@@ -97,18 +97,18 @@ export class LLMService {
       contents: [
         {
           role: "user",
-          parts: [{ text: prompt }]
-        }
+          parts: [{ text: prompt }],
+        },
       ],
       config: {
         responseMimeType: "application/json",
         responseSchema: schema || defaultSchema,
         thinkingConfig: {
-          thinkingBudget: this.thinkingBudget
+          thinkingBudget: this.thinkingBudget,
         },
         temperature: this.temperature,
-        maxOutputTokens: this.maxOutputTokens
-      }
+        maxOutputTokens: this.maxOutputTokens,
+      },
     });
 
     return response?.text ?? "";
@@ -153,7 +153,7 @@ export class LLMService {
    */
   async generateDescription(
     eventType: EventTypeString,
-    context: LLMGameContext
+    context: LLMGameContext,
   ): Promise<string> {
     try {
       const prompt = this.buildDescriptionPrompt(eventType, context);
@@ -162,9 +162,9 @@ export class LLMService {
       const schema = {
         type: "object",
         properties: {
-          description: { type: "string" }
+          description: { type: "string" },
         },
-        required: ["description"]
+        required: ["description"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -189,7 +189,7 @@ export class LLMService {
    */
   async requestStatBoost(
     context: LLMGameContext,
-    eventType: EventTypeString
+    eventType: EventTypeString,
   ): Promise<StatBoostResponse> {
     try {
       const prompt = this.buildStatBoostPrompt(eventType, context);
@@ -200,11 +200,11 @@ export class LLMService {
         properties: {
           statType: {
             type: "string",
-            enum: ["health", "attack", "defense"]
+            enum: ["health", "attack", "defense"],
           },
-          baseValue: { type: "number" }
+          baseValue: { type: "number" },
         },
-        required: ["statType", "baseValue"]
+        required: ["statType", "baseValue"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -217,7 +217,7 @@ export class LLMService {
 
       return {
         statType: parsed.statType,
-        baseValue: parsed.baseValue
+        baseValue: parsed.baseValue,
       };
     } catch (error) {
       console.error("Failed to request stat boost:", error);
@@ -268,7 +268,7 @@ Return ONLY: {"type": "TYPE_HERE"}`;
    */
   private buildDescriptionPrompt(
     eventType: EventTypeString,
-    context: LLMGameContext
+    context: LLMGameContext,
   ): string {
     const { character, scenario, trigger } = context;
     const finalScenario = scenario || this.getRandomItem(SCENARIOS);
@@ -293,7 +293,7 @@ Return JSON: {"description": "your description here"}`;
    */
   private buildStatBoostPrompt(
     eventType: EventTypeString,
-    context: LLMGameContext
+    context: LLMGameContext,
   ): string {
     const { character } = context;
 
@@ -337,15 +337,15 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           itemType: {
             type: "string",
-            enum: ["weapon", "armor", "shield", "potion"]
+            enum: ["weapon", "armor", "shield", "potion"],
           },
           itemName: { type: "string" },
           itemStats: {
             type: "object",
-            additionalProperties: { type: "number" }
-          }
+            additionalProperties: { type: "number" },
+          },
         },
-        required: ["itemType", "itemName", "itemStats"]
+        required: ["itemType", "itemName", "itemStats"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -356,21 +356,21 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         return {
           itemType: "potion",
           itemName: "Health Potion",
-          itemStats: { healAmount: 20 }
+          itemStats: { healAmount: 20 },
         };
       }
 
       return {
         itemType: parsed.itemType,
         itemName: parsed.itemName,
-        itemStats: parsed.itemStats
+        itemStats: parsed.itemStats,
       };
     } catch (error) {
       console.error("Failed to generate item drop:", error);
       return {
         itemType: "potion",
         itemName: "Health Potion",
-        itemStats: { healAmount: 20 }
+        itemStats: { healAmount: 20 },
       };
     }
   }
@@ -395,15 +395,15 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           statType: {
             type: "string",
-            enum: ["vitality", "attack", "defense"]
+            enum: ["vitality", "attack", "defense"],
           },
           value: {
             type: "number",
             minimum: 2,
-            maximum: 10
-          }
+            maximum: 10,
+          },
         },
-        required: ["statType", "value"]
+        required: ["statType", "value"],
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -419,7 +419,7 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
 
       return {
         statType: parsed.statType as "vitality" | "attack" | "defense",
-        value: clampedValue
+        value: clampedValue,
       };
     } catch (error) {
       console.error("Failed to generate bonus stat:", error);
@@ -452,7 +452,7 @@ Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "i
 
     const { character } = context;
     const healthPercentage = Math.round(
-      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
+      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100,
     );
 
     return `You are a D&D dungeon master distributing loot.
@@ -500,7 +500,7 @@ Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
 
     const { character } = context;
     const healthPercentage = Math.round(
-      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
+      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100,
     );
 
     return `You are a D&D dungeon master rewarding exceptional performance.

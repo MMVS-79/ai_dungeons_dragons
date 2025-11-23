@@ -4,7 +4,9 @@ app/api/campaigns/route.ts
 app/api/characters/[id]/inventory/route.ts
 app/api/characters/[id]/route.ts
 app/api/enemies/[id]/route.ts
-app/api/game/action/route.ts
+app/api/game/choice/route.ts
+app/api/game/combat/route.ts
+app/api/game/continue/route.ts
 app/campaigns/[id]/components/characterPanel/characterPanel.tsx
 app/campaigns/[id]/components/chatPanel/chatPanel.tsx
 app/campaigns/[id]/components/dicePanel/dicePanel.tsx
@@ -28,7 +30,4 @@ lib/services/game.service.ts
 lib/services/llm.service.ts
 lib/types/game.types.ts
 lib/types/llm.types.ts
-lib/utils/diceRoll.ts
 lib/utils/env.ts
-lib/utils/eventUtils.ts
-lib/utils/statCalc.ts
