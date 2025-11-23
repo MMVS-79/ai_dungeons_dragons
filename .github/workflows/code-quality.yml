@@ -31,11 +31,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install ESLint TypeScript/React plugins (CI only)
+      - name: Install TypeScript + ESLint ecosystem (CI only)
         run: |
-          # Install parser/plugins for ESLint at runtime so CI can parse TS/JSX even
-          # if package-lock.json doesn't include them yet.
+          # Install everything needed for TypeScript parsing
           npm install --no-save \
+            typescript \
+            eslint \
             @typescript-eslint/parser \
             @typescript-eslint/eslint-plugin \
             eslint-plugin-react \
@@ -47,7 +48,6 @@ jobs:
       - name: Find tracked source files
         id: find_files
         run: |
-          # Find tracked JS/TS files under common source dirs (NUL-separated)
           FILES_Z=$(git ls-files -z 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' || true)
 
           if [ -z "$FILES_Z" ]; then
@@ -148,9 +148,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install ESLint TypeScript/React plugins (CI only)
+      - name: Install TypeScript + ESLint ecosystem (CI only)
         run: |
+          # Install everything needed for TypeScript parsing
           npm install --no-save \
+            typescript \
+            eslint \
             @typescript-eslint/parser \
             @typescript-eslint/eslint-plugin \
             eslint-plugin-react \
@@ -212,5 +215,4 @@ jobs:
         run: npm test
         env:
           CI: true
-
           
