@@ -71,18 +71,18 @@ interface Message {
 const generateLLMResponse = (
   choice: string,
   diceRoll: number,
-  gameState: GameStateContext
+  gameState: GameStateContext,
 ) => {
   if (gameState.enemyState && gameState.enemyState.hp > 0) {
     // In combat
     if (choice === "Attack") {
       const playerDamage = Math.max(
         1,
-        gameState.playerAttack - gameState.enemyState.defense + (diceRoll - 10)
+        gameState.playerAttack - gameState.enemyState.defense + (diceRoll - 10),
       );
       const enemyDamage = Math.max(
         1,
-        gameState.enemyState.attack - gameState.playerDefense
+        gameState.enemyState.attack - gameState.playerDefense,
       );
 
       return {
@@ -90,13 +90,13 @@ const generateLLMResponse = (
         message: `You rolled a ${diceRoll}! You strike the ${gameState.enemyState.name} for ${playerDamage} damage! The ${gameState.enemyState.name} retaliates for ${enemyDamage} damage!`,
         playerDamage: enemyDamage,
         enemyDamage: playerDamage,
-        choices: ["Attack", "Use Potion"]
+        choices: ["Attack", "Use Potion"],
       };
     } else if (choice === "Use Potion") {
       return {
         type: "potion_prompt",
         message: "Select a potion from your inventory to use.",
-        choices: ["Attack", "Use Potion"]
+        choices: ["Attack", "Use Potion"],
       };
     }
   } else {
@@ -114,9 +114,9 @@ const generateLLMResponse = (
           attack: 30,
           defense: 15,
           image: "/characters/enemy/boss/dragon.png",
-          isBoss: true
+          isBoss: true,
         },
-        choices: ["Attack", "Use Potion"]
+        choices: ["Attack", "Use Potion"],
       };
     } else if (diceRoll >= 15) {
       return {
@@ -128,9 +128,9 @@ const generateLLMResponse = (
           maxHp: 30,
           attack: 8,
           defense: 3,
-          image: "/characters/enemy/low/goblin.png"
+          image: "/characters/enemy/low/goblin.png",
         },
-        choices: ["Attack", "Use Potion"]
+        choices: ["Attack", "Use Potion"],
       };
     } else if (diceRoll >= 10 && eventRoll < 33) {
       // Found weapon
@@ -144,9 +144,9 @@ const generateLLMResponse = (
           type: "weapon",
           image: "/items/epic_sword.png",
           attack: 10,
-          description: "A sharp steel blade (+10 Attack)"
+          description: "A sharp steel blade (+10 Attack)",
         },
-        choices: ["Pick Up", "Leave It"]
+        choices: ["Pick Up", "Leave It"],
       };
     } else if (diceRoll >= 10 && eventRoll < 66) {
       // Found armor
@@ -160,9 +160,9 @@ const generateLLMResponse = (
           type: "armor",
           image: "/items/rare_armour.png",
           hpBonus: 30,
-          description: "Sturdy iron protection (+30 Max HP)"
+          description: "Sturdy iron protection (+30 Max HP)",
         },
-        choices: ["Pick Up", "Leave It"]
+        choices: ["Pick Up", "Leave It"],
       };
     } else if (diceRoll >= 10) {
       // Found shield
@@ -176,9 +176,9 @@ const generateLLMResponse = (
           type: "shield",
           image: "/items/epic_shield.png",
           defense: 10,
-          description: "A reliable shield (+10 Defense)"
+          description: "A reliable shield (+10 Defense)",
         },
-        choices: ["Pick Up", "Leave It"]
+        choices: ["Pick Up", "Leave It"],
       };
     } else if (diceRoll >= 1) {
       return {
@@ -190,15 +190,15 @@ const generateLLMResponse = (
           type: "potion",
           image: "/items/red_potion.png",
           healAmount: 20,
-          description: "Restores 20 HP"
+          description: "Restores 20 HP",
         },
-        choices: ["Continue Forward", "Search Area"]
+        choices: ["Continue Forward", "Search Area"],
       };
     } else {
       return {
         type: "story",
         message: `You rolled a ${diceRoll}. You carefully navigate through the dark corridor. Nothing happens... yet.`,
-        choices: ["Continue Forward", "Search Area"]
+        choices: ["Continue Forward", "Search Area"],
       };
     }
   }
@@ -223,7 +223,7 @@ export default function CampaignPage() {
         type: "potion",
         image: "/items/red_potion.png",
         healAmount: 20,
-        description: "Restores 20 HP"
+        description: "Restores 20 HP",
       },
       {
         id: "potion2",
@@ -231,8 +231,8 @@ export default function CampaignPage() {
         type: "potion",
         image: "/items/red_potion.png",
         healAmount: 20,
-        description: "Restores 20 HP"
-      }
+        description: "Restores 20 HP",
+      },
     ],
     equipped: {
       weapon: {
@@ -241,7 +241,7 @@ export default function CampaignPage() {
         type: "weapon",
         image: "/items/rare_sword.png",
         attack: 5,
-        description: "+5 Attack"
+        description: "+5 Attack",
       },
       armor: {
         id: `armor1`,
@@ -249,7 +249,7 @@ export default function CampaignPage() {
         type: "armor",
         image: "/items/common_armour.png",
         hpBonus: 15,
-        description: "Sturdy leather protection (+15 Max HP)"
+        description: "Sturdy leather protection (+15 Max HP)",
       },
       shield: {
         id: `shield1`,
@@ -257,9 +257,9 @@ export default function CampaignPage() {
         type: "shield",
         image: "/items/rare_shield.png",
         defense: 4,
-        description: "A reliable shield (+4 Defense)"
-      }
-    }
+        description: "A reliable shield (+4 Defense)",
+      },
+    },
   });
 
   const [enemyState, setEnemyState] = useState<EnemyState | null>(null);
@@ -269,8 +269,8 @@ export default function CampaignPage() {
     {
       id: "1",
       text: "You stand at the entrance of an ancient dungeon. The air is thick with mystery. What do you do?",
-      choices: ["Continue Forward", "Search Area"]
-    }
+      choices: ["Continue Forward", "Search Area"],
+    },
   ]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
@@ -308,8 +308,8 @@ export default function CampaignPage() {
               {
                 id: Date.now().toString(),
                 text: `You already have a ${equipmentSlot} equipped. Would you like to replace it?`,
-                choices: ["Replace Equipment", "Leave It"]
-              }
+                choices: ["Replace Equipment", "Leave It"],
+              },
             ]);
             return;
           } else {
@@ -318,8 +318,8 @@ export default function CampaignPage() {
               ...prev,
               equipped: {
                 ...prev.equipped,
-                [equipmentSlot]: pendingEquipment
-              }
+                [equipmentSlot]: pendingEquipment,
+              },
             }));
 
             setMessages((prev) => [
@@ -327,8 +327,8 @@ export default function CampaignPage() {
               {
                 id: Date.now().toString(),
                 text: `You equipped the ${pendingEquipment.name}!`,
-                choices: ["Continue Forward", "Search Area"]
-              }
+                choices: ["Continue Forward", "Search Area"],
+              },
             ]);
           }
         } else {
@@ -337,8 +337,8 @@ export default function CampaignPage() {
             {
               id: Date.now().toString(),
               text: `You decided to leave the ${pendingEquipment.name} behind.`,
-              choices: ["Continue Forward", "Search Area"]
-            }
+              choices: ["Continue Forward", "Search Area"],
+            },
           ]);
         }
 
@@ -369,7 +369,7 @@ export default function CampaignPage() {
 
           newState.equipped = {
             ...prev.equipped,
-            [equipmentSlot]: pendingEquipment
+            [equipmentSlot]: pendingEquipment,
           };
 
           return newState;
@@ -380,8 +380,8 @@ export default function CampaignPage() {
           {
             id: Date.now().toString(),
             text: `You replaced your ${oldEquipment?.name} with the ${pendingEquipment.name}!`,
-            choices: ["Continue Forward", "Search Area"]
-          }
+            choices: ["Continue Forward", "Search Area"],
+          },
         ]);
 
         setPendingEquipment(null);
@@ -407,7 +407,7 @@ export default function CampaignPage() {
       const response = generateLLMResponse(choice, diceResult, {
         enemyState,
         playerAttack,
-        playerDefense
+        playerDefense,
       })!;
 
       // 3. Update game state based on response
@@ -423,11 +423,11 @@ export default function CampaignPage() {
           // Combat damage
           const newEnemyHp = Math.max(
             0,
-            (enemyState?.hp || 0) - response.enemyDamage
+            (enemyState?.hp || 0) - response.enemyDamage,
           );
           const newPlayerHp = Math.max(
             0,
-            playerState.hp - response.playerDamage
+            playerState.hp - response.playerDamage,
           );
 
           // Check game end conditions IMMEDIATELY
@@ -448,14 +448,14 @@ export default function CampaignPage() {
             prev
               ? {
                   ...prev,
-                  hp: newEnemyHp
+                  hp: newEnemyHp,
                 }
-              : null
+              : null,
           );
 
           setPlayerState((prev) => ({
             ...prev,
-            hp: newPlayerHp
+            hp: newPlayerHp,
           }));
 
           // Show messages with delay (for dramatic effect)
@@ -470,8 +470,8 @@ export default function CampaignPage() {
                 {
                   id: Date.now().toString(),
                   text: `Victory! The ${enemyState.name} has been defeated!`,
-                  choices: ["Continue Forward", "Search Area"]
-                }
+                  choices: ["Continue Forward", "Search Area"],
+                },
               ]);
             }, 1500);
           }
@@ -480,7 +480,7 @@ export default function CampaignPage() {
         if (playerState.inventory.length < 10) {
           setPlayerState((prev) => ({
             ...prev,
-            inventory: [...prev.inventory, response.item as Item]
+            inventory: [...prev.inventory, response.item as Item],
           }));
           setCurrentEvent({ type: "item", data: response.item as Item });
         } else {
@@ -489,8 +489,8 @@ export default function CampaignPage() {
             {
               id: Date.now().toString(),
               text: "Your inventory is full! You cannot pick up the item.",
-              choices: ["Continue Forward", "Search Area"]
-            }
+              choices: ["Continue Forward", "Search Area"],
+            },
           ]);
           return;
         }
@@ -501,7 +501,7 @@ export default function CampaignPage() {
         setPendingEquipment(response.equipment as Item);
         setCurrentEvent({
           type: "equipment",
-          data: response.equipment as Item
+          data: response.equipment as Item,
         });
       } else if (response.type === "story") {
         setCurrentEvent({ type: "story" });
@@ -513,8 +513,8 @@ export default function CampaignPage() {
         {
           id: Date.now().toString(),
           text: response.message,
-          choices: response.choices
-        }
+          choices: response.choices,
+        },
       ]);
     } finally {
       // --- Ensure it always unlocks ---
@@ -527,7 +527,7 @@ export default function CampaignPage() {
       setPlayerState((prev) => ({
         ...prev,
         hp: Math.min(prev.hp + (item.healAmount || 0), playerMaxHp),
-        inventory: prev.inventory.filter((i) => i.id !== item.id)
+        inventory: prev.inventory.filter((i) => i.id !== item.id),
       }));
 
       setMessages((prev) => [
@@ -537,8 +537,8 @@ export default function CampaignPage() {
           text: `You used ${item.name} and restored ${item.healAmount} HP!`,
           choices: enemyState
             ? ["Attack", "Use Potion"]
-            : ["Continue Forward", "Search Area"]
-        }
+            : ["Continue Forward", "Search Area"],
+        },
       ]);
     }
   };
@@ -551,7 +551,7 @@ export default function CampaignPage() {
       // Equip new item
       newState.equipped = {
         ...newState.equipped,
-        [slot]: item
+        [slot]: item,
       };
       newState.inventory = newState.inventory.filter((i) => i.id !== item.id);
 
@@ -571,7 +571,7 @@ export default function CampaignPage() {
 
       newState.equipped = {
         ...prev.equipped,
-        [slot]: undefined
+        [slot]: undefined,
       };
 
       return newState;
@@ -586,8 +586,8 @@ export default function CampaignPage() {
         {
           id: Date.now().toString(),
           text: `You unequipped your ${slot}.`,
-          choices: lastChoices
-        }
+          choices: lastChoices,
+        },
       ];
     });
   };
@@ -628,14 +628,8 @@ export default function CampaignPage() {
 
         {/* Right Column */}
         <div className={styles.rightColumn}>
-          <EventPanel
-            currentEvent={currentEvent}
-            enemyState={enemyState}
-          />
-          <DicePanel
-            isRolling={diceRolling}
-            lastResult={lastDiceResult}
-          />
+          <EventPanel currentEvent={currentEvent} enemyState={enemyState} />
+          <DicePanel isRolling={diceRolling} lastResult={lastDiceResult} />
         </div>
       </div>
 

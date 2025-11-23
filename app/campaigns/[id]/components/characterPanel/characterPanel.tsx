@@ -1,11 +1,11 @@
-import React from 'react';
-import Image from 'next/image';
-import styles from './characterPanel.module.css';
+import React from "react";
+import Image from "next/image";
+import styles from "./characterPanel.module.css";
 
 interface Item {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'shield' | 'potion';
+  type: "weapon" | "armor" | "shield" | "potion";
   image: string;
   attack?: number;
   defense?: number;
@@ -36,20 +36,20 @@ interface CharacterPanelProps {
   playerMaxHp: number;
 }
 
-export default function CharacterPanel({ 
+export default function CharacterPanel({
   playerState,
   playerAttack,
   playerDefense,
-  playerMaxHp
+  playerMaxHp,
 }: CharacterPanelProps) {
   return (
     <div className={styles.panel}>
       <h2 className={styles.header}>⚔️ Your Character</h2>
-      
+
       <div className={styles.characterInfo}>
         <div className={styles.characterImage}>
-          <Image 
-            src={playerState.image} 
+          <Image
+            src={playerState.image}
             alt={playerState.name}
             width={512}
             height={512}
@@ -57,19 +57,21 @@ export default function CharacterPanel({
         </div>
         <h3 className={styles.characterName}>{playerState.name}</h3>
       </div>
-      
+
       <div className={styles.statsContainer}>
         <div className={styles.statRow}>
           <span>HP:</span>
-          <span>{playerState.hp} / {playerMaxHp}</span>
+          <span>
+            {playerState.hp} / {playerMaxHp}
+          </span>
         </div>
         <div className={styles.hpBar}>
-          <div 
+          <div
             className={styles.hpBarFill}
             style={{ width: `${(playerState.hp / playerMaxHp) * 100}%` }}
           />
         </div>
-        
+
         <div className={styles.statRow}>
           <span>⚔️ Attack: {playerAttack}</span>
           <span>🛡️ Defense: {playerDefense}</span>

@@ -3,7 +3,7 @@
  * ----------
  * Shared TypeScript interfaces used by the GameEngine and related services.
  * Ensures consistent data structures between Backend, LLMService, and WebClient.
- * 
+ *
  * These types directly support:
  *  - game.service.ts (GameService orchestrator)
  *  - llm.service.ts
@@ -88,36 +88,40 @@ export interface GameState {
   recentEvents: GameEvent[];
   currentPhase: GamePhase;
   pendingEvent?: {
-    eventType: string;      // "Descriptive", "Environmental", "Combat", "Item_Drop"
+    eventType: string; // "Descriptive", "Environmental", "Combat", "Item_Drop"
     displayMessage?: string; // Optional preview message
   };
 }
 
-export type GamePhase = 
-  | "exploration"   // Player exploring, no active combat
-  | "combat"        // Active combat with enemy
-  | "item_choice"   // Player choosing whether to pick up item
-  | "event_choice"  // Player choosing to accept/reject event
-  | "game_over"     // Character died
-  | "victory";      // Player won
+export type GamePhase =
+  | "exploration" // Player exploring, no active combat
+  | "combat" // Active combat with enemy
+  | "item_choice" // Player choosing whether to pick up item
+  | "event_choice" // Player choosing to accept/reject event
+  | "game_over" // Character died
+  | "victory"; // Player won
 
 // Event type strings for game events
-export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
+export type EventTypeString =
+  | "Descriptive"
+  | "Environmental"
+  | "Combat"
+  | "Item_Drop";
 
 // ============================================================================
 // ACTION TYPES
 // ============================================================================
 
 export type ActionType =
-  | "continue"          // Continue exploring
-  | "search"            // Search for items
-  | "attack"            // Attack enemy
-  | "use_item"          // Use item from inventory
-  | "pickup_item"       // Pick up item
-  | "reject_item"       // Reject item
-  | "equip_item"        // Equip item
-  | "accept_event"      // Accept pending event
-  | "reject_event";     // Reject pending event
+  | "continue" // Continue exploring
+  | "search" // Search for items
+  | "attack" // Attack enemy
+  | "use_item" // Use item from inventory
+  | "pickup_item" // Pick up item
+  | "reject_item" // Reject item
+  | "equip_item" // Equip item
+  | "accept_event" // Accept pending event
+  | "reject_event"; // Reject pending event
 
 export interface PlayerAction {
   campaignId: number;

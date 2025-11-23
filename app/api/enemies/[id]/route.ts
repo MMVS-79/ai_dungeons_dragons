@@ -3,17 +3,17 @@ import type { Unit } from "@/lib/types/game.types";
 
 /**
  * GET /api/enemies/[id]
- * 
+ *
  * TODO: Get specific enemy details
- * 
+ *
  * Purpose: View detailed information about a specific enemy
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   enemy: Enemy;
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract enemy ID from URL params
  * 2. Call BackendService.getEnemy(id)
@@ -22,7 +22,7 @@ import type { Unit } from "@/lib/types/game.types";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // ✅ Updated for Next.js 15+
+  context: { params: Promise<{ id: string }> }, // ✅ Updated for Next.js 15+
 ) {
   try {
     // Await the params promise to extract the id
@@ -32,7 +32,7 @@ export async function GET(
     if (isNaN(enemyId)) {
       return NextResponse.json(
         { success: false, error: "Invalid enemy ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,15 +50,14 @@ export async function GET(
         vitality: 20,
         attack: 15,
         defense: 8,
-        spritePath: "/characters/enemy/boss/dragon.png"
-      } as Unit
+        spritePath: "/characters/enemy/boss/dragon.png",
+      } as Unit,
     });
-
   } catch (error) {
     console.error("[API] Get enemy error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch enemy" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

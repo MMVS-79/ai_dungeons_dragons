@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     if (!accountId) {
       return NextResponse.json(
         { success: false, error: "Missing accountId parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,13 +48,13 @@ export async function GET(request: NextRequest) {
     // MOCK DATA - Replace with actual database query
     return NextResponse.json({
       success: true,
-      campaigns: []
+      campaigns: [],
     });
   } catch (error) {
     console.error("[API] List campaigns error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaigns" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     if (!body.accountId || !body.campaignName || !body.character?.name) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         description: body.campaignDescription || "",
         state: "active",
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       } as Campaign,
       character: {
         id: 1,
@@ -137,14 +137,14 @@ export async function POST(request: NextRequest) {
         race: body.character.race,
         class: body.character.class,
         campaignId: 1,
-        spritePath: body.character.spritePath
-      } as Character
+        spritePath: body.character.spritePath,
+      } as Character,
     });
   } catch (error) {
     console.error("[API] Create campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create campaign" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

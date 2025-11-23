@@ -62,8 +62,16 @@ export default function NewCampaignPage() {
   };
 
   const calculateFinalStats = () => {
-    const raceBonus = selectedRace || { hpBonus: 0, attackBonus: 0, defenseBonus: 0 };
-    const classBonus = selectedClass || { hpBonus: 0, attackBonus: 0, defenseBonus: 0 };
+    const raceBonus = selectedRace || {
+      hpBonus: 0,
+      attackBonus: 0,
+      defenseBonus: 0,
+    };
+    const classBonus = selectedClass || {
+      hpBonus: 0,
+      attackBonus: 0,
+      defenseBonus: 0,
+    };
 
     return {
       hp: baseHP + raceBonus.hpBonus + classBonus.hpBonus,
@@ -222,8 +230,12 @@ export default function NewCampaignPage() {
                     <h3 className={styles.optionTitle}>{race.name}</h3>
                     <div className={styles.bonuses}>
                       <div className={styles.bonus}>HP: +{race.hpBonus}</div>
-                      <div className={styles.bonus}>ATK: +{race.attackBonus}</div>
-                      <div className={styles.bonus}>DEF: +{race.defenseBonus}</div>
+                      <div className={styles.bonus}>
+                        ATK: +{race.attackBonus}
+                      </div>
+                      <div className={styles.bonus}>
+                        DEF: +{race.defenseBonus}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -250,8 +262,12 @@ export default function NewCampaignPage() {
                     <h3 className={styles.optionTitle}>{cls.name}</h3>
                     <div className={styles.bonuses}>
                       <div className={styles.bonus}>HP: +{cls.hpBonus}</div>
-                      <div className={styles.bonus}>ATK: +{cls.attackBonus}</div>
-                      <div className={styles.bonus}>DEF: +{cls.defenseBonus}</div>
+                      <div className={styles.bonus}>
+                        ATK: +{cls.attackBonus}
+                      </div>
+                      <div className={styles.bonus}>
+                        DEF: +{cls.defenseBonus}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -291,15 +307,21 @@ export default function NewCampaignPage() {
                   <div className={styles.finalStats}>
                     <div className={styles.finalStat}>
                       <span>HP:</span>
-                      <span className={styles.finalStatValue}>{finalStats.hp}</span>
+                      <span className={styles.finalStatValue}>
+                        {finalStats.hp}
+                      </span>
                     </div>
                     <div className={styles.finalStat}>
                       <span>Attack:</span>
-                      <span className={styles.finalStatValue}>{finalStats.attack}</span>
+                      <span className={styles.finalStatValue}>
+                        {finalStats.attack}
+                      </span>
                     </div>
                     <div className={styles.finalStat}>
                       <span>Defense:</span>
-                      <span className={styles.finalStatValue}>{finalStats.defense}</span>
+                      <span className={styles.finalStatValue}>
+                        {finalStats.defense}
+                      </span>
                     </div>
                   </div>
                 </div>
