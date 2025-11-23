@@ -1,5 +1,5 @@
 -- seed.sql (UPDATED)
-
+-- sqlfluff: disable=L040,L014,L003
 -- Seed admin user
 INSERT INTO accounts (email) VALUES ('admin@example.com');
 
@@ -74,93 +74,23 @@ INSERT INTO items (name, rarity, stat_modified, stat_value, description, sprite_
 ),
 
 -- ATTACK BUFFS (Scrolls/Elixirs - Temporary combat boost)
-(
-    'Strength Berries',
-    10,
-    'attack',
-    3,
-    'Temporarily increases attack by 3',
-    '/items/strength_berries.png'
-),
-(
-    'Strength Scroll',
-    30,
-    'attack',
-    5,
-    'Temporarily increases attack by 5',
-    '/items/strength_scroll.png'
-),
-(
-    'Greater Strength Scroll',
-    50,
-    'attack',
-    8,
-    'Temporarily increases attack by 8',
-    '/items/greater_strength_scroll.png'
-),
-(
-    'Berserker Elixir',
-    70,
-    'attack',
-    12,
-    'Temporarily increases attack by 12',
-    '/items/berserker_potion.png'
-),
+('Strength Berries', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/strength_berries.png'),
+('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/strength_scroll.png'),
+('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/greater_strength_scroll.png'),
+('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/berserker_potion.png'),
 ('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/titan_potion.png'),
 
 -- DEFENSE BUFFS (Temporary combat boost)
-(
-    'Fortifying Ginger',
-    10,
-    'defense',
-    3,
-    'Temporarily increases defense by 3',
-    '/items/fortifying_ginger.png'
-),
-(
-    'Protection Scroll',
-    30,
-    'defense',
-    5,
-    'Temporarily increases defense by 5',
-    '/items/protection_scroll.png'
-),
-(
-    'Greater Protection Scroll',
-    50,
-    'defense',
-    8,
-    'Temporarily increases defense by 8',
-    '/items/greater_protection_scroll.png'
-),
-(
-    'Stone Skin Elixir',
-    70,
-    'defense',
-    10,
-    'Temporarily increases defense by 10',
-    '/items/sturdy_potion.png'
-),
-(
-    'Invulnerability Elixir',
-    90,
-    'defense',
-    15,
-    'Temporarily increases defense by 15',
-    '/items/invulnerability_potion.png'
-),
+('Fortifying Ginger', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/fortifying_ginger.png'),
+('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/protection_scroll.png'),
+('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/greater_protection_scroll.png'),
+('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/sturdy_potion.png'),
+('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/invulnerability_potion.png'),
 
 -- CURSED ITEMS (Negative stats - clogs inventory)
 ('Cursed Vial', 5, 'health', -10, 'A toxic vial that damages you', '/items/placeholder.png'),
 ('Weakness Curse', 15, 'attack', -5, 'Temporarily reduces attack by 3', '/items/placeholder.png'),
-(
-    'Fragility Curse',
-    15,
-    'defense',
-    -5,
-    'Temporarily reduces defense by 3',
-    '/items/fragility_curse.png'
-);
+('Fragility Curse', 15, 'defense', -5, 'Temporarily reduces defense by 3', '/items/fragility_curse.png');
 
 -- ============================================================================
 -- WEAPONS (Rarity-based system)
