@@ -4,13 +4,16 @@
  * Handles all LLM-based event generation and context tracking.
  *
  * Responsibilities:
- * - generateEvent(context): Sends current character + recent events to model.
- * - parseLLMResponse(): Extracts event text, type, and effects.
- * - logLLMEvent(): Saves model outputs into logs table for traceability.
+ * - generateEventType(): Determines the type of event (Descriptive, Combat, etc.) based on context.
+ * - generateDescription(): Generates narrative text for specific events.
+ * - requestStatBoost(): Calculates dynamic stat changes for environmental/combat events.
+ * - RequestItemDrop(): Generates balanced items for loot.
+ * - bonusStatRequest(): Generates rewards for critical successes.
  *
  * Interacts With:
- * - gameEngine.service.ts → for next-event requests.
- * - DB (logs.sql) → saves and retrieves LLM responses.
+ * - Google Gemini API (via @google/genai)
+ * - game.service.ts (called to generate content)
+ * - Event_type.ts (called to handle specific event logic)
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -19,7 +22,7 @@ import type {
   LLMEvent,
   LLMServiceConfig,
   EventTypeString,
-  StatBoostResponse,
+  StatBoostResponse
 } from "@/lib/types/llm.types";
 import { HEALTH_PER_VITALITY } from "../contants";
 
@@ -31,7 +34,7 @@ const SCENARIOS = [
   "abandoned tower",
   "underground crypt",
   "mountain pass",
-  "swampy marshland",
+  "swampy marshland"
 ];
 
 const EVENT_TRIGGERS = [
@@ -42,7 +45,7 @@ const EVENT_TRIGGERS = [
   "while checking for traps",
   "during a moment of quiet",
   "as you approach a door",
-  "while examining the area",
+  "while examining the area"
 ];
 
 export class LLMService {
@@ -61,97 +64,11 @@ export class LLMService {
   }
 
   /**
-   * Generates a D&D event based on game context with history
-   * @param context - Current game state and previous events
-   * @returns Generated event with type and effects
-   */
-  async generateEvent(context: LLMGameContext): Promise<LLMEvent> {
-    try {
-      const prompt = this.buildPrompt(context);
-      const response = await this.callGemini(prompt);
-      const event = this.parseResponse(response);
-
-      return event;
-    } catch (error) {
-      console.error("LLM generation failed:", error);
-      return {
-        event:
-          "An unexpected error occurred. The adventure pauses momentarily.",
-        type: "Descriptive",
-        effects: { health: 0, attack: 0, defense: 0 },
-      };
-    }
-  }
-
-  /**
-   * Builds the prompt with game context and history
-   * Incorporates previous events for narrative continuity
-   */
-  private buildPrompt(context: LLMGameContext): string {
-    const { character, enemy, recentEvents, scenario, trigger } = context;
-
-    // Use provided or random scenario/trigger
-    const finalScenario = scenario || this.getRandomItem(SCENARIOS);
-    const finalTrigger = trigger || this.getRandomItem(EVENT_TRIGGERS);
-
-    // Build context from previous events WITH stat changes
-    const eventHistory =
-      recentEvents.length > 0
-        ? recentEvents
-            .map((event, i) => {
-              const effectsStr = this.formatEffects(event.effects);
-              return `${i + 1}. ${event.description} [${event.type}${
-                effectsStr ? `, ${effectsStr}` : ""
-              }]`;
-            })
-            .join("\n")
-        : "(No previous events - this is the beginning of the adventure)";
-
-    return `You are a D&D game master. Here are the rules for our game:
-
-GAME MECHANICS:
-- Characters have: Health, Attack, Defense stats
-- Characters can equip items that modify these stats
-- Players face bosses as main encounters
-- Before bosses, random events occur that can:
-  * Apply stat modifiers (temporary/permanent)
-  * Drop/pickup items
-  * Create environmental challenges
-
-EVENT TYPES:
-- Descriptive: Story/flavor events (effects should be 0,0,0)
-- Combat: Direct combat scenarios (may have negative effects)
-- Environmental: Environmental hazards or benefits (can affect any stats)
-- Item_Drop: Items found or lost (usually positive effects)
-
-Keep descriptions vivid but concise (1-2 sentences). Events should build tension before boss encounters.
-
-STAT EFFECTS RULES:
-- Health: -10 to +10 (healing/damage)
-- Attack: -5 to +5 (weapon bonuses/penalties)
-- Defense: -5 to +5 (armor/protection changes)
-- Use 0 for stats that don't change
-
-CURRENT GAME STATE:
-- Character: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}, ATK: ${character.attack}, DEF: ${character.defense})
-- Enemy: ${enemy.name} (HP: ${enemy.health}, ATK: ${enemy.attack}, DEF: ${enemy.defense})
-
-RECENT EVENTS (what happened before):
-${eventHistory}
-
-CONTEXT: You are in a ${finalScenario} ${finalTrigger}.
-
-IMPORTANT: Generate the NEXT event that continues from the previous events. Make it specific and different from typical atmospheric descriptions. Consider what just happened and build on it naturally.
-
-Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYPE", "effects": {"health": 0, "attack": 0, "defense": 0}}`;
-  }
-
-  /**
    * Calls Gemini API with structured output
    */
   private async callGemini(
     prompt: string,
-    schema?: Record<string, unknown>,
+    schema?: Record<string, unknown>
   ): Promise<string> {
     // Default schema for backwards compatibility (old single-call system)
     const defaultSchema = {
@@ -160,19 +77,19 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
         event: { type: "string" },
         type: {
           type: "string",
-          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"],
+          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"]
         },
         effects: {
           type: "object",
           properties: {
             health: { type: "number" },
             attack: { type: "number" },
-            defense: { type: "number" },
+            defense: { type: "number" }
           },
-          required: ["health", "attack", "defense"],
-        },
+          required: ["health", "attack", "defense"]
+        }
       },
-      required: ["event", "type", "effects"],
+      required: ["event", "type", "effects"]
     };
 
     const response = await this.ai.models.generateContent({
@@ -180,51 +97,21 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
       contents: [
         {
           role: "user",
-          parts: [{ text: prompt }],
-        },
+          parts: [{ text: prompt }]
+        }
       ],
       config: {
         responseMimeType: "application/json",
         responseSchema: schema || defaultSchema,
         thinkingConfig: {
-          thinkingBudget: this.thinkingBudget,
+          thinkingBudget: this.thinkingBudget
         },
         temperature: this.temperature,
-        maxOutputTokens: this.maxOutputTokens,
-      },
+        maxOutputTokens: this.maxOutputTokens
+      }
     });
 
     return response?.text ?? "";
-  }
-
-  /**
-   * Parses and validates Gemini response
-   */
-  private parseResponse(response: string): LLMEvent {
-    try {
-      const parsed = JSON.parse(response);
-
-      // Handle array responses (sometimes Gemini returns array)
-      const eventData = Array.isArray(parsed) ? parsed[0] : parsed;
-
-      // Validate structure
-      if (!eventData.event || !eventData.type || !eventData.effects) {
-        throw new Error("Invalid event structure");
-      }
-
-      return {
-        event: eventData.event,
-        type: eventData.type as EventTypeString,
-        effects: {
-          health: Number(eventData.effects.health) || 0,
-          attack: Number(eventData.effects.attack) || 0,
-          defense: Number(eventData.effects.defense) || 0,
-        },
-      };
-    } catch (error) {
-      console.error("Failed to parse LLM response:", error);
-      throw error;
-    }
   }
 
   /**
@@ -232,29 +119,6 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
    */
   private getRandomItem<T>(array: T[]): T {
     return array[Math.floor(Math.random() * array.length)];
-  }
-
-  /**
-   * Formats stat effects for display in prompt
-   */
-  private formatEffects(effects: {
-    health: number;
-    attack: number;
-    defense: number;
-  }): string {
-    const parts: string[] = [];
-
-    if (effects.health !== 0) {
-      parts.push(`HP ${effects.health > 0 ? "+" : ""}${effects.health}`);
-    }
-    if (effects.attack !== 0) {
-      parts.push(`ATK ${effects.attack > 0 ? "+" : ""}${effects.attack}`);
-    }
-    if (effects.defense !== 0) {
-      parts.push(`DEF ${effects.defense > 0 ? "+" : ""}${effects.defense}`);
-    }
-
-    return parts.join(", ");
   }
 
   /**
@@ -289,7 +153,7 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
    */
   async generateDescription(
     eventType: EventTypeString,
-    context: LLMGameContext,
+    context: LLMGameContext
   ): Promise<string> {
     try {
       const prompt = this.buildDescriptionPrompt(eventType, context);
@@ -298,9 +162,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
       const schema = {
         type: "object",
         properties: {
-          description: { type: "string" },
+          description: { type: "string" }
         },
-        required: ["description"],
+        required: ["description"]
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -325,7 +189,7 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
    */
   async requestStatBoost(
     context: LLMGameContext,
-    eventType: EventTypeString,
+    eventType: EventTypeString
   ): Promise<StatBoostResponse> {
     try {
       const prompt = this.buildStatBoostPrompt(eventType, context);
@@ -336,11 +200,11 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
         properties: {
           statType: {
             type: "string",
-            enum: ["health", "attack", "defense"],
+            enum: ["health", "attack", "defense"]
           },
-          baseValue: { type: "number" },
+          baseValue: { type: "number" }
         },
-        required: ["statType", "baseValue"],
+        required: ["statType", "baseValue"]
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -353,7 +217,7 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
 
       return {
         statType: parsed.statType,
-        baseValue: parsed.baseValue,
+        baseValue: parsed.baseValue
       };
     } catch (error) {
       console.error("Failed to request stat boost:", error);
@@ -377,7 +241,9 @@ Generate a unique D&D event as JSON: {"event": "description", "type": "EVENT_TYP
     return `You are a D&D Dungeon Master. Decide what TYPE of event happens next.
 
 CURRENT STATE:
-- Character: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}, ATK: ${character.attack}, DEF: ${character.defense})
+- Character: ${character.name} (HP: ${character.health}/${
+      character.vitality * HEALTH_PER_VITALITY
+    }, ATK: ${character.attack}, DEF: ${character.defense})
 - Enemy: ${enemy.name} (HP: ${enemy.health})
 
 RECENT EVENTS:
@@ -402,7 +268,7 @@ Return ONLY: {"type": "TYPE_HERE"}`;
    */
   private buildDescriptionPrompt(
     eventType: EventTypeString,
-    context: LLMGameContext,
+    context: LLMGameContext
   ): string {
     const { character, scenario, trigger } = context;
     const finalScenario = scenario || this.getRandomItem(SCENARIOS);
@@ -410,7 +276,9 @@ Return ONLY: {"type": "TYPE_HERE"}`;
 
     return `You are a D&D Dungeon Master. Generate a vivid description for a ${eventType} event.
 
-CHARACTER: ${character.name} (HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY})
+CHARACTER: ${character.name} (HP: ${character.health}/${
+      character.vitality * HEALTH_PER_VITALITY
+    })
 LOCATION: ${finalScenario}
 CONTEXT: ${finalTrigger}
 
@@ -425,7 +293,7 @@ Return JSON: {"description": "your description here"}`;
    */
   private buildStatBoostPrompt(
     eventType: EventTypeString,
-    context: LLMGameContext,
+    context: LLMGameContext
   ): string {
     const { character } = context;
 
@@ -469,15 +337,15 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           itemType: {
             type: "string",
-            enum: ["weapon", "armor", "shield", "potion"],
+            enum: ["weapon", "armor", "shield", "potion"]
           },
           itemName: { type: "string" },
           itemStats: {
             type: "object",
-            additionalProperties: { type: "number" },
-          },
+            additionalProperties: { type: "number" }
+          }
         },
-        required: ["itemType", "itemName", "itemStats"],
+        required: ["itemType", "itemName", "itemStats"]
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -488,21 +356,21 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         return {
           itemType: "potion",
           itemName: "Health Potion",
-          itemStats: { healAmount: 20 },
+          itemStats: { healAmount: 20 }
         };
       }
 
       return {
         itemType: parsed.itemType,
         itemName: parsed.itemName,
-        itemStats: parsed.itemStats,
+        itemStats: parsed.itemStats
       };
     } catch (error) {
       console.error("Failed to generate item drop:", error);
       return {
         itemType: "potion",
         itemName: "Health Potion",
-        itemStats: { healAmount: 20 },
+        itemStats: { healAmount: 20 }
       };
     }
   }
@@ -527,15 +395,15 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
         properties: {
           statType: {
             type: "string",
-            enum: ["vitality", "attack", "defense"],
+            enum: ["vitality", "attack", "defense"]
           },
           value: {
             type: "number",
             minimum: 2,
-            maximum: 10,
-          },
+            maximum: 10
+          }
         },
-        required: ["statType", "value"],
+        required: ["statType", "value"]
       };
 
       const response = await this.callGemini(prompt, schema);
@@ -551,7 +419,7 @@ Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
 
       return {
         statType: parsed.statType as "vitality" | "attack" | "defense",
-        value: clampedValue,
+        value: clampedValue
       };
     } catch (error) {
       console.error("Failed to generate bonus stat:", error);
@@ -584,14 +452,16 @@ Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "i
 
     const { character } = context;
     const healthPercentage = Math.round(
-      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100,
+      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
     );
 
     return `You are a D&D dungeon master distributing loot.
 
 Character: ${character.name}
 Current Stats:
-- Health: ${character.health}/${character.vitality * HEALTH_PER_VITALITY} (${healthPercentage}%)
+- Health: ${character.health}/${
+      character.vitality * HEALTH_PER_VITALITY
+    } (${healthPercentage}%)
 - Attack: ${character.attack}
 - Defense: ${character.defense}
 
@@ -630,7 +500,7 @@ Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
 
     const { character } = context;
     const healthPercentage = Math.round(
-      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100,
+      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
     );
 
     return `You are a D&D dungeon master rewarding exceptional performance.

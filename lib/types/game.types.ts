@@ -26,7 +26,6 @@ export interface Item {
 interface Equipment {
   id: number;
   name: string;
-  health: number;
   image?: string;
   description?: string;
   rarity?: number;
@@ -114,7 +113,6 @@ export type EventTypeString =
 
 export type ActionType =
   | "continue" // Continue exploring
-  | "search" // Search for items
   | "attack" // Attack enemy
   | "use_item" // Use item from inventory
   | "pickup_item" // Pick up item
@@ -131,6 +129,23 @@ export interface PlayerAction {
     targetId?: number;
     [key: string]: unknown;
   };
+}
+
+export interface ChoiceActionRequest {
+  campaignId: number;
+  choiceType: "event" | "item" | "equipment";
+  choice: boolean; // true = accept/pickup/equip, false = reject/leave
+  itemId?: number; // itemId for equipment choices
+}
+
+export interface ContinueActionRequest {
+  campaignId: number;
+}
+
+export interface CombatActionRequest {
+  campaignId: number;
+  actionType: "attack" | "use_item";
+  itemId?: number; // Required for use_item
 }
 
 // ============================================================================

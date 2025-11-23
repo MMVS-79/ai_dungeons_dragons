@@ -23,14 +23,9 @@
  *
  */
 
-import type {
-  Character,
-  Unit,
-  Campaign,
-  GameEvent,
-  Item,
-  EventTypeString,
-} from "@/lib/types/game.types";
+import type { Character, Weapon, Armor, Shield, Item, Unit } from "@/lib/types/game.types";
+import { pool } from "../db";
+import type { RowDataPacket } from "mysql2";
 import { LLMService } from "@/lib/services/llm.service";
 import type { LLMGameContext } from "@/lib/types/llm.types";
 
@@ -38,7 +33,7 @@ import type { LLMGameContext } from "@/lib/types/llm.types";
 const llmService = new LLMService({
   apiKey: process.env.GEMINI_API_KEY || "",
   model: "gemini-2.5-flash-lite",
-  temperature: 0.8,
+  temperature: 0.8
 });
 
 // Temporary in-memory storage for pending events and current enemies
@@ -48,92 +43,181 @@ declare global {
   var currentEnemies: Map<number, number> | undefined;
 }
 
-// ============================================================================
-// CHARACTER OPERATIONS
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Type for updates
+// ---------------------------------------------------------------------------
+export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
+  weapon?: Partial<Weapon>;
+  armor?: Partial<Armor>;
+  shield?: Partial<Shield>;
+};
+// ---------------------------------------------------------------------------
+// Backend Service
+// ---------------------------------------------------------------------------
+export class BackendService {
+  /**
+   * Fetch a character by ID from the database
+   * Includes race, class, equipment, base stats, and final stats
+   */
+  static async getCharacter(id: number): Promise<Character | null> {
+    try {
+      const sql = `
+        SELECT 
+          c.id AS character_id,
+          c.name AS character_name,
+          c.current_health AS character_health,
+          c.vitality AS base_vitality,
+          c.attack AS base_attack,
+          c.defense AS base_defense,
+          c.sprite_path AS character_sprite,
+          c.campaign_id AS campaign_id,
 
-/**
- * Fetch character by ID from database
- *
- * TODO: Implement database query
- *
- * Implementation:
- * 1. Query: SELECT * FROM characters WHERE id = ?
- * 2. Map DB fields to TypeScript:
- *    - current_health → currentHealth
- *    - vitality → vitality
- *    - sprite_path → spritePath
- *    - race_id → race
- *    - class_id → class
- *    - campaign_id → campaignId
- *    - weapon_id → weapon
- *    - armour_id → armor
- *    - shield_id → shield
- * 3. Return Character object
- *
- * @param characterId - Character ID
- * @returns Character data from database
- */
-export async function getCharacter(characterId: number): Promise<Character> {
-  // Step 1: Query database for character
+          r.id AS race_id, r.name AS race_name, r.vitality AS race_vitality, r.attack AS race_attack, r.defense AS race_defense, r.sprite_path AS race_sprite,
+          cl.id AS class_id, cl.name AS class_name, cl.vitality AS class_vitality, cl.attack AS class_attack, cl.defense AS class_defense, cl.sprite_path AS class_sprite,
 
-  // Step 2: Map database fields to Character type
+          w.id AS weapon_id, w.name AS weapon_name, w.attack AS weapon_atk, w.sprite_path AS weapon_sprite,
+          a.id AS armor_id, a.name AS armor_name, a.vitality AS armor_vit, a.sprite_path AS armor_sprite,
+          s.id AS shield_id, s.name AS shield_name, s.defense AS shield_def, s.sprite_path AS shield_sprite
 
-  console.log(`[PLACEHOLDER] getCharacter(${characterId})`);
+        FROM characters c
+        JOIN races r ON r.id = c.race_id
+        JOIN classes cl ON cl.id = c.class_id
+        LEFT JOIN weapons w ON w.id = c.weapon_id
+        LEFT JOIN armours a ON a.id = c.armour_id
+        LEFT JOIN shields s ON s.id = c.shield_id
+        WHERE c.id = ?
+      `;
 
-  // MOCK DATA - Replace with actual database query
-  return {
-    id: characterId,
-    name: "Placeholder Hero",
-    currentHealth: 50,
-    vitality: 10,
-    attack: 10,
-    defense: 5,
-    spritePath: "/characters/player/warrior.png",
-    race: { id: 1, name: "Human", vitality: 10, attack: 10, defense: 5 },
-    class: { id: 1, name: "Warrior", vitality: 12, attack: 15, defense: 10 },
-    campaignId: 1,
-  };
-}
+      const [rows] = await pool.query<RowDataPacket[]>(sql, [id]);
+      if (rows.length === 0) return null;
 
-/**
- * Update character stats in database
- *
- * TODO: Implement database update
- *
- * Implementation:
- * 1. Map TypeScript fields to DB columns:
- *    - currentHealth → current_health
- *    - vitality → vitality
- *    - weapon → weapon_id
- *    - armor → armour_id (note: armour not armor in DB)
- *    - shield → shield_id
- * 2. Build dynamic UPDATE query for provided fields only
- * 3. Query: UPDATE characters SET field1 = ?, field2 = ? WHERE id = ?
- * 4. Return updated character via getCharacter()
- *
- * Example:
- * updates = { currentHealth: 50, attack: 15 }
- * → UPDATE characters SET current_health = 50, attack = 15 WHERE id = ?
- *
- * @param characterId - Character ID
- * @param updates - Partial character updates (camelCase fields)
- * @returns Updated character from database
- */
-export async function updateCharacter(
-  characterId: number,
-  updates: Partial<Character>,
-): Promise<Character> {
-  // Step 1: Build dynamic update fields
+      const row = rows[0];
 
-  // Step 2: Execute update query
+      // -----------------------------
+      // Normalize equipment
+      // -----------------------------
 
-  // Step 3: Return updated character
+      const weapon: Weapon | undefined = row.weapon_id
+        ? { id: row.weapon_id, name: row.weapon_name, attack: row.weapon_atk, image: row.weapon_sprite }
+        : undefined;
 
-  console.log(`[PLACEHOLDER] updateCharacter(${characterId})`, updates);
+      const armor: Armor | undefined = row.armor_id
+        ? { id: row.armor_id, name: row.armor_name, vitality: row.armor_vit, image: row.armor_sprite }
+        : undefined;
 
-  const character = await getCharacter(characterId);
-  return { ...character, ...updates };
+      const shield: Shield | undefined = row.shield_id
+        ? { id: row.shield_id, name: row.shield_name, defense: row.shield_def, image: row.shield_sprite }
+        : undefined;
+
+        const race: Unit = {
+          id: row.race_id,
+          name: row.race_name,
+          vitality: row.race_vitality,
+          attack: row.race_attack,
+          defense: row.race_defense,
+          spritePath: row.race_sprite
+        };
+      
+        const Class: Unit = {
+          id: row.class_id,
+          name: row.class_name,
+          vitality: row.class_vitality,
+          attack: row.class_attack,
+          defense: row.class_defense,
+          spritePath: row.class_sprite
+        };
+
+      // -----------------------------
+      // Final stats calculation (currently unused, for future combat logic)
+      // -----------------------------
+      /*const finalAttack = row.base_attack + (weapon?.attack ?? 0);
+      const finalVitality = row.base_vitality + (armor?.vitality ?? 0);
+      const finalDefense = row.base_defense + (shield?.defense ?? 0);
+      */
+
+      // -----------------------------
+      // Compose Character object
+      // -----------------------------
+      const character: Character = {
+        id: row.character_id,
+        name: row.character_name,
+        vitality: row.base_vitality,       // top-level stats
+        attack: row.base_attack,
+        defense: row.base_defense,
+        campaignId: row.campaign_id,
+        currentHealth: row.character_health,
+        race: race,
+        class: Class,
+        weapon: weapon,  // only attack
+        armor: armor,    // only vitality
+        shield: shield,  // only defense
+        spritePath: row.character_sprite
+      };
+
+      return character;
+    } catch (error) {
+      console.error(`[BackendService] getCharacter(${id}) failed:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Update character dynamically in the database
+   */
+  static async updateCharacter(
+    characterId: number,
+    updates: CharacterUpdates
+  ): Promise<Character | null> {
+    try {
+      // Map TypeScript keys to DB columns
+      const fieldMap: Record<string, string> = {
+        name: "name",
+        currentHealth: "current_health",
+        vitality: "vitality",
+        attack: "attack",
+        defense: "defense",
+        spritePath: "sprite_path",
+        campaignId: "campaign_id",
+        weapon: "weapon_id",
+        armor: "armour_id",
+        shield: "shield_id",
+      };
+  
+      const columns: string[] = [];
+      const values: (number | string | null)[] = [];
+  
+      const equipKeys = ["weapon", "armor", "shield"];
+  
+      for (const [key, value] of Object.entries(updates)) {
+        const col = fieldMap[key];
+        if (!col) continue;
+  
+        // For equipment, store only the ID (or null)
+        if (equipKeys.includes(key)) {
+          const equip = value as Weapon | Armor | Shield | null;
+          values.push(equip?.id ?? null);
+        } else {
+          values.push(value as number | string | null);
+        }
+  
+        columns.push(col);
+      }
+  
+      // Nothing to update
+      if (columns.length === 0) return await this.getCharacter(characterId);
+  
+      const setClause = columns.map(col => `${col} = ?`).join(", ");
+      const sql = `UPDATE characters SET ${setClause} WHERE id = ?`;
+      values.push(characterId);
+  
+      await pool.query(sql, values);
+  
+      return await this.getCharacter(characterId);
+    } catch (error) {
+      console.error(`[BackendService] updateCharacter(${characterId}) failed:`, error);
+      return null;
+    }
+  }
 }
 
 // ============================================================================
@@ -168,7 +252,7 @@ export async function getEnemy(enemyId: number): Promise<Unit> {
     vitality: 10,
     attack: 15,
     defense: 8,
-    spritePath: "/characters/enemy/boss/dragon.png",
+    spritePath: "/characters/enemy/boss/dragon.png"
   };
 }
 
@@ -234,7 +318,7 @@ export async function getCampaign(campaignId: number): Promise<Campaign> {
     description: "A placeholder campaign",
     state: "active",
     createdAt: new Date(),
-    updatedAt: new Date(),
+    updatedAt: new Date()
   };
 }
 
@@ -257,7 +341,7 @@ export async function getCampaign(campaignId: number): Promise<Campaign> {
  */
 export async function updateCampaign(
   campaignId: number,
-  updates: Partial<Campaign>,
+  updates: Partial<Campaign>
 ): Promise<Campaign> {
   // Step 1: Build dynamic update fields
 
@@ -288,7 +372,7 @@ export async function updateCampaign(
  * @returns Character data for this campaign
  */
 export async function getCharacterByCampaign(
-  campaignId: number,
+  campaignId: number
 ): Promise<Character> {
   // Step 1: Query for character by campaign_id
   // Step 2: Map database fields (same as getCharacter mapping)
@@ -359,7 +443,7 @@ export async function saveEvent(
   campaignId: number,
   message: string,
   eventType: EventTypeString,
-  eventData?: Record<string, unknown>,
+  eventData?: Record<string, unknown>
 ): Promise<GameEvent> {
   // Step 1: Get next sequential event number
   const eventNumber = await getNextEventNumber(campaignId);
@@ -372,7 +456,7 @@ export async function saveEvent(
     message,
     eventNumber,
     eventType,
-    eventData,
+    eventData
   });
 
   // MOCK DATA - Replace with actual database insert
@@ -383,7 +467,7 @@ export async function saveEvent(
     eventNumber,
     eventType,
     eventData,
-    createdAt: new Date(),
+    createdAt: new Date()
   };
 }
 
@@ -407,7 +491,7 @@ export async function saveEvent(
  */
 export async function getRecentEvents(
   campaignId: number,
-  limit: number = 10,
+  limit: number = 10
 ): Promise<GameEvent[]> {
   // Step 1: Query recent events with limit
 
@@ -474,7 +558,7 @@ export async function addItemToInventory(
     itemType: string;
     itemName: string;
     itemStats: Record<string, number>;
-  },
+  }
 ): Promise<void> {
   // Step 1: Route item to correct table based on type
   switch (item.itemType) {
@@ -484,7 +568,7 @@ export async function addItemToInventory(
       // Step 4: Update character's weapon_id field
 
       console.log(
-        `[PLACEHOLDER] addItemToInventory - Weapon: ${item.itemName} (attack: ${item.itemStats.attack})`,
+        `[PLACEHOLDER] addItemToInventory - Weapon: ${item.itemName} (attack: ${item.itemStats.attack})`
       );
       break;
 
@@ -496,7 +580,7 @@ export async function addItemToInventory(
       console.log(
         `[PLACEHOLDER] addItemToInventory - Armor: ${
           item.itemName
-        } (defense/hp: ${item.itemStats.defense || item.itemStats.hpBonus})`,
+        } (defense/hp: ${item.itemStats.defense || item.itemStats.hpBonus})`
       );
       break;
 
@@ -506,7 +590,7 @@ export async function addItemToInventory(
       // Step 10: Update character's shield_id field
 
       console.log(
-        `[PLACEHOLDER] addItemToInventory - Shield: ${item.itemName} (defense: ${item.itemStats.defense})`,
+        `[PLACEHOLDER] addItemToInventory - Shield: ${item.itemName} (defense: ${item.itemStats.defense})`
       );
       break;
 
@@ -516,13 +600,13 @@ export async function addItemToInventory(
       // Step 13: Add to character_items join table linking character and item
 
       console.log(
-        `[PLACEHOLDER] addItemToInventory - Potion: ${item.itemName} (heal: ${item.itemStats.healAmount})`,
+        `[PLACEHOLDER] addItemToInventory - Potion: ${item.itemName} (heal: ${item.itemStats.healAmount})`
       );
       break;
 
     default:
       console.error(
-        `[BackendService] Unknown item type: ${item.itemType} for ${item.itemName}`,
+        `[BackendService] Unknown item type: ${item.itemType} for ${item.itemName}`
       );
       break;
   }
@@ -543,33 +627,33 @@ export async function addItemToInventory(
  */
 export async function removeItemFromInventory(
   characterId: number,
-  itemId: number,
+  itemId: number
 ): Promise<void> {
   // Step 1: Delete item from inventory
 
   // Step 2 (Optional): Handle stackable items
 
   console.log(
-    `[PLACEHOLDER] removeItemFromInventory(${characterId}, ${itemId})`,
+    `[PLACEHOLDER] removeItemFromInventory(${characterId}, ${itemId})`
   );
 }
 
 /**
  * Assign an existing item to a character (e.g. picking up a dropped item)
- *
+ * 
  * TODO: Implement database insert
- *
+ * 
  * Implementation:
  * 1. Check item type (weapon/armor/shield/item)
  * 2. If equipment: UPDATE characters SET weapon_id/armor_id/shield_id = ? WHERE id = ?
  * 3. If consumable: INSERT INTO character_items (character_id, item_id) VALUES (?, ?)
- *
+ * 
  * @param characterId - Character ID
  * @param itemId - ID of the item to assign
  */
 export async function assignItemToCharacter(
   characterId: number,
-  itemId: number,
+  itemId: number
 ): Promise<void> {
   console.log(`[PLACEHOLDER] assignItemToCharacter(${characterId}, ${itemId})`);
 }
@@ -601,7 +685,7 @@ export async function getItem(itemId: number): Promise<Item> {
     id: itemId,
     name: "Placeholder Item",
     health: 20,
-    description: "A placeholder item",
+    description: "A placeholder item"
   };
 }
 
@@ -636,7 +720,7 @@ export async function getItem(itemId: number): Promise<Item> {
 export async function equipItem(
   characterId: number,
   itemId: number,
-  slot: "weapon" | "armor" | "shield",
+  slot: "weapon" | "armor" | "shield"
 ): Promise<void> {
   // Step 1: Get current character data from database
 
@@ -675,7 +759,7 @@ export async function equipItem(
  * @returns Current enemy or null if not in combat
  */
 export async function getCurrentEnemy(
-  campaignId: number,
+  campaignId: number
 ): Promise<Unit | null> {
   // Step 1: Query campaigns table for enemy_id
 
@@ -718,7 +802,7 @@ export async function getCurrentEnemy(
  */
 export async function setCurrentEnemy(
   campaignId: number,
-  enemyId: number | null,
+  enemyId: number | null
 ): Promise<void> {
   // Step 1: Update campaigns table with enemy_id
 
@@ -751,7 +835,7 @@ export async function setCurrentEnemy(
  */
 export async function setPendingEvent(
   campaignId: number,
-  eventType: EventTypeString,
+  eventType: EventTypeString
 ): Promise<void> {
   // Step 1: Update campaigns table with pending event type
 
@@ -779,7 +863,7 @@ export async function setPendingEvent(
  * @returns Pending event type or null if no pending event
  */
 export async function getPendingEvent(
-  campaignId: number,
+  campaignId: number
 ): Promise<EventTypeString | null> {
   // Step 1: Query campaigns table for pending_event_type
 
@@ -865,7 +949,7 @@ export async function processCombatRewards(
       defense: number;
     };
     enemyDefeated: string;
-  },
+  }
 ): Promise<{
   statBoosts: Array<{ statType: string; value: number }>;
   items: Array<{
@@ -884,16 +968,16 @@ export async function processCombatRewards(
         health: context.characterStats.health,
         vitality: context.characterStats.vitality,
         attack: context.characterStats.attack,
-        defense: context.characterStats.defense,
+        defense: context.characterStats.defense
       },
       enemy: {
         name: context.enemyDefeated,
         health: 0, // Enemy is defeated
         attack: 0,
-        defense: 0,
+        defense: 0
       },
       recentEvents: [],
-      trigger: `Combat victory against ${context.enemyDefeated}`,
+      trigger: `Combat victory against ${context.enemyDefeated}`
     };
   }
 
@@ -902,7 +986,7 @@ export async function processCombatRewards(
     case "critical_failure":
       // Step 3: No rewards for critical failure
       console.log(
-        `[BackendService] processCombatRewards - Critical Failure: No rewards`,
+        `[BackendService] processCombatRewards - Critical Failure: No rewards`
       );
       return { statBoosts: [], items: [], bonusStats: [] };
 
@@ -911,7 +995,7 @@ export async function processCombatRewards(
       try {
         const statBoost = await llmService.requestStatBoost(
           llmContext!,
-          "Combat",
+          "Combat"
         );
 
         // TODO: Uncomment when Stat_Calc is available to apply dice roll modifier
@@ -930,24 +1014,24 @@ export async function processCombatRewards(
           campaignId,
           `Combat reward: +${finalValue} ${statBoost.statType}`,
           "Combat",
-          { reward: statBoost },
+          { reward: statBoost }
         );
 
         console.log(
-          `[BackendService] processCombatRewards - Regular: +${finalValue} ${statBoost.statType}`,
+          `[BackendService] processCombatRewards - Regular: +${finalValue} ${statBoost.statType}`
         );
 
         return {
           statBoosts: [{ statType: statBoost.statType, value: finalValue }],
           items: [],
-          bonusStats: [],
+          bonusStats: []
         };
       } catch (error) {
         console.error("Failed to generate regular combat rewards:", error);
         return {
           statBoosts: [{ statType: "vitality", value: 1 }],
           items: [],
-          bonusStats: [],
+          bonusStats: []
         };
       }
 
@@ -957,7 +1041,7 @@ export async function processCombatRewards(
         // Call both LLM methods in parallel for efficiency
         const [item, bonusStat] = await Promise.all([
           llmService.RequestItemDrop(llmContext),
-          llmService.bonusStatRequest(llmContext),
+          llmService.bonusStatRequest(llmContext)
         ]);
 
         // Add item to inventory (routes to correct table internally)
@@ -973,17 +1057,17 @@ export async function processCombatRewards(
           campaignId,
           `Combat reward: ${item.itemName} + ${bonusStat.value} ${bonusStat.statType}!`,
           "Combat",
-          { item, bonusStat },
+          { item, bonusStat }
         );
 
         console.log(
-          `[BackendService] processCombatRewards - Critical Success: ${item.itemName} + ${bonusStat.value} ${bonusStat.statType}`,
+          `[BackendService] processCombatRewards - Critical Success: ${item.itemName} + ${bonusStat.value} ${bonusStat.statType}`
         );
 
         return {
           statBoosts: [],
           items: [item],
-          bonusStats: [bonusStat],
+          bonusStats: [bonusStat]
         };
       } catch (error) {
         console.error("Failed to generate critical success rewards:", error);
@@ -993,16 +1077,16 @@ export async function processCombatRewards(
             {
               itemType: "potion",
               itemName: "Health Potion",
-              itemStats: { health: 20 },
-            },
+              itemStats: { health: 20 }
+            }
           ],
-          bonusStats: [{ statType: "vitality", value: 1 }],
+          bonusStats: [{ statType: "vitality", value: 1 }]
         };
       }
 
     default:
       console.error(
-        `[BackendService] Unknown roll classification: ${rollClassification}`,
+        `[BackendService] Unknown roll classification: ${rollClassification}`
       );
       return { statBoosts: [], items: [], bonusStats: [] };
   }
