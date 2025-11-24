@@ -233,11 +233,13 @@ export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
  * Includes race, class, equipment, base stats, and final stats
  */
 
+import { ResultSetHeader } from 'mysql2';
+
 export async function createCharacter(
   campaignId: number,
   name: string,
   raceId: number,
-  classId: number,
+  classId: number
 ): Promise<Character> {
   try {
     // 1. Load race + class data
@@ -259,7 +261,7 @@ export async function createCharacter(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
     `;
 
-    const [result] = await pool.query<any>(sql, [
+    const [result] = await pool.query<ResultSetHeader>(sql, [
       name,
       baseHealth, // current
       baseHealth, // max
@@ -847,7 +849,7 @@ export async function createCampaign(
       ) VALUES (?, ?, ?, ?, NOW(), NOW())
     `;
 
-    const [result] = await pool.query<any>(sql, [
+    const [result] = await pool.query<ResultSetHeader>(sql, [
       accountId,
       name,
       description || null,
