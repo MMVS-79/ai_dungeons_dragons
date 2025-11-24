@@ -9,7 +9,7 @@ const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
 // Fail early with a helpful message if required env is missing
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !NEXTAUTH_SECRET) {
   throw new Error(
-    "Missing required NEXTAUTH env vars. Ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and NEXTAUTH_SECRET are set.",
+    "Missing required NEXTAUTH env vars. Ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and NEXTAUTH_SECRET are set."
   );
 }
 
@@ -22,14 +22,14 @@ const handler = NextAuth({
         params: {
           prompt: "consent", // shows consent screen (useful for refresh tokens)
           access_type: "offline", // request refresh token
-          response_type: "code",
-        },
-      },
-    }),
+          response_type: "code"
+        }
+      }
+    })
   ],
   pages: {
     signIn: "/login",
-    error: "/login",
+    error: "/login"
   },
 
   callbacks: {
@@ -40,12 +40,12 @@ const handler = NextAuth({
         session.user.id = token.sub;
       }
       return session;
-    },
+    }
     // Optionally add `jwt` callback if you need to persist custom token claims
   },
 
   debug: process.env.NODE_ENV !== "production",
-  secret: NEXTAUTH_SECRET,
+  secret: NEXTAUTH_SECRET
 });
 
 export { handler as GET, handler as POST };
