@@ -69,13 +69,13 @@ export default function Navbar() {
               width={64}
               height={64}
             />
-            <span className={styles.collapsedProjectName}>
-              DumbgeonsAI
-            </span>
+            <span className={styles.collapsedProjectName}>DumbgeonsAI</span>
           </div>
 
           <div className={styles.collapsedCenter}>
-            <span className={styles.expandText}>Click to expand navigation bar</span>
+            <span className={styles.expandText}>
+              Click to expand navigation bar
+            </span>
             <Image
               className={styles.Arrow}
               src="/icons/down_arrow.png"
@@ -87,7 +87,9 @@ export default function Navbar() {
         </div>
       )}
 
-      <nav className={`${styles.navbar} ${isCollapsed ? styles.collapsed : ""}`}>
+      <nav
+        className={`${styles.navbar} ${isCollapsed ? styles.collapsed : ""}`}
+      >
         {/* Brand */}
         <div className={styles.brand}>
           <Link href="/" className={styles.logoLink}>
@@ -149,7 +151,10 @@ export default function Navbar() {
         </div>
 
         {/* Hamburger */}
-        <div className={styles.hamburger} onClick={() => setMenuOpen(!menuOpen)}>
+        <div
+          className={styles.hamburger}
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
           <div className={menuOpen ? styles.bar1 : ""}></div>
           <div className={menuOpen ? styles.bar2 : ""}></div>
           <div className={menuOpen ? styles.bar3 : ""}></div>

@@ -4,7 +4,7 @@
  * Type definitions for MySQL query results to eliminate 'any' types
  */
 
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // ============================================================================
 // DATABASE ROW TYPES (snake_case as returned from MySQL)
@@ -65,7 +65,7 @@ export interface ItemRow extends RowDataPacket {
   id: number;
   name: string;
   rarity: number;
-  stat_modified: 'health' | 'attack' | 'defense';
+  stat_modified: "health" | "attack" | "defense";
   stat_value: number;
   description: string | null;
   sprite_path: string | null;
@@ -90,7 +90,7 @@ export interface CampaignRow extends RowDataPacket {
   account_id: number;
   name: string;
   description: string | null;
-  state: 'active' | 'game_over' | 'completed';
+  state: "active" | "game_over" | "completed";
   created_at: Date;
   updated_at: Date;
 }
@@ -100,7 +100,7 @@ export interface LogRow extends RowDataPacket {
   campaign_id: number;
   message: string;
   event_number: number;
-  event_type: 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
+  event_type: "Descriptive" | "Environmental" | "Combat" | "Item_Drop";
   event_data: string | null; // JSON string
   created_at: Date;
 }
@@ -132,7 +132,7 @@ export interface ClassRow extends RowDataPacket {
 // ============================================================================
 
 export interface CombatEncounterEventData {
-  phase: 'encounter';
+  phase: "encounter";
   enemyId: number;
   enemyName: string;
   enemyDifficulty: number;
@@ -141,8 +141,8 @@ export interface CombatEncounterEventData {
 }
 
 export interface CombatConclusionEventData {
-  phase: 'conclusion';
-  outcome: 'enemy_defeated' | 'character_defeated' | 'fled' | 'boss_defeated';
+  phase: "conclusion";
+  outcome: "enemy_defeated" | "character_defeated" | "fled" | "boss_defeated";
   diceRoll: number;
   rewardRarity?: number;
   lootReceived?: number[];
@@ -150,13 +150,13 @@ export interface CombatConclusionEventData {
 
 export interface EnvironmentalEventData {
   diceRoll: number;
-  statType: 'health' | 'attack' | 'defense';
+  statType: "health" | "attack" | "defense";
   statChange: number;
 }
 
 export interface ItemDropEventData {
   diceRoll: number;
-  lootType: 'item' | 'weapon' | 'armour' | 'shield';
+  lootType: "item" | "weapon" | "armour" | "shield";
   itemId?: number;
   itemName?: string;
   itemRarity?: number;
@@ -177,10 +177,10 @@ export interface CampaignIntroEventData {
 }
 
 // Union type for all event data
-export type EventData = 
-  | CombatEncounterEventData 
-  | CombatConclusionEventData 
-  | EnvironmentalEventData 
+export type EventData =
+  | CombatEncounterEventData
+  | CombatConclusionEventData
+  | EnvironmentalEventData
   | ItemDropEventData
   | DeclinedEventData
   | CampaignIntroEventData

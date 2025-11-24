@@ -5,7 +5,13 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import type { Item, Weapon, Armour, Shield, GameState } from "../types/game.types";
+import type {
+  Item,
+  Weapon,
+  Armour,
+  Shield,
+  GameState,
+} from "../types/game.types";
 import { pool } from "../db";
 import type { RaceRow, ClassRow } from "../types/db.types";
 
@@ -84,17 +90,16 @@ export class LLMService {
 
   public async generateCampaignIntroduction(
     campaignId: number,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<string> {
-
     // Get character race and class names from database
     const [raceRows] = await pool.query<RaceRow[]>(
       "SELECT name FROM races WHERE id = ?",
-      [gameState.character.raceId]
+      [gameState.character.raceId],
     );
     const [classRows] = await pool.query<ClassRow[]>(
       "SELECT name FROM classes WHERE id = ?",
-      [gameState.character.classId]
+      [gameState.character.classId],
     );
 
     const raceName = raceRows[0]?.name || "adventurer";
@@ -126,7 +131,6 @@ Your introduction:`;
       });
 
       return result?.text?.trim() || "";
-
     } catch (error) {
       console.error("[LLMService] Error generating introduction:", error);
 
@@ -145,7 +149,7 @@ Your introduction:`;
    * Generate event type based on game context
    */
   public async generateEventType(
-    context: LLMContext
+    context: LLMContext,
   ): Promise<EventTypeString> {
     const recentEventsText =
       context.recentEvents.length > 0
@@ -155,7 +159,7 @@ Your introduction:`;
               (e) =>
                 `- Event ${e.eventNumber} (${
                   e.eventType
-                }): ${e.message.substring(0, 100)}...`
+                }): ${e.message.substring(0, 100)}...`,
             )
             .join("\n")
         : "No recent events";
@@ -219,7 +223,7 @@ Your response:`;
 
       // Fallback if invalid
       console.warn(
-        `[LLMService] Invalid event type "${eventType}", defaulting to Descriptive`
+        `[LLMService] Invalid event type "${eventType}", defaulting to Descriptive`,
       );
       return "Descriptive";
     } catch (error) {
@@ -238,7 +242,7 @@ Your response:`;
   public async generateDescription(
     eventType: string,
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield
+    lootItem?: Item | Weapon | Armour | Shield,
   ): Promise<string> {
     let prompt = "";
 
@@ -277,7 +281,7 @@ Your response:`;
     } catch (error) {
       console.error(
         `[LLMService] Error generating ${eventType} description:`,
-        error
+        error,
       );
       return this.getFallbackDescription(eventType, context, lootItem);
     }
@@ -304,7 +308,7 @@ Your description:`;
 
   private buildEnvironmentalPrompt(context: LLMContext): string {
     const healthPercent = Math.round(
-      (context.character.currentHealth / context.character.maxHealth) * 100
+      (context.character.currentHealth / context.character.maxHealth) * 100,
     );
 
     return `You are a D&D dungeon master. Create a description of an environmental event that will affect the character.
@@ -349,7 +353,7 @@ Your description:`;
    */
   private buildItemDropPrompt(
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield
+    lootItem?: Item | Weapon | Armour | Shield,
   ): string {
     // If no item provided (shouldn't happen), use generic prompt
     if (!lootItem) {
@@ -421,7 +425,7 @@ Your description:`;
   private getFallbackDescription(
     eventType: string,
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield
+    lootItem?: Item | Weapon | Armour | Shield,
   ): string {
     const fallbacks: Record<string, string> = {
       Descriptive:
@@ -442,12 +446,12 @@ Your description:`;
             lootItem.name.toLowerCase().includes("potion")
               ? "a mystical vial"
               : lootItem.name.toLowerCase().includes("sword")
-              ? "a finely crafted blade"
-              : lootItem.name.toLowerCase().includes("shield")
-              ? "a sturdy shield"
-              : lootItem.name.toLowerCase().includes("armour")
-              ? "protective gear"
-              : "a valuable treasure"
+                ? "a finely crafted blade"
+                : lootItem.name.toLowerCase().includes("shield")
+                  ? "a sturdy shield"
+                  : lootItem.name.toLowerCase().includes("armour")
+                    ? "protective gear"
+                    : "a valuable treasure"
           } resting on a weathered stone pedestal.`
         : "Something glints in the dim light ahead—a small vial resting on a weathered stone pedestal, its contents swirling with an otherworldly glow.",
     };
@@ -465,10 +469,10 @@ Your description:`;
    */
   public async requestStatBoost(
     context: LLMContext,
-    eventType: string
+    eventType: string,
   ): Promise<StatBoostResponse> {
     const healthPercent = Math.round(
-      (context.character.currentHealth / context.character.maxHealth) * 100
+      (context.character.currentHealth / context.character.maxHealth) * 100,
     );
 
     const prompt = `You are a D&D game master. Recommend a stat boost for an Environmental event based on the character's current state.
@@ -535,7 +539,7 @@ Your JSON response:`;
       const jsonMatch = text.match(/\{[^}]+\}/);
       if (!jsonMatch) {
         console.warn(
-          "[LLMService] No JSON object found in response, using intelligent default"
+          "[LLMService] No JSON object found in response, using intelligent default",
         );
         return this.getIntelligentStatBoost(context);
       }
@@ -551,9 +555,13 @@ Your JSON response:`;
         "attack",
         "defense",
       ];
-      if (!validStatTypes.includes(parsed.statType as "health" | "attack" | "defense")) {
+      if (
+        !validStatTypes.includes(
+          parsed.statType as "health" | "attack" | "defense",
+        )
+      ) {
         console.warn(
-          `[LLMService] Invalid statType: "${parsed.statType}", using intelligent default`
+          `[LLMService] Invalid statType: "${parsed.statType}", using intelligent default`,
         );
         return this.getIntelligentStatBoost(context);
       }
@@ -562,7 +570,7 @@ Your JSON response:`;
       let baseValue = Number(parsed.baseValue);
       if (isNaN(baseValue)) {
         console.warn(
-          `[LLMService] Invalid baseValue: ${parsed.baseValue}, using intelligent default`
+          `[LLMService] Invalid baseValue: ${parsed.baseValue}, using intelligent default`,
         );
         return this.getIntelligentStatBoost(context);
       }
@@ -575,8 +583,8 @@ Your JSON response:`;
       }
 
       return {
-        statType: parsed.statType as "health" | "attack" | "defense", 
-        baseValue
+        statType: parsed.statType as "health" | "attack" | "defense",
+        baseValue,
       };
     } catch (error) {
       console.error("[LLMService] Error parsing stat boost:", error);
@@ -588,7 +596,6 @@ Your JSON response:`;
    * Intelligent default stat boost based on character state
    */
   private getIntelligentStatBoost(context: LLMContext): StatBoostResponse {
-
     const healthPercent =
       (context.character.currentHealth / context.character.maxHealth) * 100;
 

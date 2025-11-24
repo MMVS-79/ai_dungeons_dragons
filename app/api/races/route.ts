@@ -3,9 +3,9 @@ import * as BackendService from "@/lib/services/backend.service";
 
 /**
  * GET /api/races
- * 
+ *
  * List all race options for character creation
- * 
+ *
  * Response:
  * {
  *   success: boolean;
@@ -15,22 +15,20 @@ import * as BackendService from "@/lib/services/backend.service";
  */
 
 export async function GET() {
-    try {
-      const races = await BackendService.getAllRaces();
+  try {
+    const races = await BackendService.getAllRaces();
 
-      return NextResponse.json({
-        success: true,
-        races: races,
-      });
-
-    } catch (error) {
-      return NextResponse.json(
-        { success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch races"
-        },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      success: true,
+      races: races,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch races",
+      },
+      { status: 500 },
+    );
+  }
 }
-    
-
