@@ -766,6 +766,17 @@ export class GameService {
       });
     } else {
       // ITEM DROP
+
+      // Fetch the item FIRST (before inventory check)
+      lootItem = await BackendService.getItemByRarity(targetRarity);
+
+      // Generate description WITH the actual item
+      const description = await this.llmService.generateDescription(
+        "Item_Drop",
+        context,
+        lootItem
+      );
+
       const MAX_INVENTORY = 10;
       if (gameState.inventory.length >= MAX_INVENTORY) {
         const message =
@@ -787,19 +798,11 @@ export class GameService {
           gameState: updatedState,
           message,
           choices: ["Continue Forward"],
+          itemFound: lootItem,
         };
       }
 
-      lootItem = await BackendService.getItemByRarity(targetRarity);
-
-      // Generate description WITH the actual item
-      const description = await this.llmService.generateDescription(
-        "Item_Drop",
-        context,
-        lootItem
-      );
-
-      // Add item to inventory (consumables only)
+      // Add item to inventory (this part stays the same)
       await BackendService.addItemToInventory(
         gameState.character.id,
         lootItem.id
@@ -837,6 +840,7 @@ export class GameService {
       gameState: updatedState,
       message,
       choices: ["Continue Forward"],
+      itemFound: lootItem,
     };
   }
 

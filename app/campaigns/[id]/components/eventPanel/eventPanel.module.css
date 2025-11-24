@@ -80,7 +80,8 @@
 .itemImage {
   margin: 0 auto 0.5rem;
   width: 100%;
-  max-width: 80px;
+  max-width: 180px;
+  margin-bottom: 40px;
   height: auto;
   display: flex;
   align-items: center;
