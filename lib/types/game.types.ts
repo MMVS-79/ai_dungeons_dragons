@@ -173,7 +173,7 @@ export interface CombatSnapshot {
     defense: number;
   };
   combatLog: string[];
-  startedAt: Date;
+  createdAt: Date;
 }
 
 export interface CombatResult {

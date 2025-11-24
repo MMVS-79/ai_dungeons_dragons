@@ -123,7 +123,7 @@ Continue → Event Generated → Investigation Prompt
   originalInventoryIds: number[],   // For tracking item usage
   temporaryBuffs: { attack: 0, defense: 0 },
   combatLog: string[],
-  startedAt: Date
+  createdAt: Date
 }
 ```
 

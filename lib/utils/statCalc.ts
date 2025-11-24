@@ -2,34 +2,34 @@
  * Stat Calculation Utility
  * -------------------------
  * Applies dice roll modifiers to stat values using three-tier system.
- * 
+ *
  * Formula:
  * - Critical Failure (1-4): finalValue = 0
  * - Regular (5-15): finalValue = initValue * (1 + (rollValue - 10) / 10)
  * - Critical Success (16-20): finalValue = initValue * 2
- * 
+ *
  * Example:
  * - LLM says: +10 health
  * - Player rolls 18 (critical success)
  * - Result: 10 * 2 = +20 health bonus!
- * 
+ *
  * Used by:
  * - game.service.ts for environmental events
  * - backend.service.ts for combat rewards (future)
  */
 
 // Stat types supported by the system
-export type StatType = 'HEALTH' | 'ATTACK' | 'DEFENSE' | 'VIT' | 'ATK' | 'DEF';
+export type StatType = "HEALTH" | "ATTACK" | "DEFENSE";
 
 export class Stat_Calc {
   /**
    * Apply dice roll modifier to a stat value
-   * 
+   *
    * @param rollValue - The D20 roll result (1-20)
    * @param statType - The stat being modified ('HEALTH'|'ATTACK'|'DEFENSE' or 'VIT'|'ATK'|'DEF')
    * @param initValue - Base stat value from LLM (before dice modifier)
    * @returns Final adjusted stat value (rounded to integer)
-   * 
+   *
    * Examples:
    * - applyRoll(3, 'HEALTH', 10) → 0 (critical failure)
    * - applyRoll(10, 'ATTACK', 5) → 5 (roll matches midpoint)
@@ -46,23 +46,23 @@ export class Stat_Calc {
     // Critical Failure (1-4): No stat gain
     if (rollValue >= 1 && rollValue <= 4) {
       finalValue = 0;
-    } 
+    }
     // Regular Roll (5-15): Scale stat based on formula
     else if (rollValue >= 5 && rollValue <= 15) {
       // Current: initValue * (1 + (rollValue - 10) / 10)
       // Roll 10 = 1.0x, Roll 5 = 0.5x, Roll 15 = 1.5x
-      
+
       // Example: Make it less punishing for low rolls
       // finalValue = initValue * (0.7 + (rollValue - 5) / 10);
       finalValue = initValue * (1 + (rollValue - 10) / 10);
-    } 
+    }
     // Critical Success (16-20): Double the stat
     else if (rollValue >= 16 && rollValue <= 20) {
       // Current: 2x
-      
+
       // Example: Make crits less powerful: finalValue = initValue * 1.5;
       finalValue = initValue * 2;
-    } 
+    }
     // Invalid roll value (should never happen)
     else {
       console.error(`[Stat_Calc] Invalid Roll_Value: ${rollValue}`);
@@ -76,27 +76,29 @@ export class Stat_Calc {
   /**
    * Normalize stat type string to uppercase
    * Handles both full names (HEALTH) and abbreviations (VIT)
-   * 
+   *
    * @param statType - Stat type string (any case)
    * @returns Normalized stat type
    */
   public static normalizeStatType(statType: string): StatType {
     const normalized = statType.toUpperCase();
-    
+
     // Map abbreviations to full names
     const mapping: Record<string, StatType> = {
-      'VIT': 'HEALTH',
-      'ATK': 'ATTACK',
-      'DEF': 'DEFENSE',
-      'HEALTH': 'HEALTH',
-      'ATTACK': 'ATTACK',
-      'DEFENSE': 'DEFENSE'
+      HEALTH: "HEALTH",
+      ATTACK: "ATTACK",
+      DEFENSE: "DEFENSE",
+      health: "HEALTH",
+      attack: "ATTACK",
+      defense: "DEFENSE",
     };
 
     const result = mapping[normalized];
     if (!result) {
-      console.warn(`[Stat_Calc] Unknown stat type: ${statType}, defaulting to HEALTH`);
-      return 'HEALTH';
+      console.warn(
+        `[Stat_Calc] Unknown stat type: ${statType}, defaulting to HEALTH`
+      );
+      return "HEALTH";
     }
 
     return result;
@@ -105,7 +107,7 @@ export class Stat_Calc {
   /**
    * Apply roll with automatic stat type normalization
    * Convenience method for handling LLM stat strings
-   * 
+   *
    * @param rollValue - The D20 roll result
    * @param statType - Stat type (any format: 'health', 'VIT', 'Attack', etc.)
    * @param initValue - Base stat value

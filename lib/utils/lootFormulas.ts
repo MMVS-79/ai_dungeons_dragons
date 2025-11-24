@@ -141,38 +141,3 @@ export const BALANCE_CONFIG = {
   MAX_EVENT_NUMBER: 50,
   BOSS_FORCED_EVENT_START: 48, // Boss encounters forced after this many events
 };
-
-/**
- * Recalculate formulas with custom balance config
- * Use this if you want to test different balance settings
- */
-export function calculateWithCustomBalance(
-  formulaType: 'item' | 'enemy' | 'reward',
-  eventNumber: number,
-  diceRoll: number,
-  enemyDifficulty?: number
-): number {
-  const config = BALANCE_CONFIG;
-  
-  switch (formulaType) {
-    case 'item':
-      return (eventNumber * config.ITEM_EVENT_NUMBER_WEIGHT) + 
-             (diceRoll * config.ITEM_DICE_ROLL_WEIGHT);
-    
-    case 'enemy':
-      return (eventNumber * config.ENEMY_EVENT_NUMBER_WEIGHT) + 
-             (diceRoll * config.ENEMY_DICE_ROLL_WEIGHT);
-    
-    case 'reward':
-      if (enemyDifficulty === undefined) {
-        throw new Error('enemyDifficulty required for reward calculation');
-      }
-      return Math.round(
-        (enemyDifficulty * config.REWARD_DIFFICULTY_WEIGHT) + 
-        (diceRoll * config.REWARD_DICE_ROLL_WEIGHT)
-      );
-    
-    default:
-      throw new Error(`Unknown formula type: ${formulaType}`);
-  }
-}

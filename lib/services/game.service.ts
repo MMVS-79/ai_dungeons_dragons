@@ -921,7 +921,7 @@ export class GameService {
           defense: 0,
         },
         combatLog: [],
-        startedAt: new Date(),
+        createdAt: new Date(),
       };
 
       createCombatSnapshot(snapshot);
@@ -1012,7 +1012,7 @@ export class GameService {
         defense: 0,
       },
       combatLog: [],
-      startedAt: new Date(),
+      createdAt: new Date(),
     };
 
     createCombatSnapshot(snapshot);

@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
           defense: 0,
         },
         combatLog: [],
-        startedAt: new Date(),
+        createdAt: new Date(),
       };
 
       createCombatSnapshot(freshSnapshot);
