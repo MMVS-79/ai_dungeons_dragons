@@ -827,6 +827,45 @@ export async function getBossEnemy(): Promise<Enemy> {
 // ============================================================================
 
 /**
+ * Creates a new campaign
+ * Returns the created Campaign object
+ */
+export async function createCampaign(
+  accountId: number,
+  name: string,
+  description?: string
+): Promise<Campaign> {
+  try {
+    // 1. Insert new campaign into DB
+    const sql = `
+      INSERT INTO campaigns (
+        account_id,
+        name,
+        description,
+        state,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, NOW(), NOW())
+    `;
+
+    const [result] = await pool.query<any>(sql, [
+      accountId,
+      name,
+      description || null,
+      'active', // default state
+    ]);
+
+    const newId = result.insertId;
+
+    // 2. Return the campaign using the same mapping as getCampaign
+    return await getCampaign(newId);
+  } catch (err) {
+    console.error("[BackendService] createCampaign failed:", err);
+    throw err;
+  }
+}
+
+/**
  * Get campaign by ID
  */
 export async function getCampaign(campaignId: number): Promise<Campaign> {
