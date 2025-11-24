@@ -233,13 +233,13 @@ export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
  * Includes race, class, equipment, base stats, and final stats
  */
 
-import { ResultSetHeader } from 'mysql2';
+import { ResultSetHeader } from "mysql2";
 
 export async function createCharacter(
   campaignId: number,
   name: string,
   raceId: number,
-  classId: number
+  classId: number,
 ): Promise<Character> {
   try {
     // 1. Load race + class data
