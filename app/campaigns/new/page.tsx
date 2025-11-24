@@ -104,25 +104,26 @@ export default function NewCampaignPage() {
   const canAccessStep = (step: Step): boolean => {
     const stepIndex = steps.indexOf(step);
     const currentIndex = steps.indexOf(currentStep);
-    
+
     // Can access current step
     if (stepIndex === currentIndex) return true;
-    
+
     // Can access previous completed steps
     if (stepIndex < currentIndex) return true;
-    
+
     // Can access next step only if current step is completed
-    if (stepIndex === currentIndex + 1 && completedSteps.has(currentStep)) return true;
-    
+    if (stepIndex === currentIndex + 1 && completedSteps.has(currentStep))
+      return true;
+
     return false;
   };
 
   const handleNext = () => {
     if (!canProceed()) return;
-    
+
     // Mark current step as completed
-    setCompletedSteps(prev => new Set([...prev, currentStep]));
-    
+    setCompletedSteps((prev) => new Set([...prev, currentStep]));
+
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -155,7 +156,7 @@ export default function NewCampaignPage() {
             {steps.map((step, index) => {
               const isAccessible = canAccessStep(step);
               const isCompleted = completedSteps.has(step);
-              
+
               return (
                 <div
                   key={step}
