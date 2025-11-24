@@ -26,7 +26,7 @@ export class Stat_Calc {
    * Apply dice roll modifier to a stat value
    *
    * @param rollValue - The D20 roll result (1-20)
-   * @param statType - The stat being modified ('HEALTH'|'ATTACK'|'DEFENSE' or 'VIT'|'ATK'|'DEF')
+   * @param statType - The stat being modified ('HEALTH'|'ATTACK'|'DEFENSE')
    * @param initValue - Base stat value from LLM (before dice modifier)
    * @returns Final adjusted stat value (rounded to integer)
    *
@@ -75,7 +75,6 @@ export class Stat_Calc {
 
   /**
    * Normalize stat type string to uppercase
-   * Handles both full names (HEALTH) and abbreviations (VIT)
    *
    * @param statType - Stat type string (any case)
    * @returns Normalized stat type
@@ -109,7 +108,7 @@ export class Stat_Calc {
    * Convenience method for handling LLM stat strings
    *
    * @param rollValue - The D20 roll result
-   * @param statType - Stat type (any format: 'health', 'VIT', 'Attack', etc.)
+   * @param statType - Stat type
    * @param initValue - Base stat value
    * @returns Final adjusted stat value
    */
