@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Unit } from "@/lib/types/game.types";
+import type { Enemy } from "@/lib/types/game.types";
 
 /**
  * GET /api/enemies/[id]
- * 
+ *
  * TODO: Get specific enemy details
- * 
+ *
  * Purpose: View detailed information about a specific enemy
- * 
+ *
  * Response:
  * {
  *   success: boolean;
  *   enemy: Enemy;
  * }
- * 
+ *
  * Implementation Steps:
  * 1. Extract enemy ID from URL params
  * 2. Call BackendService.getEnemy(id)
@@ -47,13 +47,13 @@ export async function GET(
       enemy: {
         id: enemyId,
         name: "Mock Dragon",
-        vitality: 20,
+        difficulty: 100,
+        health: 200,
         attack: 15,
         defense: 8,
-        spritePath: "/characters/enemy/boss/dragon.png"
-      } as Unit
+        spritePath: "/characters/enemy/boss/dragon.png",
+      } as Enemy,
     });
-
   } catch (error) {
     console.error("[API] Get enemy error:", error);
     return NextResponse.json(

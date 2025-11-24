@@ -67,10 +67,12 @@ export async function POST(
         {
           id: body.itemId,
           name: "Mock Item",
-          health: 10,
-          description: "A mock item"
-        }
-      ] as Item[]
+          rarity: 10,
+          statModified: "health",
+          statValue: 10,
+          description: "A mock item",
+        },
+      ] as Item[],
     });
   } catch (error) {
     console.error("[API] Add inventory item error:", error);
@@ -140,7 +142,7 @@ export async function DELETE(
     // MOCK DATA - Replace with actual database delete
     return NextResponse.json({
       success: true,
-      inventory: [] as Item[]
+      inventory: [] as Item[],
     });
   } catch (error) {
     console.error("[API] Remove inventory item error:", error);
