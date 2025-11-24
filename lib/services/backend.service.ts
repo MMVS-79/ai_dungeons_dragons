@@ -214,7 +214,6 @@ async function getClass(id: number): Promise<ClassRow> {
   return rows[0];
 }
 
-
 // ---------------------------------------------------------------------------
 // Type for updates
 // ---------------------------------------------------------------------------
@@ -237,7 +236,7 @@ export async function createCharacter(
   campaignId: number,
   name: string,
   raceId: number,
-  classId: number
+  classId: number,
 ): Promise<Character> {
   try {
     // 1. Load race + class data
@@ -261,21 +260,20 @@ export async function createCharacter(
 
     const [result] = await pool.query<any>(sql, [
       name,
-      baseHealth,      // current
-      baseHealth,      // max
+      baseHealth, // current
+      baseHealth, // max
       baseAttack,
       baseDefense,
-      null,            // sprite_path for character
+      null, // sprite_path for character
       campaignId,
       raceId,
-      classId
+      classId,
     ]);
 
     const newId = result.insertId;
 
     // 4. Return it using same mapping as getCharacter
     return await getCharacter(newId);
-
   } catch (err) {
     console.error("[BackendService] createCharacter failed:", err);
     throw err;
