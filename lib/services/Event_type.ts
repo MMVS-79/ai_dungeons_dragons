@@ -2,7 +2,6 @@
 // // VERSION THAT ISNT USED BY BACKEND ANYMORE
 // // ===================================================
 
-
 // // Event_type.ts
 // import { LLMService } from './llm.service';
 // import { Dice_Roll } from './dice_roll';
@@ -73,7 +72,7 @@
 //         // Example placeholder for combat logic
 //         // const result = await CombatUI.InitializeCombat();
 //         // if (result === 'Won Combat') {
-//         //     const rollValue = Dice_Roll.roll(); 
+//         //     const rollValue = Dice_Roll.roll();
 //         //     console.log("Combat roll:", rollValue);
 //         // }
 

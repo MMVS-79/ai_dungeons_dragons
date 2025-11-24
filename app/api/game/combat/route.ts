@@ -36,18 +36,22 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Missing required fields: campaignId and actionType",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate actionType
-    if (!["attack", "use_item_combat"].includes(body.actionType === "use_item" ? "use_item_combat" : body.actionType)) {
+    if (
+      !["attack", "use_item_combat"].includes(
+        body.actionType === "use_item" ? "use_item_combat" : body.actionType,
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,
           error: `Invalid actionType: ${body.actionType}. Must be "attack" or "use_item"`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "itemId is required for use_item actions",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -71,17 +75,16 @@ export async function POST(request: NextRequest) {
     };
 
     console.log(
-      `[API Combat] Processing ${body.actionType} action for campaign ${body.campaignId}`
+      `[API Combat] Processing ${body.actionType} action for campaign ${body.campaignId}`,
     );
 
     // Call GameService orchestrator
-    const result: GameServiceResponse = await gameService.processPlayerAction(
-      action
-    );
+    const result: GameServiceResponse =
+      await gameService.processPlayerAction(action);
 
     // Log result for debugging
     console.log(
-      `[API Combat] Result: success=${result.success}, phase=${result.gameState.currentPhase}`
+      `[API Combat] Result: success=${result.success}, phase=${result.gameState.currentPhase}`,
     );
 
     // Return response
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to process combat action",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

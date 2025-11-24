@@ -58,8 +58,8 @@ export function updateCharacterHp(campaignId: number, newHp: number): void {
  */
 export function applyTemporaryBuff(
   campaignId: number,
-  statType: 'attack' | 'defense',
-  value: number
+  statType: "attack" | "defense",
+  value: number,
 ): void {
   const snapshot = getCombatSnapshot(campaignId);
   if (snapshot) {
@@ -71,12 +71,17 @@ export function applyTemporaryBuff(
 /**
  * Remove item from inventory snapshot
  */
-export function removeItemFromSnapshot(campaignId: number, itemId: number): void {
+export function removeItemFromSnapshot(
+  campaignId: number,
+  itemId: number,
+): void {
   const snapshot = getCombatSnapshot(campaignId);
   if (snapshot) {
     // Find the index of the first matching item
-    const itemIndex = snapshot.inventorySnapshot.findIndex(item => item.id === itemId);
-    
+    const itemIndex = snapshot.inventorySnapshot.findIndex(
+      (item) => item.id === itemId,
+    );
+
     if (itemIndex !== -1) {
       // Remove only ONE instance
       snapshot.inventorySnapshot.splice(itemIndex, 1);
@@ -108,7 +113,10 @@ export function clearCombatSnapshot(campaignId: number): void {
  */
 export function getEffectiveAttack(snapshot: CombatSnapshot): number {
   const weaponBonus = snapshot.equipment?.weapon?.attack || 0;
-  const total = snapshot.characterSnapshot.baseAttack + weaponBonus + snapshot.temporaryBuffs.attack;
+  const total =
+    snapshot.characterSnapshot.baseAttack +
+    weaponBonus +
+    snapshot.temporaryBuffs.attack;
   return total;
 }
 
@@ -117,6 +125,9 @@ export function getEffectiveAttack(snapshot: CombatSnapshot): number {
  */
 export function getEffectiveDefense(snapshot: CombatSnapshot): number {
   const shieldBonus = snapshot.equipment?.shield?.defense || 0;
-  const total = snapshot.characterSnapshot.baseDefense + shieldBonus + snapshot.temporaryBuffs.defense;
+  const total =
+    snapshot.characterSnapshot.baseDefense +
+    shieldBonus +
+    snapshot.temporaryBuffs.defense;
   return total;
 }

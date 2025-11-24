@@ -2,28 +2,32 @@
  * Event Type Handler
  * -------------------
  * Manages event type logic and descriptive event counter.
- * 
+ *
  * Event Types:
  * - Descriptive: Pure narrative (no mechanical effects)
  * - Environmental: Stat modifications from environment
  * - Combat: Enemy encounters
  * - Item_Drop: Items found or lost
- * 
+ *
  * Descriptive Counter:
  * Tracks consecutive descriptive events to prevent boring gameplay.
  * Game engine checks this before accepting a Descriptive event.
  * Counter resets after boss fights.
- * 
+ *
  * Architecture Note:
  * This class is a LIGHTWEIGHT coordinator. The actual event processing
  * logic lives in GameService. This just tracks state and provides
  * helper methods.
- * 
+ *
  * Used by:
  * - game.service.ts for event routing and counter checks
  */
 
-export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
+export type EventTypeString =
+  | "Descriptive"
+  | "Environmental"
+  | "Combat"
+  | "Item_Drop";
 
 export class EventType {
   // Static counter for consecutive descriptive events
@@ -39,7 +43,7 @@ export class EventType {
   /**
    * Get the current descriptive event count
    * Used by GameService to check if too many consecutive descriptive events
-   * 
+   *
    * @returns Number of consecutive descriptive events
    */
   public static getDescriptiveCount(): number {
@@ -66,44 +70,44 @@ export class EventType {
   /**
    * Check if this event type should reset the descriptive counter
    * Combat events (especially boss fights) reset the counter
-   * 
+   *
    * @param eventType - The event type to check
    * @returns True if counter should be reset
    */
   public static shouldResetCounter(eventType: EventTypeString): boolean {
     // Reset counter for combat (narrative tension justified more descriptive events after)
-    return eventType === 'Combat';
+    return eventType === "Combat";
   }
 
   /**
    * Trigger event type logic
-   * 
+   *
    * ARCHITECTURE NOTE:
    * In the original design, this method would contain the full event logic.
    * However, to keep GameService as the central orchestrator, this now
    * just handles counter updates and delegates actual processing to GameService.
-   * 
+   *
    * GameService calls this to:
    * 1. Update descriptive counter
    * 2. Get any event-type-specific state
-   * 
+   *
    * The actual event processing (LLM calls, stat updates, etc.) happens in GameService.
    */
   public async trigger(): Promise<void> {
     switch (this.eventType) {
-      case 'Descriptive':
+      case "Descriptive":
         this.handleDescriptive();
         break;
 
-      case 'Environmental':
+      case "Environmental":
         this.handleEnvironmental();
         break;
 
-      case 'Combat':
+      case "Combat":
         this.handleCombat();
         break;
 
-      case 'Item_Drop':
+      case "Item_Drop":
         this.handleItemDrop();
         break;
 
@@ -166,8 +170,12 @@ export class EventType {
    * @param eventType - String to validate
    * @returns True if valid event type
    */
-  public static isValidEventType(eventType: string): eventType is EventTypeString {
-    return ['Descriptive', 'Environmental', 'Combat', 'Item_Drop'].includes(eventType);
+  public static isValidEventType(
+    eventType: string,
+  ): eventType is EventTypeString {
+    return ["Descriptive", "Environmental", "Combat", "Item_Drop"].includes(
+      eventType,
+    );
   }
 }
 

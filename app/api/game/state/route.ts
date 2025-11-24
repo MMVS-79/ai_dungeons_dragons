@@ -7,9 +7,7 @@ import {
   createCombatSnapshot,
 } from "@/lib/utils/combatSnapshot";
 import type { CombatSnapshot } from "@/lib/types/game.types";
-import type {
-  CombatEncounterEventData
-} from "@/lib/types/db.types";
+import type { CombatEncounterEventData } from "@/lib/types/db.types";
 
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
 
@@ -25,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (!campaignId) {
       return NextResponse.json(
         { success: false, error: "Missing campaignId parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (isNaN(id)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaignId - must be a number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -113,11 +111,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error 
-          ? error.message 
-          : "Failed to fetch game state",
+        error:
+          error instanceof Error ? error.message : "Failed to fetch game state",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
