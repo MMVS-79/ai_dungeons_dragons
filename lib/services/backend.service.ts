@@ -180,7 +180,7 @@ function mapCampaignRow(row: CampaignRow): Campaign {
   };
 }
 
-export interface RaceRow {
+/*export interface RaceRow {
   id: number;
   name: string;
   health: number;
@@ -197,6 +197,7 @@ export interface ClassRow {
   defense: number;
   sprite_path?: string;
 }
+*/
 
 async function getRace(id: number): Promise<RaceRow> {
   const sql = `SELECT * FROM races WHERE id = ?`;
