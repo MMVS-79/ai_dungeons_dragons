@@ -1,60 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./newCampaign.module.css";
 
-type Step = "name" | "stats" | "race" | "class" | "preview";
+type Step = "campaignName" | "name" | "race" | "class" | "preview";
 
 interface Race {
+  id: number;
   name: string;
-  hpBonus: number;
-  attackBonus: number;
-  defenseBonus: number;
+  health: number;
+  attack: number;
+  defense: number;
 }
 
 interface Class {
+  id: number;
   name: string;
-  hpBonus: number;
-  attackBonus: number;
-  defenseBonus: number;
+  health: number;
+  attack: number;
+  defense: number;
 }
-
-const races: Race[] = [
-  { name: "Human", hpBonus: 5, attackBonus: 2, defenseBonus: 2 },
-  { name: "Elf", hpBonus: 3, attackBonus: 4, defenseBonus: 1 },
-  { name: "Dwarf", hpBonus: 8, attackBonus: 1, defenseBonus: 4 },
-];
-
-const classes: Class[] = [
-  { name: "Warrior", hpBonus: 10, attackBonus: 3, defenseBonus: 5 },
-  { name: "Mage", hpBonus: 5, attackBonus: 8, defenseBonus: 2 },
-  { name: "Rogue", hpBonus: 7, attackBonus: 6, defenseBonus: 3 },
-];
 
 export default function NewCampaignPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<Step>("name");
+  const [currentStep, setCurrentStep] = useState<Step>("campaignName");
+
+  // Campaign data
+  const [campaignName, setCampaignName] = useState("");
 
   // Character data
   const [characterName, setCharacterName] = useState("");
-  const [baseHP, setBaseHP] = useState(50);
-  const [baseAttack, setBaseAttack] = useState(10);
-  const [baseDefense, setBaseDefense] = useState(10);
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
-  // Track which steps have been completed
+  // Database data for race/class options
+  const [dbRaces, setDbRaces] = useState<Race[]>([]);
+  const [dbClasses, setDbClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Track which steps have been completed (coworker's addition)
   const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set());
 
-  const steps: Step[] = ["name", "stats", "race", "class", "preview"];
+  // Fetch races and classes from database on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [racesRes, classesRes] = await Promise.all([
+          fetch("/api/races"),
+          fetch("/api/classes")
+        ]);
+        const { races } = await racesRes.json();
+        const { classes } = await classesRes.json();
+        setDbRaces(races);
+        setDbClasses(classes);
+      } catch (error) {
+        console.error("Failed to fetch character options:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const steps: Step[] = ["campaignName", "name", "race", "class", "preview"];
 
   const getStepLabel = (step: Step): string => {
     switch (step) {
+      case "campaignName":
+        return "Campaign";
       case "name":
         return "Name";
-      case "stats":
-        return "Stats";
       case "race":
         return "Race";
       case "class":
@@ -65,30 +81,19 @@ export default function NewCampaignPage() {
   };
 
   const calculateFinalStats = () => {
-    const raceBonus = selectedRace || {
-      hpBonus: 0,
-      attackBonus: 0,
-      defenseBonus: 0,
-    };
-    const classBonus = selectedClass || {
-      hpBonus: 0,
-      attackBonus: 0,
-      defenseBonus: 0,
-    };
-
     return {
-      hp: baseHP + raceBonus.hpBonus + classBonus.hpBonus,
-      attack: baseAttack + raceBonus.attackBonus + classBonus.attackBonus,
-      defense: baseDefense + raceBonus.defenseBonus + classBonus.defenseBonus,
+      hp: (selectedRace?.health || 0) + (selectedClass?.health || 0),
+      attack: (selectedRace?.attack || 0) + (selectedClass?.attack || 0),
+      defense: (selectedRace?.defense || 0) + (selectedClass?.defense || 0)
     };
   };
 
   const canProceed = (): boolean => {
     switch (currentStep) {
+      case "campaignName":
+        return campaignName.trim().length > 0;
       case "name":
         return characterName.trim().length > 0;
-      case "stats":
-        return true;
       case "race":
         return selectedRace !== null;
       case "class":
@@ -137,11 +142,39 @@ export default function NewCampaignPage() {
     }
   };
 
-  const handleStartCampaign = () => {
-    // Generate a campaign ID (in a real app, this would come from your backend)
-    const campaignId = Date.now();
-    // Navigate to the campaign page
-    router.push(`/campaigns/${campaignId}`);
+  const handleStartCampaign = async () => {
+    try {
+      if (!selectedRace?.id || !selectedClass?.id) {
+        throw new Error("Invalid race or class selection");
+      }
+
+      // Create campaign via API
+      const response = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountId: 1, // TODO: Get from auth session
+          campaignName: campaignName,
+          campaignDescription: `A ${selectedRace.name} ${selectedClass.name} adventure`,
+          character: {
+            name: characterName,
+            raceId: selectedRace.id,
+            classId: selectedClass.id
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create campaign");
+      }
+
+      const { campaign } = await response.json();
+      router.push(`/campaigns/${campaign.id}`);
+    } catch (error) {
+      // TODO: Remove console.log after development
+      console.error("Failed to create campaign:", error);
+      alert("Failed to create campaign. Please try again.");
+    }
   };
 
   const finalStats = calculateFinalStats();
@@ -178,6 +211,23 @@ export default function NewCampaignPage() {
 
         {/* Main Content */}
         <div className={styles.mainContent}>
+          {currentStep === "campaignName" && (
+            <div className={styles.stepContent}>
+              <h1 className={styles.stepTitle}>Campaign Name</h1>
+              <p className={styles.stepDescription}>
+                Choose a name for your adventure
+              </p>
+              <input
+                type="text"
+                className={styles.nameInput}
+                placeholder="Enter campaign name..."
+                value={campaignName}
+                onChange={(e) => setCampaignName(e.target.value)}
+                autoFocus
+              />
+            </div>
+          )}
+
           {currentStep === "name" && (
             <div className={styles.stepContent}>
               <h1 className={styles.stepTitle}>Character Name</h1>
@@ -195,85 +245,35 @@ export default function NewCampaignPage() {
             </div>
           )}
 
-          {currentStep === "stats" && (
-            <div className={styles.stepContent}>
-              <h1 className={styles.stepTitle}>Base Stats</h1>
-              <p className={styles.stepDescription}>
-                Set your character&#39;s base attributes
-              </p>
-
-              <div className={styles.statsContainer}>
-                <div className={styles.statItem}>
-                  <label className={styles.statLabel}>Health Points (HP)</label>
-                  <input
-                    type="range"
-                    min="30"
-                    max="100"
-                    value={baseHP}
-                    onChange={(e) => setBaseHP(Number(e.target.value))}
-                    className={styles.slider}
-                  />
-                  <span className={styles.statValue}>{baseHP}</span>
-                </div>
-
-                <div className={styles.statItem}>
-                  <label className={styles.statLabel}>Attack</label>
-                  <input
-                    type="range"
-                    min="5"
-                    max="20"
-                    value={baseAttack}
-                    onChange={(e) => setBaseAttack(Number(e.target.value))}
-                    className={styles.slider}
-                  />
-                  <span className={styles.statValue}>{baseAttack}</span>
-                </div>
-
-                <div className={styles.statItem}>
-                  <label className={styles.statLabel}>Defense</label>
-                  <input
-                    type="range"
-                    min="5"
-                    max="20"
-                    value={baseDefense}
-                    onChange={(e) => setBaseDefense(Number(e.target.value))}
-                    className={styles.slider}
-                  />
-                  <span className={styles.statValue}>{baseDefense}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {currentStep === "race" && (
             <div className={styles.stepContent}>
               <h1 className={styles.stepTitle}>Choose Your Race</h1>
               <p className={styles.stepDescription}>
-                Each race provides different stat bonuses
+                Each race provides different base stats
               </p>
 
-              <div className={styles.optionsContainer}>
-                {races.map((race) => (
-                  <div
-                    key={race.name}
-                    className={`${styles.optionCard} ${
-                      selectedRace?.name === race.name ? styles.selected : ""
-                    }`}
-                    onClick={() => setSelectedRace(race)}
-                  >
-                    <h3 className={styles.optionTitle}>{race.name}</h3>
-                    <div className={styles.bonuses}>
-                      <div className={styles.bonus}>HP: +{race.hpBonus}</div>
-                      <div className={styles.bonus}>
-                        ATK: +{race.attackBonus}
-                      </div>
-                      <div className={styles.bonus}>
-                        DEF: +{race.defenseBonus}
+              {isLoading ? (
+                <p>Loading races...</p>
+              ) : (
+                <div className={styles.optionsContainer}>
+                  {dbRaces.map((race) => (
+                    <div
+                      key={race.id}
+                      className={`${styles.optionCard} ${
+                        selectedRace?.id === race.id ? styles.selected : ""
+                      }`}
+                      onClick={() => setSelectedRace(race)}
+                    >
+                      <h3 className={styles.optionTitle}>{race.name}</h3>
+                      <div className={styles.bonuses}>
+                        <div className={styles.bonus}>HP: {race.health}</div>
+                        <div className={styles.bonus}>ATK: {race.attack}</div>
+                        <div className={styles.bonus}>DEF: {race.defense}</div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -281,31 +281,31 @@ export default function NewCampaignPage() {
             <div className={styles.stepContent}>
               <h1 className={styles.stepTitle}>Choose Your Class</h1>
               <p className={styles.stepDescription}>
-                Each class provides different stat bonuses
+                Each class provides different base stats
               </p>
 
-              <div className={styles.optionsContainer}>
-                {classes.map((cls) => (
-                  <div
-                    key={cls.name}
-                    className={`${styles.optionCard} ${
-                      selectedClass?.name === cls.name ? styles.selected : ""
-                    }`}
-                    onClick={() => setSelectedClass(cls)}
-                  >
-                    <h3 className={styles.optionTitle}>{cls.name}</h3>
-                    <div className={styles.bonuses}>
-                      <div className={styles.bonus}>HP: +{cls.hpBonus}</div>
-                      <div className={styles.bonus}>
-                        ATK: +{cls.attackBonus}
-                      </div>
-                      <div className={styles.bonus}>
-                        DEF: +{cls.defenseBonus}
+              {isLoading ? (
+                <p>Loading classes...</p>
+              ) : (
+                <div className={styles.optionsContainer}>
+                  {dbClasses.map((cls) => (
+                    <div
+                      key={cls.id}
+                      className={`${styles.optionCard} ${
+                        selectedClass?.id === cls.id ? styles.selected : ""
+                      }`}
+                      onClick={() => setSelectedClass(cls)}
+                    >
+                      <h3 className={styles.optionTitle}>{cls.name}</h3>
+                      <div className={styles.bonuses}>
+                        <div className={styles.bonus}>HP: {cls.health}</div>
+                        <div className={styles.bonus}>ATK: {cls.attack}</div>
+                        <div className={styles.bonus}>DEF: {cls.defense}</div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -365,8 +365,11 @@ export default function NewCampaignPage() {
 
           {/* Navigation Buttons */}
           <div className={styles.navigationButtons}>
-            {currentStep !== "name" && (
-              <button className={styles.backButton} onClick={handleBack}>
+            {currentStep !== "campaignName" && (
+              <button
+                className={styles.backButton}
+                onClick={handleBack}
+              >
                 Back
               </button>
             )}
