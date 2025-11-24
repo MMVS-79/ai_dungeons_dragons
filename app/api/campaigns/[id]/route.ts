@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Campaign, Character, GameEvent } from "@/lib/types/game.types";
+import type {
+  Campaign,
+  Character,
+  GameEvent,
+  Equipment,
+  Item
+} from "@/lib/types/game.types";
 import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
 
@@ -88,7 +94,7 @@ export async function GET(
       inventory
     });
   } catch (error) {
-    // Log error details and return 500 response
+    // TODO: Remove console.log after development
     console.error("[API] Get campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaign" },
@@ -100,28 +106,37 @@ export async function GET(
 /**
  * PUT /api/campaigns/[id]
  *
- * TODO: Sync database with backend game state
+ * Sync database with backend game state
  *
- * Purpose: Update database to match current backend game state
- * This endpoint syncs campaign state, character stats, and other game state
- * from the backend services to ensure database consistency.
+ * Purpose:
+ *   Updates the database to match the current game state from GameService. This
+ *   ensures database consistency by syncing campaign state, character stats, and
+ *   equipment from the in-memory game state to persistent storage.
+ *
+ * URL Parameters:
+ *   - id: Campaign ID (number)
  *
  * Request Body: None (only campaign ID from URL)
  *
  * Response:
- * {
- *   success: boolean;
- *   campaign: Campaign;
- *   character: Character;
- * }
+ *   {
+ *     success: boolean;
+ *     campaign: Campaign;    // Updated campaign with preserved createdAt
+ *     character: Character;  // Updated character with current stats
+ *   }
  *
- * Implementation Steps:
- * 1. Extract campaign ID from URL params
- * 2. Call GameService.getGameState(campaignId) to get current state
- * 3. Update campaign record with state from gameState.campaign (preserve createdAt)
- * 4. Update character record with stats from gameState.character
- * 5. Return updated campaign and character
- * 6. Return 404 if campaign not found
+ * Implementation:
+ *   1. Validates campaign ID from URL parameter
+ *   2. Initializes GameService with API key
+ *   3. Fetches current game state from GameService
+ *   4. Gets existing campaign to preserve createdAt timestamp
+ *   5. Updates campaign record (state, description, updatedAt)
+ *   6. Updates character record (health, stats, equipment IDs)
+ *   7. Returns updated objects with preserved createdAt
+ *
+ * Error Handling:
+ *   - 400: Invalid campaign ID (not a number)
+ *   - 500: Campaign not found, GameService error, or database update failure
  */
 export async function PUT(
   request: NextRequest,
@@ -138,35 +153,27 @@ export async function PUT(
       );
     }
 
-    // Step 1: Initialize GameService
-    // Step 2: Get current game state
-    // Step 3: Get existing campaign to preserve createdAt
-    // Step 4: Update campaign record (preserve createdAt, update updatedAt)
-    // Step 5: Update character record with current stats
-    // Step 6: Return 404 if campaign not found
-
-    console.log(
-      `[API] PUT /api/campaigns/${campaignId} - Syncing database with game state`
-    );
-
-    // Initialize GameService
+    // Initialize GameService with API key from environment
     const gameService = new GameService(process.env.GEMINI_API_KEY || "");
 
     // Get current game state from GameService
+    // This contains the in-memory state that needs to be persisted
     const gameState = await gameService.getGameState(campaignId);
 
-    // Get existing campaign to preserve createdAt
+    // Get existing campaign to preserve createdAt timestamp
+    // createdAt should never change after initial creation
     const existingCampaign = await BackendService.getCampaign(campaignId);
 
-    // Update campaign record (preserve createdAt, never update it)
+    // Update campaign record with state from game service
+    // Preserves createdAt, updates state, description, and updatedAt
     const updatedCampaign = await BackendService.updateCampaign(campaignId, {
       state: gameState.campaign.state,
       description: gameState.campaign.description,
       updatedAt: new Date()
-      // Note: createdAt is preserved automatically by updateCampaign
     });
 
-    // Update character stats
+    // Update character record with current stats and equipment from game state
+    // Syncs health, attack, defense, and equipped items
     const updatedCharacter = await BackendService.updateCharacter(
       gameState.character.id,
       {
@@ -180,6 +187,12 @@ export async function PUT(
       }
     );
 
+    // TODO: Remove console.log after development
+    console.log(
+      `[API] PUT /api/campaigns/${campaignId} - Synced database with game state`
+    );
+
+    // Return updated objects with preserved createdAt
     return NextResponse.json({
       success: true,
       campaign: {
@@ -189,6 +202,7 @@ export async function PUT(
       character: updatedCharacter
     });
   } catch (error) {
+    // TODO: Remove console.log after development
     console.error("[API] Sync campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to sync campaign state" },
@@ -277,8 +291,7 @@ export async function DELETE(
       message: `Campaign ${campaignId} deleted successfully`
     });
   } catch (error) {
-    // Log error details and return 500 response
-    // Common errors: campaign not found, foreign key constraint issues
+    // TODO: Remove console.log after development
     console.error("[API] Delete campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete campaign" },
