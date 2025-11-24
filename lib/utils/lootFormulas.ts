@@ -13,18 +13,21 @@
 /**
  * Calculate item rarity for exploration item drops
  * Formula: (event_number * ITEM_EVENT_NUMBER_WEIGHT + dice_roll * ITEM_DICE_ROLL_WEIGHT)
- * 
+ *
  * Examples:
  * - Event 1, Roll 5: 1 + 10 = 11 rarity (low-tier items)
  * - Event 25, Roll 10: 25 + 20 = 45 rarity (mid-tier items)
  * - Event 50, Roll 20: 50 + 40 = 90 rarity (high-tier items)
  */
-export function calculateItemRarity(eventNumber: number, diceRoll: number): number {  
+export function calculateItemRarity(
+  eventNumber: number,
+  diceRoll: number,
+): number {
   const baseValue = eventNumber * BALANCE_CONFIG.ITEM_EVENT_NUMBER_WEIGHT;
   const diceContribution = diceRoll * BALANCE_CONFIG.ITEM_DICE_ROLL_WEIGHT;
-  
+
   const targetRarity = baseValue + diceContribution;
-  
+
   return Math.round(targetRarity);
 }
 
@@ -35,20 +38,24 @@ export function calculateItemRarity(eventNumber: number, diceRoll: number): numb
 /**
  * Calculate enemy difficulty for combat encounters
  * Formula: (event_number * ENEMY_EVENT_NUMBER_WEIGHT + dice_roll * ENEMY_DICE_ROLL_WEIGHT)
- * 
+ *
  * Examples:
  * - Event 1, Roll 5: 2 + 5 = 7 (rats, zombies)
  * - Event 25, Roll 10: 50 + 10 = 60 (orcs, devils)
  * - Event 50, Roll 15: 100 + 15 = 115 (trolls, minotaurs)
- * 
+ *
  * Bosses (difficulty 1000+) are only encountered in forced end-game events
  */
-export function calculateEnemyDifficulty(eventNumber: number, diceRoll: number): number {
+export function calculateEnemyDifficulty(
+  eventNumber: number,
+  diceRoll: number,
+): number {
   const baseValue = eventNumber * BALANCE_CONFIG.ENEMY_EVENT_NUMBER_WEIGHT;
-  const diceContribution = (diceRoll - 10) * BALANCE_CONFIG.ENEMY_DICE_ROLL_WEIGHT;
-  
+  const diceContribution =
+    (diceRoll - 10) * BALANCE_CONFIG.ENEMY_DICE_ROLL_WEIGHT;
+
   const targetDifficulty = Math.max(0, baseValue + diceContribution);
-  
+
   return Math.round(targetDifficulty);
 }
 
@@ -59,9 +66,9 @@ export function calculateEnemyDifficulty(eventNumber: number, diceRoll: number):
 /**
  * Calculate item/equipment rarity for combat rewards
  * Formula: (enemy_difficulty * REWARD_DIFFICULTY_WEIGHT + dice_roll * REWARD_DICE_ROLL_WEIGHT)
- * 
+ *
  * This ensures harder enemies drop better loot, with dice roll adding variance
- * 
+ *
  * Examples:
  * - Goblin (diff 15), Roll 5: 7.5 + 10 = 17.5 ≈ 18 (common items)
  * - Orc (diff 35), Roll 10: 17.5 + 20 = 37.5 ≈ 38 (uncommon equipment)
@@ -70,13 +77,14 @@ export function calculateEnemyDifficulty(eventNumber: number, diceRoll: number):
  */
 export function calculateCombatRewardRarity(
   enemyDifficulty: number,
-  diceRoll: number
+  diceRoll: number,
 ): number {
-  const difficultyContribution = enemyDifficulty * BALANCE_CONFIG.REWARD_DIFFICULTY_WEIGHT;
+  const difficultyContribution =
+    enemyDifficulty * BALANCE_CONFIG.REWARD_DIFFICULTY_WEIGHT;
   const diceContribution = diceRoll * BALANCE_CONFIG.REWARD_DICE_ROLL_WEIGHT;
-  
+
   const targetRarity = difficultyContribution + diceContribution;
-  
+
   return Math.round(targetRarity);
 }
 
@@ -88,7 +96,10 @@ export function calculateCombatRewardRarity(
  * Get acceptable rarity range for queries
  * Allows ±5 variance for LLM selection flexibility
  */
-export function getRarityRange(targetRarity: number, variance: number = 5): {
+export function getRarityRange(
+  targetRarity: number,
+  variance: number = 5,
+): {
   min: number;
   max: number;
 } {
@@ -102,7 +113,10 @@ export function getRarityRange(targetRarity: number, variance: number = 5): {
  * Get acceptable difficulty range for enemy queries
  * Allows ±3 variance for enemy selection
  */
-export function getDifficultyRange(targetDifficulty: number, variance: number = 3): {
+export function getDifficultyRange(
+  targetDifficulty: number,
+  variance: number = 3,
+): {
   min: number;
   max: number;
 } {
@@ -123,19 +137,19 @@ export const BALANCE_CONFIG = {
   // Item drop formula multipliers
   ITEM_EVENT_NUMBER_WEIGHT: 1,
   ITEM_DICE_ROLL_WEIGHT: 2,
-  
+
   // Enemy selection formula multipliers
   ENEMY_EVENT_NUMBER_WEIGHT: 2,
   ENEMY_DICE_ROLL_WEIGHT: 1,
-  
+
   // Combat reward formula multipliers
   REWARD_DIFFICULTY_WEIGHT: 0.5,
   REWARD_DICE_ROLL_WEIGHT: 1,
-  
+
   // Selection variance
   ITEM_RARITY_VARIANCE: 5,
   ENEMY_DIFFICULTY_VARIANCE: 3,
-  
+
   // Campaign constants
   BOSS_DIFFICULTY_THRESHOLD: 1000,
   MAX_EVENT_NUMBER: 50,

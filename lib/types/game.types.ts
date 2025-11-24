@@ -8,13 +8,13 @@
 // ============================================================================
 // ITEM & EQUIPMENT TYPES
 // ============================================================================
-import type { EventData } from './db.types';
+import type { EventData } from "./db.types";
 
 export interface Item {
   id: number;
   name: string;
   rarity: number;
-  statModified: 'health' | 'attack' | 'defense';
+  statModified: "health" | "attack" | "defense";
   statValue: number; // Positive = buff, Negative = curse
   description?: string;
   spritePath?: string;
@@ -119,26 +119,30 @@ export interface GameState {
   };
 }
 
-export type GamePhase = 
-  | "exploration"           // Normal exploration (Continue Forward)
-  | "investigation_prompt"  // Asking to investigate (Yes/No)
-  | "combat"                // Active combat
+export type GamePhase =
+  | "exploration" // Normal exploration (Continue Forward)
+  | "investigation_prompt" // Asking to investigate (Yes/No)
+  | "combat" // Active combat
   | "game_over"
   | "victory";
 
-export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
+export type EventTypeString =
+  | "Descriptive"
+  | "Environmental"
+  | "Combat"
+  | "Item_Drop";
 
 // ============================================================================
 // ACTION TYPES (UPDATED)
 // ============================================================================
 
 export type ActionType =
-  | "continue"              // Generate next event
-  | "investigate"           // Accept investigation
-  | "decline"               // Decline investigation
-  | "attack"                // Combat attack
-  | "flee"                  // Combat flee
-  | "use_item_combat";      // Use item during combat
+  | "continue" // Generate next event
+  | "investigate" // Accept investigation
+  | "decline" // Decline investigation
+  | "attack" // Combat attack
+  | "flee" // Combat flee
+  | "use_item_combat"; // Use item during combat
 
 export interface PlayerAction {
   campaignId: number;
@@ -165,7 +169,7 @@ export interface CombatSnapshot {
     baseAttack: number;
     baseDefense: number;
   };
-  equipment?: Equipment; 
+  equipment?: Equipment;
   inventorySnapshot: Item[];
   originalInventoryIds: number[];
   temporaryBuffs: {

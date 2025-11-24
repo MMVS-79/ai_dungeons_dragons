@@ -9,7 +9,7 @@ const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
 // Fail early with a helpful message if required env is missing
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !NEXTAUTH_SECRET) {
   throw new Error(
-    "Missing required NEXTAUTH env vars. Ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and NEXTAUTH_SECRET are set."
+    "Missing required NEXTAUTH env vars. Ensure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and NEXTAUTH_SECRET are set.",
   );
 }
 
@@ -20,8 +20,8 @@ const handler = NextAuth({
       clientSecret: GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          prompt: "consent",        // shows consent screen (useful for refresh tokens)
-          access_type: "offline",   // request refresh token
+          prompt: "consent", // shows consent screen (useful for refresh tokens)
+          access_type: "offline", // request refresh token
           response_type: "code",
         },
       },
@@ -32,12 +32,12 @@ const handler = NextAuth({
     error: "/login",
   },
 
-callbacks: {
+  callbacks: {
     async session({ session, token }) {
       // session.user is now guaranteed to have an 'id' property due to type augmentation.
       if (session.user && token.sub) {
         // Fix: Use the properly typed session object
-        session.user.id = token.sub; 
+        session.user.id = token.sub;
       }
       return session;
     },

@@ -118,7 +118,9 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(true);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [enemyState, setEnemyState] = useState<EnemyState | null>(null);
-  const [itemFound, setItemFound] = useState<Weapon | Armour | Shield | Item | null>(null);
+  const [itemFound, setItemFound] = useState<
+    Weapon | Armour | Shield | Item | null
+  >(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [diceRolling, setDiceRolling] = useState(false);
   const [lastDiceResult, setLastDiceResult] = useState<number | null>(null);
@@ -322,7 +324,7 @@ export default function CampaignPage() {
       }
 
       console.log(
-        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`
+        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`,
       );
 
       const response = await fetch("/api/game/action", {

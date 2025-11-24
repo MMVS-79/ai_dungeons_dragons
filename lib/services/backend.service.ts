@@ -47,7 +47,7 @@ import type {
   EventData,
   InsertResult,
 } from "../types/db.types";
-import { RowDataPacket } from 'mysql2';
+import { RowDataPacket } from "mysql2";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -236,7 +236,7 @@ export async function getCharacter(id: number): Promise<Character> {
  */
 export async function updateCharacter(
   characterId: number,
-  updates: Partial<Character>
+  updates: Partial<Character>,
 ): Promise<Character> {
   try {
     // Map TypeScript keys to DB columns
@@ -280,7 +280,7 @@ export async function updateCharacter(
   } catch (error) {
     console.error(
       `[BackendService] updateCharacter(${characterId}) failed:`,
-      error
+      error,
     );
     throw error;
   }
@@ -290,11 +290,11 @@ export async function updateCharacter(
  * Get Character by Campaign ID
  */
 export async function getCharacterByCampaign(
-  campaignId: number
+  campaignId: number,
 ): Promise<Character> {
   const [rows] = await pool.query<CharacterRow[]>(
     "SELECT * FROM characters WHERE campaign_id = ? LIMIT 1",
-    [campaignId]
+    [campaignId],
   );
 
   if (rows.length === 0) {
@@ -341,7 +341,7 @@ export async function getCharacterWithFullData(campaignId: number): Promise<{
 export async function getAllRaces(): Promise<RaceRow[]> {
   const [rows] = await pool.query<RaceRow[]>(
     `SELECT * FROM races
-     ORDER BY name ASC`
+     ORDER BY name ASC`,
   );
 
   return rows;
@@ -350,7 +350,7 @@ export async function getAllRaces(): Promise<RaceRow[]> {
 export async function getAllClasses(): Promise<ClassRow[]> {
   const [rows] = await pool.query<ClassRow[]>(
     `SELECT * FROM classes
-     ORDER BY name ASC`
+     ORDER BY name ASC`,
   );
 
   return rows;
@@ -366,7 +366,7 @@ export async function getAllClasses(): Promise<ClassRow[]> {
 export async function getWeapon(weaponId: number): Promise<Weapon> {
   const [rows] = await pool.query<WeaponRow[]>(
     "SELECT * FROM weapons WHERE id = ?",
-    [weaponId]
+    [weaponId],
   );
 
   if (rows.length === 0) {
@@ -381,7 +381,7 @@ export async function getWeapon(weaponId: number): Promise<Weapon> {
 export async function getArmour(armourId: number): Promise<Armour> {
   const [rows] = await pool.query<ArmourRow[]>(
     "SELECT * FROM armours WHERE id = ?",
-    [armourId]
+    [armourId],
   );
 
   if (rows.length === 0) {
@@ -396,7 +396,7 @@ export async function getArmour(armourId: number): Promise<Armour> {
 export async function getShield(shieldId: number): Promise<Shield> {
   const [rows] = await pool.query<ShieldRow[]>(
     "SELECT * FROM shields WHERE id = ?",
-    [shieldId]
+    [shieldId],
   );
 
   if (rows.length === 0) {
@@ -414,11 +414,11 @@ export async function getShield(shieldId: number): Promise<Shield> {
  */
 export async function equipWeapon(
   characterId: number,
-  weaponId: number
+  weaponId: number,
 ): Promise<void> {
   await pool.query(
     "UPDATE characters SET weapon_id = ?, updated_at = NOW() WHERE id = ?",
-    [weaponId, characterId]
+    [weaponId, characterId],
   );
 }
 
@@ -427,11 +427,11 @@ export async function equipWeapon(
  */
 export async function equipArmour(
   characterId: number,
-  armourId: number
+  armourId: number,
 ): Promise<void> {
   await pool.query(
     "UPDATE characters SET armour_id = ?, updated_at = NOW() WHERE id = ?",
-    [armourId, characterId]
+    [armourId, characterId],
   );
 }
 
@@ -440,11 +440,11 @@ export async function equipArmour(
  */
 export async function equipShield(
   characterId: number,
-  shieldId: number
+  shieldId: number,
 ): Promise<void> {
   await pool.query(
     "UPDATE characters SET shield_id = ?, updated_at = NOW() WHERE id = ?",
-    [shieldId, characterId]
+    [shieldId, characterId],
   );
 }
 
@@ -460,7 +460,7 @@ export async function getInventory(characterId: number): Promise<Item[]> {
     `SELECT items.* FROM items
      JOIN character_items ON items.id = character_items.item_id
      WHERE character_items.character_id = ?`,
-    [characterId]
+    [characterId],
   );
 
   return rows.map(mapItemRow);
@@ -472,7 +472,7 @@ export async function getInventory(characterId: number): Promise<Item[]> {
 export async function getItem(itemId: number): Promise<Item> {
   const [rows] = await pool.query<ItemRow[]>(
     "SELECT * FROM items WHERE id = ?",
-    [itemId]
+    [itemId],
   );
 
   if (rows.length === 0) {
@@ -487,11 +487,11 @@ export async function getItem(itemId: number): Promise<Item> {
  */
 export async function addItemToInventory(
   characterId: number,
-  itemId: number
+  itemId: number,
 ): Promise<void> {
   await pool.query(
     "INSERT INTO character_items (character_id, item_id) VALUES (?, ?)",
-    [characterId, itemId]
+    [characterId, itemId],
   );
 }
 
@@ -500,11 +500,11 @@ export async function addItemToInventory(
  */
 export async function removeItemFromInventory(
   characterId: number,
-  itemId: number
+  itemId: number,
 ): Promise<void> {
   await pool.query(
     "DELETE FROM character_items WHERE character_id = ? AND item_id = ? LIMIT 1",
-    [characterId, itemId]
+    [characterId, itemId],
   );
 }
 
@@ -517,7 +517,7 @@ export async function removeItemFromInventory(
  */
 export async function getItemByRarity(
   targetRarity: number,
-  variance: number = 5
+  variance: number = 5,
 ): Promise<Item> {
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
@@ -527,7 +527,7 @@ export async function getItemByRarity(
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
      LIMIT 1`,
-    [minRarity, maxRarity, targetRarity]
+    [minRarity, maxRarity, targetRarity],
   );
 
   if (rows.length === 0) {
@@ -536,7 +536,7 @@ export async function getItemByRarity(
       `SELECT * FROM items 
        ORDER BY ABS(rarity - ?) ASC 
        LIMIT 1`,
-      [targetRarity]
+      [targetRarity],
     );
 
     if (fallbackRows.length === 0) {
@@ -554,7 +554,7 @@ export async function getItemByRarity(
  */
 export async function getWeaponByRarity(
   targetRarity: number,
-  variance: number = 5
+  variance: number = 5,
 ): Promise<Weapon> {
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
@@ -564,13 +564,13 @@ export async function getWeaponByRarity(
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
      LIMIT 1`,
-    [minRarity, maxRarity, targetRarity]
+    [minRarity, maxRarity, targetRarity],
   );
 
   if (rows.length === 0) {
     const [fallbackRows] = await pool.query<WeaponRow[]>(
       "SELECT * FROM weapons ORDER BY ABS(rarity - ?) ASC LIMIT 1",
-      [targetRarity]
+      [targetRarity],
     );
 
     if (fallbackRows.length === 0) {
@@ -588,7 +588,7 @@ export async function getWeaponByRarity(
  */
 export async function getArmourByRarity(
   targetRarity: number,
-  variance: number = 5
+  variance: number = 5,
 ): Promise<Armour> {
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
@@ -598,13 +598,13 @@ export async function getArmourByRarity(
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
      LIMIT 1`,
-    [minRarity, maxRarity, targetRarity]
+    [minRarity, maxRarity, targetRarity],
   );
 
   if (rows.length === 0) {
     const [fallbackRows] = await pool.query<ArmourRow[]>(
       "SELECT * FROM armours ORDER BY ABS(rarity - ?) ASC LIMIT 1",
-      [targetRarity]
+      [targetRarity],
     );
 
     if (fallbackRows.length === 0) {
@@ -622,7 +622,7 @@ export async function getArmourByRarity(
  */
 export async function getShieldByRarity(
   targetRarity: number,
-  variance: number = 5
+  variance: number = 5,
 ): Promise<Shield> {
   const minRarity = Math.max(0, targetRarity - variance);
   const maxRarity = targetRarity + variance;
@@ -632,13 +632,13 @@ export async function getShieldByRarity(
      WHERE rarity BETWEEN ? AND ?
      ORDER BY ABS(rarity - ?) ASC, RAND()
      LIMIT 1`,
-    [minRarity, maxRarity, targetRarity]
+    [minRarity, maxRarity, targetRarity],
   );
 
   if (rows.length === 0) {
     const [fallbackRows] = await pool.query<ShieldRow[]>(
       "SELECT * FROM shields ORDER BY ABS(rarity - ?) ASC LIMIT 1",
-      [targetRarity]
+      [targetRarity],
     );
 
     if (fallbackRows.length === 0) {
@@ -661,7 +661,7 @@ export async function getShieldByRarity(
 export async function getEnemy(enemyId: number): Promise<Enemy> {
   const [rows] = await pool.query<EnemyRow[]>(
     "SELECT * FROM enemies WHERE id = ?",
-    [enemyId]
+    [enemyId],
   );
 
   if (rows.length === 0) {
@@ -677,7 +677,7 @@ export async function getEnemy(enemyId: number): Promise<Enemy> {
 export async function getEnemyByDifficulty(
   targetDifficulty: number,
   variance: number = 3,
-  excludeBosses: boolean = true
+  excludeBosses: boolean = true,
 ): Promise<Enemy> {
   const minDifficulty = Math.max(0, targetDifficulty - variance);
   const maxDifficulty = targetDifficulty + variance;
@@ -722,7 +722,7 @@ export async function getEnemyByDifficulty(
  */
 export async function getBossEnemy(): Promise<Enemy> {
   const [rows] = await pool.query<EnemyRow[]>(
-    "SELECT * FROM enemies WHERE difficulty >= 1000 ORDER BY RAND() LIMIT 1"
+    "SELECT * FROM enemies WHERE difficulty >= 1000 ORDER BY RAND() LIMIT 1",
   );
 
   if (rows.length === 0) {
@@ -742,7 +742,7 @@ export async function getBossEnemy(): Promise<Enemy> {
 export async function getCampaign(campaignId: number): Promise<Campaign> {
   const [rows] = await pool.query<CampaignRow[]>(
     "SELECT * FROM campaigns WHERE id = ?",
-    [campaignId]
+    [campaignId],
   );
 
   if (rows.length === 0) {
@@ -757,7 +757,7 @@ export async function getCampaign(campaignId: number): Promise<Campaign> {
  */
 export async function updateCampaign(
   campaignId: number,
-  updates: Partial<Campaign>
+  updates: Partial<Campaign>,
 ): Promise<Campaign> {
   const dbUpdates: Record<string, string | undefined> = {};
 
@@ -777,7 +777,7 @@ export async function updateCampaign(
 
   await pool.query(
     `UPDATE campaigns SET ${setClause}, updated_at = NOW() WHERE id = ?`,
-    values
+    values,
   );
 
   return getCampaign(campaignId);
@@ -797,7 +797,7 @@ async function getNextEventNumber(campaignId: number): Promise<number> {
 
   const [rows] = await pool.query<MaxNumRow[]>(
     "SELECT MAX(event_number) as maxNum FROM logs WHERE campaign_id = ?",
-    [campaignId]
+    [campaignId],
   );
 
   const maxNum = rows[0]?.maxNum;
@@ -811,14 +811,14 @@ export async function saveEvent(
   campaignId: number,
   message: string,
   eventType: EventTypeString,
-  eventData?: EventData
+  eventData?: EventData,
 ): Promise<GameEvent> {
   const eventNumber = await getNextEventNumber(campaignId);
   const eventDataJson = eventData ? JSON.stringify(eventData) : null;
 
   const [result] = await pool.query<InsertResult>(
     "INSERT INTO logs (campaign_id, message, event_number, event_type, event_data) VALUES (?, ?, ?, ?, ?)",
-    [campaignId, message, eventNumber, eventType, eventDataJson]
+    [campaignId, message, eventNumber, eventType, eventDataJson],
   );
 
   return {
@@ -837,11 +837,11 @@ export async function saveEvent(
  */
 export async function getRecentEvents(
   campaignId: number,
-  limit: number = 10
+  limit: number = 10,
 ): Promise<GameEvent[]> {
   const [rows] = await pool.query<LogRow[]>(
     "SELECT * FROM logs WHERE campaign_id = ? ORDER BY event_number DESC LIMIT ?",
-    [campaignId, limit]
+    [campaignId, limit],
   );
 
   return rows.map((row) => ({
@@ -854,4 +854,3 @@ export async function getRecentEvents(
     createdAt: new Date(row.created_at),
   }));
 }
-

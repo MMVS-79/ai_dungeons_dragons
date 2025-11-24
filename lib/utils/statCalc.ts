@@ -39,7 +39,7 @@ export class Stat_Calc {
   public static applyRoll(
     rollValue: number,
     statType: StatType,
-    initValue: number
+    initValue: number,
   ): number {
     let finalValue: number;
 
@@ -95,7 +95,7 @@ export class Stat_Calc {
     const result = mapping[normalized];
     if (!result) {
       console.warn(
-        `[Stat_Calc] Unknown stat type: ${statType}, defaulting to HEALTH`
+        `[Stat_Calc] Unknown stat type: ${statType}, defaulting to HEALTH`,
       );
       return "HEALTH";
     }
@@ -115,7 +115,7 @@ export class Stat_Calc {
   public static applyRollFlexible(
     rollValue: number,
     statType: string,
-    initValue: number
+    initValue: number,
   ): number {
     const normalized = this.normalizeStatType(statType);
     return this.applyRoll(rollValue, normalized, initValue);
