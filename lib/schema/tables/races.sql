@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS races;
 CREATE TABLE races (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    vitality INT NOT NULL,
+    health INT NOT NULL,
     attack INT NOT NULL,
     defense INT NOT NULL,
     sprite_path VARCHAR(255),

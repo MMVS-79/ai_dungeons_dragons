@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Unit } from "@/lib/types/game.types";
+import type { Enemy } from "@/lib/types/game.types";
 
 /**
  * GET /api/enemies/[id]
@@ -22,7 +22,7 @@ import type { Unit } from "@/lib/types/game.types";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }, // ✅ Updated for Next.js 15+
+  context: { params: Promise<{ id: string }> } // ✅ Updated for Next.js 15+
 ) {
   try {
     // Await the params promise to extract the id
@@ -32,7 +32,7 @@ export async function GET(
     if (isNaN(enemyId)) {
       return NextResponse.json(
         { success: false, error: "Invalid enemy ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -47,17 +47,18 @@ export async function GET(
       enemy: {
         id: enemyId,
         name: "Mock Dragon",
-        vitality: 20,
+        difficulty: 100,
+        health: 200,
         attack: 15,
         defense: 8,
         spritePath: "/characters/enemy/boss/dragon.png",
-      } as Unit,
+      } as Enemy,
     });
   } catch (error) {
     console.error("[API] Get enemy error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch enemy" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

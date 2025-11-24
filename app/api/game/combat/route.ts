@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
-import type {
-  CombatActionRequest,
-  PlayerAction,
-  GameServiceResponse,
-} from "@/lib/types/game.types";
+import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
+
+interface CombatActionRequest {
+  campaignId: number;
+  actionType: "attack" | "use_item";
+  itemId?: number;
+}
 
 // Initialize GameService with API key
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
@@ -34,18 +36,18 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Missing required fields: campaignId and actionType",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Validate actionType
-    if (!["attack", "use_item"].includes(body.actionType)) {
+    if (!["attack", "use_item_combat"].includes(body.actionType === "use_item" ? "use_item_combat" : body.actionType)) {
       return NextResponse.json(
         {
           success: false,
           error: `Invalid actionType: ${body.actionType}. Must be "attack" or "use_item"`,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -56,28 +58,30 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "itemId is required for use_item actions",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Construct PlayerAction
     const action: PlayerAction = {
       campaignId: body.campaignId,
-      actionType: body.actionType,
+      actionType:
+        body.actionType === "use_item" ? "use_item_combat" : body.actionType, // Map use_item to use_item_combat
       actionData: body.itemId ? { itemId: body.itemId } : {},
     };
 
     console.log(
-      `[API Combat] Processing ${body.actionType} action for campaign ${body.campaignId}`,
+      `[API Combat] Processing ${body.actionType} action for campaign ${body.campaignId}`
     );
 
     // Call GameService orchestrator
-    const result: GameServiceResponse =
-      await gameService.processPlayerAction(action);
+    const result: GameServiceResponse = await gameService.processPlayerAction(
+      action
+    );
 
     // Log result for debugging
     console.log(
-      `[API Combat] Result: success=${result.success}, phase=${result.gameState.currentPhase}`,
+      `[API Combat] Result: success=${result.success}, phase=${result.gameState.currentPhase}`
     );
 
     // Return response
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to process combat action",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

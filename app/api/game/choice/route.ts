@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
-import type {
-  ChoiceActionRequest,
-  PlayerAction,
-  GameServiceResponse,
-} from "@/lib/types/game.types";
+import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
+
+interface ChoiceActionRequest {
+  campaignId: number;
+  choiceType: "event" | "item" | "equipment";
+  choice: boolean;
+  itemId?: number;
+}
 
 // Initialize GameService with API key
 const gameService = new GameService(process.env.GEMINI_API_KEY!);
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Missing required fields: campaignId, choiceType, and choice",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: `Invalid choiceType: ${body.choiceType}. Must be "event", "item", or "equipment"`,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "itemId is required for equipment choices",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
       case "event":
         action = {
           campaignId: body.campaignId,
-          actionType: body.choice ? "accept_event" : "reject_event",
+          actionType: body.choice ? "investigate" : "decline", // Fixed
           actionData: {},
         };
         break;
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
       case "item":
         action = {
           campaignId: body.campaignId,
-          actionType: body.choice ? "pickup_item" : "reject_item",
+          actionType: body.choice ? "investigate" : "decline", // Fixed
           actionData: body.itemId ? { itemId: body.itemId } : {},
         };
         break;
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
       case "equipment":
         action = {
           campaignId: body.campaignId,
-          actionType: "equip_item",
+          actionType: "continue", // Fixed - or use appropriate action
           actionData: { itemId: body.itemId },
         };
         break;
@@ -95,21 +98,22 @@ export async function POST(request: NextRequest) {
             success: false,
             error: "Invalid choiceType",
           },
-          { status: 400 },
+          { status: 400 }
         );
     }
 
     console.log(
-      `[API Choice] Processing ${body.choiceType} choice (${body.choice}) for campaign ${body.campaignId}`,
+      `[API Choice] Processing ${body.choiceType} choice (${body.choice}) for campaign ${body.campaignId}`
     );
 
     // Call GameService orchestrator
-    const result: GameServiceResponse =
-      await gameService.processPlayerAction(action);
+    const result: GameServiceResponse = await gameService.processPlayerAction(
+      action
+    );
 
     // Log result for debugging
     console.log(
-      `[API Choice] Result: success=${result.success}, phase=${result.gameState.currentPhase}`,
+      `[API Choice] Result: success=${result.success}, phase=${result.gameState.currentPhase}`
     );
 
     // Return response
@@ -127,7 +131,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to process choice action",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

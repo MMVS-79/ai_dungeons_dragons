@@ -43,7 +43,7 @@ export default function ChatPanel({
         <div className={styles.choicesContainer}>
           {latestMessage.choices.map((choice, idx) => (
             <button
-              key={idx}
+              key={choice}
               onClick={() => onAction(choice)}
               disabled={disabled}
               className={styles.choiceButton}

@@ -1,29 +1,49 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import styles from "./itemPanel.module.css";
+import type { Weapon, Armour, Shield } from "../../page";
 
 interface Item {
-  id: string;
+  id: number;
   name: string;
-  type: "weapon" | "armor" | "shield" | "potion";
-  image: string;
-  attack?: number;
-  defense?: number;
-  hpBonus?: number;
-  healAmount?: number;
-  description: string;
+  rarity: number;
+  statModified: "health" | "attack" | "defense";
+  statValue: number;
+  description?: string;
+  spritePath?: string;
+}
+
+interface Equipment {
+  weapon?: {
+    id: number;
+    name: string;
+    rarity: number;
+    attack: number;
+    description?: string;
+    spritePath?: string;
+  };
+  armour?: {
+    id: number;
+    name: string;
+    rarity: number;
+    health: number;
+    description?: string;
+    spritePath?: string;
+  };
+  shield?: {
+    id: number;
+    name: string;
+    rarity: number;
+    defense: number;
+    description?: string;
+    spritePath?: string;
+  };
 }
 
 interface ItemPanelProps {
   inventory: Item[];
-  equipped: {
-    weapon?: Item;
-    armor?: Item;
-    shield?: Item;
-  };
+  equipped: Equipment;
   onUseItem: (item: Item) => void;
-  onEquipItem: (item: Item, slot: string) => void;
-  onDropEquipment: (slot: string) => void;
   inCombat: boolean;
 }
 
@@ -33,24 +53,21 @@ export default function ItemPanel({
   inventory,
   equipped,
   onUseItem,
-  onEquipItem,
-  onDropEquipment,
   inCombat,
 }: ItemPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<{
-    item: Item;
+    item: Equipment["weapon"] | Equipment["armour"] | Equipment["shield"];
     slot: string;
   } | null>(null);
   const [hoveredItem, setHoveredItem] = useState<Item | null>(null);
   const [hoveredEquipment, setHoveredEquipment] = useState<{
-    item: Item;
+    item: Equipment["weapon"] | Equipment["armour"] | Equipment["shield"];
     slot: string;
   } | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-  // Create array of 10 slots, filled with items or null
   const inventorySlots = Array(MAX_INVENTORY_SLOTS)
     .fill(null)
     .map((_, index) => inventory[index] || null);
@@ -59,14 +76,27 @@ export default function ItemPanel({
     setTooltipPosition({ x: e.clientX, y: e.clientY });
   };
 
-  const getTooltipText = (item: Item) => {
-    if (item.type === "potion") {
-      return `${item.name}\nHeals ${item.healAmount} HP`;
-    } else if (item.type === "weapon") {
+  const getItemTooltipText = (item: Item) => {
+    const statName =
+      item.statModified === "health"
+        ? "HP"
+        : item.statModified === "attack"
+        ? "Attack"
+        : "Defense";
+    return `${item.name}\n${item.statValue > 0 ? "+" : ""}${
+      item.statValue
+    } ${statName}`;
+  };
+
+  const getEquipmentTooltipText = (
+    item: Weapon | Armour | Shield,
+    slot: string
+  ) => {
+    if (slot === "weapon" && "attack" in item) {
       return `${item.name}\n+${item.attack} Attack`;
-    } else if (item.type === "armor") {
-      return `${item.name}\n+${item.hpBonus} Max HP`; // Changed from defense to hpBonus
-    } else if (item.type === "shield") {
+    } else if (slot === "armour" && "health" in item) {
+      return `${item.name}\n+${item.health} Max HP`;
+    } else if (slot === "shield" && "defense" in item) {
       return `${item.name}\n+${item.defense} Defense`;
     }
     return item.name;
@@ -85,23 +115,26 @@ export default function ItemPanel({
         <div className={styles.section}>
           <h3 className={styles.sectionHeader}>Equipped</h3>
           <div className={styles.equippedGrid}>
-            {(["weapon", "armor", "shield"] as const).map((slot) => (
-              <div key={slot} className={styles.equippedSlot}>
-                <div className={styles.slotLabel}>{slot}</div>
-                <div className={styles.slotImage}>
-                  {equipped[slot]?.image ? (
-                    <Image
-                      src={equipped[slot]!.image}
-                      alt={equipped[slot]!.name}
-                      width={40}
-                      height={40}
-                    />
-                  ) : (
-                    "—"
-                  )}
+            {(["weapon", "armour", "shield"] as const).map((slot) => {
+              const item = equipped[slot];
+              return (
+                <div key={slot} className={styles.equippedSlot}>
+                  <div className={styles.slotLabel}>{slot}</div>
+                  <div className={styles.slotImage}>
+                    {item?.spritePath ? (
+                      <Image
+                        src={item.spritePath}
+                        alt={item.name}
+                        width={40}
+                        height={40}
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -112,9 +145,9 @@ export default function ItemPanel({
           <div className={styles.itemsGrid}>
             {inventorySlots.map((item, index) => (
               <div key={index} className={styles.itemSlotPreview}>
-                {item?.image && (
+                {item?.spritePath && (
                   <Image
-                    src={item.image}
+                    src={item.spritePath}
                     alt={item.name}
                     width={40}
                     height={40}
@@ -151,57 +184,62 @@ export default function ItemPanel({
             <div className={styles.expandedSection}>
               <h3 className={styles.expandedSectionHeader}>⚔️ Equipped</h3>
               <div className={styles.expandedEquippedGrid}>
-                {(["weapon", "armor", "shield"] as const).map((slot) => (
-                  <div
-                    key={slot}
-                    className={`${styles.expandedEquippedSlot} ${equipped[slot] ? styles.hasItem : ""}`}
-                    onClick={() =>
-                      equipped[slot] &&
-                      setSelectedEquipment({ item: equipped[slot]!, slot })
-                    }
-                    onMouseEnter={() =>
-                      equipped[slot] &&
-                      setHoveredEquipment({ item: equipped[slot]!, slot })
-                    }
-                    onMouseLeave={() => setHoveredEquipment(null)}
-                  >
-                    <div className={styles.slotLabel}>
-                      {slot.charAt(0).toUpperCase() + slot.slice(1)}
+                {(["weapon", "armour", "shield"] as const).map((slot) => {
+                  const item = equipped[slot];
+                  return (
+                    <div
+                      key={slot}
+                      className={`${styles.expandedEquippedSlot} ${
+                        item ? styles.hasItem : ""
+                      }`}
+                      onClick={() =>
+                        item && setSelectedEquipment({ item, slot })
+                      }
+                      onMouseEnter={() =>
+                        item && setHoveredEquipment({ item, slot })
+                      }
+                      onMouseLeave={() => setHoveredEquipment(null)}
+                    >
+                      <div className={styles.slotLabel}>
+                        {slot.charAt(0).toUpperCase() + slot.slice(1)}
+                      </div>
+                      <div className={styles.expandedSlotImage}>
+                        {item?.spritePath ? (
+                          <Image
+                            src={item.spritePath}
+                            alt={item.name}
+                            width={60}
+                            height={60}
+                          />
+                        ) : (
+                          "—"
+                        )}
+                      </div>
                     </div>
-                    <div className={styles.expandedSlotImage}>
-                      {equipped[slot]?.image ? (
-                        <Image
-                          src={equipped[slot]!.image}
-                          alt={equipped[slot]!.name}
-                          width={60}
-                          height={60}
-                        />
-                      ) : (
-                        "—"
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Items Section */}
             <div className={styles.expandedSection}>
               <h3 className={styles.expandedSectionHeader}>
-                📦 Items ({inventory.length}/{MAX_INVENTORY_SLOTS})
+                🧪 Items ({inventory.length}/{MAX_INVENTORY_SLOTS})
               </h3>
               <div className={styles.expandedItemsGrid}>
                 {inventorySlots.map((item, index) => (
                   <div
                     key={index}
-                    className={`${styles.expandedItemSlot} ${item ? styles.hasItem : ""}`}
+                    className={`${styles.expandedItemSlot} ${
+                      item ? styles.hasItem : ""
+                    }`}
                     onClick={() => item && setSelectedItem(item)}
                     onMouseEnter={() => item && setHoveredItem(item)}
                     onMouseLeave={() => setHoveredItem(null)}
                   >
-                    {item?.image && (
+                    {item?.spritePath && (
                       <Image
-                        src={item.image}
+                        src={item.spritePath}
                         alt={item.name}
                         width={50}
                         height={50}
@@ -221,12 +259,12 @@ export default function ItemPanel({
                   top: `${tooltipPosition.y + 10}px`,
                 }}
               >
-                {getTooltipText(hoveredItem)}
+                {getItemTooltipText(hoveredItem)}
               </div>
             )}
 
             {/* Tooltip for Equipment */}
-            {hoveredEquipment && (
+            {hoveredEquipment && hoveredEquipment.item && (
               <div
                 className={styles.tooltip}
                 style={{
@@ -234,7 +272,10 @@ export default function ItemPanel({
                   top: `${tooltipPosition.y + 10}px`,
                 }}
               >
-                {getTooltipText(hoveredEquipment.item)}
+                {getEquipmentTooltipText(
+                  hoveredEquipment.item,
+                  hoveredEquipment.slot
+                )}
               </div>
             )}
           </div>
@@ -254,7 +295,7 @@ export default function ItemPanel({
             <div className={styles.detailHeader}>
               <div className={styles.detailImage}>
                 <Image
-                  src={selectedItem.image}
+                  src={selectedItem.spritePath || "/items/placeholder.png"}
                   alt={selectedItem.name}
                   width={100}
                   height={100}
@@ -265,30 +306,17 @@ export default function ItemPanel({
               <p className={styles.detailDescription}>
                 {selectedItem.description}
               </p>
-              {selectedItem.type === "potion" && (
-                <p className={styles.detailStats}>
-                  Heals: {selectedItem.healAmount} HP
-                </p>
-              )}
-              {selectedItem.type === "weapon" && (
-                <p className={styles.detailStats}>
-                  Attack: +{selectedItem.attack}
-                </p>
-              )}
-              {selectedItem.type === "armor" && (
-                <p className={styles.detailStats}>
-                  Max HP: +{selectedItem.hpBonus}
-                </p>
-              )}
-              {selectedItem.type === "shield" && (
-                <p className={styles.detailStats}>
-                  Defense: +{selectedItem.defense}
-                </p>
-              )}
+              <p className={styles.detailStats}>
+                {selectedItem.statModified === "health" && "❤️"}
+                {selectedItem.statModified === "attack" && "⚔️"}
+                {selectedItem.statModified === "defense" && "🛡️"}{" "}
+                {selectedItem.statValue > 0 ? "+" : ""}
+                {selectedItem.statValue} {selectedItem.statModified}
+              </p>
             </div>
 
             <div className={styles.detailActions}>
-              {selectedItem.type === "potion" && inCombat && (
+              {inCombat && (
                 <button
                   onClick={() => {
                     onUseItem(selectedItem);
@@ -297,17 +325,6 @@ export default function ItemPanel({
                   className={`${styles.actionButton} ${styles.useButton}`}
                 >
                   Use
-                </button>
-              )}
-              {selectedItem.type !== "potion" && !inCombat && (
-                <button
-                  onClick={() => {
-                    onEquipItem(selectedItem, selectedItem.type);
-                    setSelectedItem(null);
-                  }}
-                  className={`${styles.actionButton} ${styles.equipButton}`}
-                >
-                  Equip
                 </button>
               )}
               <button
@@ -334,46 +351,46 @@ export default function ItemPanel({
             <div className={styles.detailHeader}>
               <div className={styles.detailImage}>
                 <Image
-                  src={selectedEquipment.item.image}
-                  alt={selectedEquipment.item.name}
+                  src={
+                    selectedEquipment.item?.spritePath ||
+                    "/items/placeholder.png"
+                  }
+                  alt={selectedEquipment.item?.name || "Equipment"}
                   width={100}
                   height={100}
                   unoptimized
                 />
               </div>
               <h3 className={styles.detailTitle}>
-                {selectedEquipment.item.name}
+                {selectedEquipment.item?.name}
               </h3>
               <p className={styles.detailDescription}>
-                {selectedEquipment.item.description}
+                {selectedEquipment.item?.description}
               </p>
-              {selectedEquipment.item.type === "weapon" && (
-                <p className={styles.detailStats}>
-                  Attack: +{selectedEquipment.item.attack}
-                </p>
-              )}
-              {selectedEquipment.item.type === "armor" && (
-                <p className={styles.detailStats}>
-                  Max HP: +{selectedEquipment.item.hpBonus}
-                </p>
-              )}
-              {selectedEquipment.item.type === "shield" && (
-                <p className={styles.detailStats}>
-                  Defense: +{selectedEquipment.item.defense}
-                </p>
-              )}
+              {selectedEquipment.slot === "weapon" &&
+                selectedEquipment.item &&
+                "attack" in selectedEquipment.item && (
+                  <p className={styles.detailStats}>
+                    ⚔️ +{selectedEquipment.item.attack} Attack
+                  </p>
+                )}
+              {selectedEquipment.slot === "armour" &&
+                selectedEquipment.item &&
+                "health" in selectedEquipment.item && (
+                  <p className={styles.detailStats}>
+                    ❤️ +{selectedEquipment.item.health} Max HP
+                  </p>
+                )}
+              {selectedEquipment.slot === "shield" &&
+                selectedEquipment.item &&
+                "defense" in selectedEquipment.item && (
+                  <p className={styles.detailStats}>
+                    🛡️ +{selectedEquipment.item.defense} Defense
+                  </p>
+                )}
             </div>
 
             <div className={styles.detailActions}>
-              <button
-                onClick={() => {
-                  onDropEquipment(selectedEquipment.slot);
-                  setSelectedEquipment(null);
-                }}
-                className={`${styles.actionButton} ${styles.dropButton}`}
-              >
-                Unequip
-              </button>
               <button
                 onClick={() => setSelectedEquipment(null)}
                 className={`${styles.actionButton} ${styles.closeButtonAction}`}

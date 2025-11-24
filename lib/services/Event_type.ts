@@ -1,96 +1,92 @@
-// Event_type.ts
-import { LLMService } from "./llm.service";
-import { Dice_Roll } from "./dice_roll";
-// import { CombatUI } from './CombatUI';
-import type { LLMGameContext, StatBoostResponse } from "@/lib/types/llm.types";
+// // ===================================================
+// // VERSION THAT ISNT USED BY BACKEND ANYMORE
+// // ===================================================
 
-export type EventTypeString =
-  | "Descriptive"
-  | "Environmental"
-  | "Combat"
-  | "Item_Drop";
 
-export class EventType {
-  private static descriptiveCount: number = 0;
+// // Event_type.ts
+// import { LLMService } from './llm.service';
+// import { Dice_Roll } from './dice_roll';
+// // import { CombatUI } from './CombatUI';
+// import type { LLMGameContext, StatBoostResponse } from '@/lib/types/llm.types';
 
-  public static getDescriptiveCount(): number {
-    return EventType.descriptiveCount;
-  }
+// export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
 
-  public static resetDescriptiveCount(): void {
-    EventType.descriptiveCount = 0;
-  }
+// export class EventType {
+//     private static descriptiveCount: number = 0;
 
-  constructor(private eventType: EventTypeString) {}
+//     public static getDescriptiveCount(): number {
+//         return EventType.descriptiveCount;
+//     }
 
-  /**
-   * Main entry for triggering the event
-   * Pass the current game context for LLM interactions
-   */
-  public async trigger(context: LLMGameContext): Promise<void> {
-    switch (this.eventType) {
-      case "Descriptive":
-        this.handleDescriptive();
-        break;
+//     public static resetDescriptiveCount(): void {
+//         EventType.descriptiveCount = 0;
+//     }
 
-      case "Environmental":
-        await this.handleEnvironmental(context);
-        break;
+//     constructor(private eventType: EventTypeString) {}
 
-      case "Combat":
-        await this.handleCombat(context);
-        break;
+//     /**
+//      * Main entry for triggering the event
+//      * Pass the current game context for LLM interactions
+//      */
+//     public async trigger(context: LLMGameContext): Promise<void> {
+//         switch (this.eventType) {
+//             case 'Descriptive':
+//                 this.handleDescriptive();
+//                 break;
 
-      case "Item_Drop":
-        await this.handleItemDrop(context);
-        break;
+//             case 'Environmental':
+//                 await this.handleEnvironmental(context);
+//                 break;
 
-      default:
-        throw new Error(`Unknown Event_Type: ${this.eventType}`);
-    }
-  }
+//             case 'Combat':
+//                 await this.handleCombat(context);
+//                 break;
 
-  // ---------- Event Handlers ----------
+//             case 'Item_Drop':
+//                 await this.handleItemDrop(context);
+//                 break;
 
-  private handleDescriptive() {
-    EventType.descriptiveCount++;
-    console.log(
-      `Descriptive event triggered. Count: ${EventType.descriptiveCount}`,
-    );
-  }
+//             default:
+//                 throw new Error(`Unknown Event_Type: ${this.eventType}`);
+//         }
+//     }
 
-  private async handleEnvironmental(context: LLMGameContext) {
-    const llm = new LLMService({ apiKey: process.env.GEMINI_API_KEY! });
+//     // ---------- Event Handlers ----------
 
-    // Request stat modification for Environmental event
-    const statBoost: StatBoostResponse = await llm.requestStatBoost(
-      context,
-      this.eventType,
-    );
-    console.log("Environmental stat boost:", statBoost);
+//     private handleDescriptive() {
+//         EventType.descriptiveCount++;
+//         console.log(`Descriptive event triggered. Count: ${EventType.descriptiveCount}`);
+//     }
 
-    // You can apply the stat boost to the character here if needed
-    // e.g., context.character[statBoost.statType] += statBoost.baseValue;
-  }
+//     private async handleEnvironmental(context: LLMGameContext) {
+//         const llm = new LLMService({ apiKey: process.env.GEMINI_API_KEY! });
 
-  private async handleCombat(context: LLMGameContext) {
-    // Example placeholder for combat logic
-    // const result = await CombatUI.InitializeCombat();
-    // if (result === 'Won Combat') {
-    //     const rollValue = Dice_Roll.roll();
-    //     console.log("Combat roll:", rollValue);
-    // }
+//         // Request stat modification for Environmental event
+//         const statBoost: StatBoostResponse = await llm.requestStatBoost(context, this.eventType);
+//         console.log("Environmental stat boost:", statBoost);
 
-    console.log("Combat handler triggered (needs implementation).");
-  }
+//         // You can apply the stat boost to the character here if needed
+//         // e.g., context.character[statBoost.statType] += statBoost.baseValue;
+//     }
 
-  private async handleItemDrop(context?: LLMGameContext) {
-    const llm = new LLMService({ apiKey: process.env.GEMINI_API_KEY! });
+//     private async handleCombat(context: LLMGameContext) {
+//         // Example placeholder for combat logic
+//         // const result = await CombatUI.InitializeCombat();
+//         // if (result === 'Won Combat') {
+//         //     const rollValue = Dice_Roll.roll(); 
+//         //     console.log("Combat roll:", rollValue);
+//         // }
 
-    const item = await llm.RequestItemDrop(context);
-    console.log("Item dropped:", item);
+//         console.log("Combat handler triggered (needs implementation).");
+//     }
 
-    // You can add the item to the character's inventory here
-    // e.g., context.character.inventory.push(item);
-  }
-}
+//     private async handleItemDrop(context?: LLMGameContext) {
+//         const llm = new LLMService({ apiKey: process.env.GEMINI_API_KEY! });
+
+//         const item = await llm.RequestItemDrop(context);
+//         console.log("Item dropped:", item);
+
+//         // You can add the item to the character's inventory here
+//         // e.g., context.character.inventory.push(item);
+//     }
+// }

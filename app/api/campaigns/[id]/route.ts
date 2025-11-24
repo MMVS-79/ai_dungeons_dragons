@@ -30,7 +30,7 @@ import * as BackendService from "@/lib/services/backend.service";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }, // Next.js 15 requires params to be async
+  context: { params: Promise<{ id: string }> } // Next.js 15 requires params to be async
 ) {
   try {
     const { id } = await context.params; // Must await the Promise
@@ -39,7 +39,7 @@ export async function GET(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -61,28 +61,28 @@ export async function GET(
         description: "Mock campaign description",
         state: "active",
         createdAt: new Date(),
-        updatedAt: new Date(),
+        updatedAt: new Date()
       } as Campaign,
       character: {
         id: 1,
         name: "Mock Hero",
         currentHealth: 50,
-        vitality: 20,
+        maxHealth: 20,
         attack: 10,
         defense: 5,
-        race: { id: 1, name: "Human", vitality: 20, attack: 10, defense: 5 },
-        class: { id: 1, name: "Warrior", vitality: 20, attack: 10, defense: 5 },
+        raceId: 1,
+        classId: 1,
         campaignId: campaignId,
-        spritePath: "/characters/player/warrior.png",
+        spritePath: "/characters/player/warrior.png"
       } as Character,
       recentEvents: [] as GameEvent[],
-      inventory: [],
+      inventory: []
     });
   } catch (error) {
     console.error("[API] Get campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaign" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -115,7 +115,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }, // Next.js 15 route signature
+  context: { params: Promise<{ id: string }> } // Next.js 15 route signature
 ) {
   try {
     const { id } = await context.params; // Await params
@@ -124,7 +124,7 @@ export async function PUT(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -136,7 +136,7 @@ export async function PUT(
     // Step 6: Return 404 if campaign not found
 
     console.log(
-      `[API] PUT /api/campaigns/${campaignId} - Syncing database with game state`,
+      `[API] PUT /api/campaigns/${campaignId} - Syncing database with game state`
     );
 
     // Initialize GameService
@@ -152,7 +152,7 @@ export async function PUT(
     const updatedCampaign = await BackendService.updateCampaign(campaignId, {
       state: gameState.campaign.state,
       description: gameState.campaign.description,
-      updatedAt: new Date(),
+      updatedAt: new Date()
       // Note: createdAt is preserved automatically by updateCampaign
     });
 
@@ -161,28 +161,28 @@ export async function PUT(
       gameState.character.id,
       {
         currentHealth: gameState.character.currentHealth,
-        vitality: gameState.character.vitality,
+        maxHealth: gameState.character.maxHealth,
         attack: gameState.character.attack,
         defense: gameState.character.defense,
-        weapon: gameState.character.weapon,
-        armor: gameState.character.armor,
-        shield: gameState.character.shield,
-      },
+        weaponId: gameState.character.weaponId,
+        armourId: gameState.character.armourId,
+        shieldId: gameState.character.shieldId
+      }
     );
 
     return NextResponse.json({
       success: true,
       campaign: {
         ...updatedCampaign,
-        createdAt: existingCampaign.createdAt, // Ensure createdAt is preserved
+        createdAt: existingCampaign.createdAt // Ensure createdAt is preserved
       },
-      character: updatedCharacter,
+      character: updatedCharacter
     });
   } catch (error) {
     console.error("[API] Sync campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to sync campaign state" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -215,7 +215,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }, // Next.js 15 signature
+  context: { params: Promise<{ id: string }> } // Next.js 15 signature
 ) {
   try {
     const { id } = await context.params; // Await params
@@ -224,7 +224,7 @@ export async function DELETE(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -241,13 +241,13 @@ export async function DELETE(
     // MOCK DATA - Replace with actual database delete
     return NextResponse.json({
       success: true,
-      message: `Campaign ${campaignId} deleted successfully`,
+      message: `Campaign ${campaignId} deleted successfully`
     });
   } catch (error) {
     console.error("[API] Delete campaign error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete campaign" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

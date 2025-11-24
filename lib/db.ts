@@ -13,7 +13,8 @@
  * - llm.service.ts → store LLM event logs
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import mysql from "mysql2/promise";
 
 export const pool = mysql.createPool({
@@ -25,4 +26,3 @@ export const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0
 });
-

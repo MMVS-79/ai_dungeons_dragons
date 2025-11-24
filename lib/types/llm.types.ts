@@ -40,8 +40,8 @@ export interface EventHistoryEntry {
 export interface LLMGameContext {
   character: {
     name: string;
-    health: number;
-    vitality: number;
+    currentHealth: number;
+    maxHealth: number;
     attack: number;
     defense: number;
   };
@@ -51,9 +51,22 @@ export interface LLMGameContext {
     attack: number;
     defense: number;
   };
-  recentEvents: EventHistoryEntry[]; // Previous events with stats
-  scenario?: string; // Optional: location/setting
-  trigger?: string; // Optional: what prompted this event
+  recentEvents: EventHistoryEntry[];
+  currentEventNumber: number;
+  scenario?: string;
+  trigger?: string;
+}
+
+// Output: What the LLM service returns to game engine (legacy, no longer used)
+// The new flow uses generateEventType() -> generateDescription() -> requestStatBoost() separately
+export interface LLMEvent {
+  event: string; // Description of what happens
+  type: EventTypeString; // Event type
+  effects: {
+    health: number; // -10 to +10
+    attack: number; // -5 to +5
+    defense: number; // -5 to +5
+  };
 }
 
 // Stat boost response from LLM for dynamic stat modifications
