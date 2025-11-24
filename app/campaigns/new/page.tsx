@@ -44,6 +44,9 @@ export default function NewCampaignPage() {
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
+  // Track which steps have been completed
+  const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set());
+
   const steps: Step[] = ["name", "stats", "race", "class", "preview"];
 
   const getStepLabel = (step: Step): string => {
@@ -97,7 +100,30 @@ export default function NewCampaignPage() {
     }
   };
 
+  // Check if a step can be accessed
+  const canAccessStep = (step: Step): boolean => {
+    const stepIndex = steps.indexOf(step);
+    const currentIndex = steps.indexOf(currentStep);
+
+    // Can access current step
+    if (stepIndex === currentIndex) return true;
+
+    // Can access previous completed steps
+    if (stepIndex < currentIndex) return true;
+
+    // Can access next step only if current step is completed
+    if (stepIndex === currentIndex + 1 && completedSteps.has(currentStep))
+      return true;
+
+    return false;
+  };
+
   const handleNext = () => {
+    if (!canProceed()) return;
+
+    // Mark current step as completed
+    setCompletedSteps((prev) => new Set([...prev, currentStep]));
+
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -127,18 +153,26 @@ export default function NewCampaignPage() {
         <div className={styles.sidePanel}>
           <h2 className={styles.sidePanelTitle}>Create Character</h2>
           <div className={styles.stepsList}>
-            {steps.map((step, index) => (
-              <div
-                key={step}
-                className={`${styles.stepItem} ${
-                  currentStep === step ? styles.activeStep : ""
-                } ${steps.indexOf(currentStep) > index ? styles.completedStep : ""}`}
-                onClick={() => setCurrentStep(step)}
-              >
-                <div className={styles.stepNumber}>{index + 1}</div>
-                <div className={styles.stepLabel}>{getStepLabel(step)}</div>
-              </div>
-            ))}
+            {steps.map((step, index) => {
+              const isAccessible = canAccessStep(step);
+              const isCompleted = completedSteps.has(step);
+
+              return (
+                <div
+                  key={step}
+                  className={`${styles.stepItem} ${
+                    currentStep === step ? styles.activeStep : ""
+                  } ${isCompleted ? styles.completedStep : ""} ${
+                    !isAccessible ? styles.disabledStep : ""
+                  }`}
+                  onClick={() => isAccessible && setCurrentStep(step)}
+                  style={{ cursor: isAccessible ? "pointer" : "not-allowed" }}
+                >
+                  <div className={styles.stepNumber}>{index + 1}</div>
+                  <div className={styles.stepLabel}>{getStepLabel(step)}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
