@@ -1,525 +1,630 @@
 /**
- * LLM Service
- * -----------
- * Handles all LLM-based event generation and context tracking.
- *
- * Responsibilities:
- * - generateEventType(): Determines the type of event (Descriptive, Combat, etc.) based on context.
- * - generateDescription(): Generates narrative text for specific events.
- * - requestStatBoost(): Calculates dynamic stat changes for environmental/combat events.
- * - RequestItemDrop(): Generates balanced items for loot.
- * - bonusStatRequest(): Generates rewards for critical successes.
- *
- * Interacts With:
- * - Google Gemini API (via @google/genai)
- * - game.service.ts (called to generate content)
- * - Event_type.ts (called to handle specific event logic)
+ * LLM Service - Gemini Integration
+ * =================================
+ * Handles all AI-generated content for the game
  */
 
 import { GoogleGenAI } from "@google/genai";
 import type {
-  LLMGameContext,
-  LLMEvent,
-  LLMServiceConfig,
-  EventTypeString,
-  StatBoostResponse
-} from "@/lib/types/llm.types";
-import { HEALTH_PER_VITALITY } from "../contants";
+  Item,
+  Weapon,
+  Armour,
+  Shield,
+  GameState,
+} from "../types/game.types";
+import { pool } from "../db";
+import type { RaceRow, ClassRow } from "../types/db.types";
 
-const SCENARIOS = [
-  "deep dungeon chamber",
-  "ancient temple ruins",
-  "dark forest path",
-  "cave entrance",
-  "abandoned tower",
-  "underground crypt",
-  "mountain pass",
-  "swampy marshland"
-];
+const apiKey = process.env.GOOGLE_API_KEY;
 
-const EVENT_TRIGGERS = [
-  "as you explore",
-  "while searching for clues",
-  "during your investigation",
-  "as you prepare to rest",
-  "while checking for traps",
-  "during a moment of quiet",
-  "as you approach a door",
-  "while examining the area"
-];
+if (!apiKey) {
+  throw new Error("GOOGLE_API_KEY is not set in environment variables");
+}
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+export type EventTypeString =
+  | "Descriptive"
+  | "Environmental"
+  | "Combat"
+  | "Item_Drop";
+
+export interface LLMContext {
+  character: {
+    name: string;
+    currentHealth: number;
+    maxHealth: number;
+    attack: number;
+    defense: number;
+  };
+  recentEvents: Array<{
+    eventType: string;
+    message: string;
+    eventNumber: number;
+  }>;
+  currentEventNumber: number;
+  enemy?: {
+    name: string;
+    health: number;
+    attack: number;
+    defense: number;
+  };
+}
+
+interface StatBoostResponse {
+  statType: "health" | "attack" | "defense";
+  baseValue: number;
+}
+
+// ============================================================================
+// LLM SERVICE CLASS
+// ============================================================================
 
 export class LLMService {
   private ai: GoogleGenAI;
-  private model: string;
-  private temperature: number;
-  private maxOutputTokens: number;
-  private thinkingBudget: number;
+  protected model: string;
+  private generationConfig: {
+    temperature: number;
+    topK: number;
+    topP: number;
+    maxOutputTokens: number;
+  };
 
-  constructor(config: LLMServiceConfig) {
-    this.ai = new GoogleGenAI({ apiKey: config.apiKey });
-    this.model = config.model || "gemini-2.5-flash-lite";
-    this.temperature = config.temperature ?? 0.8;
-    this.maxOutputTokens = config.maxOutputTokens ?? 500;
-    this.thinkingBudget = config.thinkingBudget ?? 0;
+  constructor() {
+    this.ai = new GoogleGenAI({ apiKey });
+    this.model = "gemini-flash-lite-latest";
+
+    this.generationConfig = {
+      temperature: 0.9,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 1024,
+    };
+  }
+
+  // ==========================================================================
+  // INTRODUCTION GENERATION
+  // ==========================================================================
+
+  public async generateCampaignIntroduction(
+    campaignId: number,
+    gameState: GameState,
+  ): Promise<string> {
+    // Get character race and class names from database
+    const [raceRows] = await pool.query<RaceRow[]>(
+      "SELECT name FROM races WHERE id = ?",
+      [gameState.character.raceId],
+    );
+    const [classRows] = await pool.query<ClassRow[]>(
+      "SELECT name FROM classes WHERE id = ?",
+      [gameState.character.classId],
+    );
+
+    const raceName = raceRows[0]?.name || "adventurer";
+    const className = classRows[0]?.name || "warrior";
+
+    const introPrompt = `You are a D&D dungeon master starting a new 48-turn campaign. Create an epic introduction.
+
+Character:
+- Name: ${gameState.character.name}
+- Race: ${raceName}
+- Class: ${className}
+
+Create a compelling introduction (3-4 sentences) that:
+- Creates a background for the character based on their name, race, and class (be creative)
+- Sets the dark, dangerous atmosphere of an ancient dungeon
+- Explains that a legendary monster boss of unknown type threatens the world
+- Describes why ${gameState.character.name} has ventured into this perilous place
+- Builds anticipation and heroic purpose
+
+Make it epic and immersive.
+
+Your introduction:`;
+
+    try {
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [{ role: "user", parts: [{ text: introPrompt }] }],
+        config: this.generationConfig,
+      });
+
+      return result?.text?.trim() || "";
+    } catch (error) {
+      console.error("[LLMService] Error generating introduction:", error);
+
+      // Fallback introduction
+      const fallback = `${gameState.character.name}, a brave ${raceName} ${className}, stands at the entrance of an ancient dungeon. Deep within these cursed halls, a legendary dragon threatens the realm. Only by venturing into the darkness and facing unimaginable dangers can you hope to save the world from destruction.`;
+
+      return fallback;
+    }
+  }
+
+  // ==========================================================================
+  // EVENT TYPE GENERATION
+  // ==========================================================================
+
+  /**
+   * Generate event type based on game context
+   */
+  public async generateEventType(
+    context: LLMContext,
+  ): Promise<EventTypeString> {
+    const recentEventsText =
+      context.recentEvents.length > 0
+        ? context.recentEvents
+            .filter((e) => e.message) // Filter out events without messages
+            .map(
+              (e) =>
+                `- Event ${e.eventNumber} (${
+                  e.eventType
+                }): ${e.message.substring(0, 100)}...`,
+            )
+            .join("\n")
+        : "No recent events";
+
+    const prompt = `You are a D&D dungeon master creating a 48-turn campaign. Generate the next event type based on context.
+
+Context:
+- Current Event Number: ${context.currentEventNumber}
+- Character: ${context.character.name}
+  - HP: ${context.character.currentHealth}/${context.character.maxHealth}
+  - Attack: ${context.character.attack}
+  - Defense: ${context.character.defense}
+
+Recent Events:
+${recentEventsText}
+
+Event Types Available:
+1. **Descriptive**: Atmospheric storytelling, world-building (30% chance)
+2. **Environmental**: Interactive event that modifies character stats (25% chance)
+3. **Combat**: Enemy encounter requiring tactical decisions (30% chance)
+4. **Item_Drop**: Discovery of consumable items like potions (15% chance)
+
+Selection Guidelines:
+- Vary event types to maintain engagement
+- Combat should be frequent but not overwhelming
+- Environmental events provide character progression
+- Balance action with storytelling
+
+IMPORTANT: Return ONLY ONE WORD from this list: Descriptive, Environmental, Combat, Item_Drop
+Do not include explanations, punctuation, or additional text.
+
+Your response:`;
+
+    try {
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        config: this.generationConfig,
+      });
+
+      const text = result?.text?.trim() ?? "";
+
+      // Extract first word
+      const eventType = text.split(/[\s\n,.:;]/)[0].trim();
+
+      // Validate against allowed types
+      const validTypes: EventTypeString[] = [
+        "Descriptive",
+        "Environmental",
+        "Combat",
+        "Item_Drop",
+      ];
+      if (validTypes.includes(eventType as EventTypeString)) {
+        return eventType as EventTypeString;
+      }
+
+      // Fallback if invalid
+      console.warn(
+        `[LLMService] Invalid event type "${eventType}", defaulting to Descriptive`,
+      );
+      return "Descriptive";
+    } catch (error) {
+      console.error("[LLMService] Error generating event type:", error);
+      return "Descriptive";
+    }
+  }
+
+  // ==========================================================================
+  // EVENT DESCRIPTION GENERATION
+  // ==========================================================================
+
+  /**
+   * Generate descriptive narrative text for events
+   */
+  public async generateDescription(
+    eventType: string,
+    context: LLMContext,
+    lootItem?: Item | Weapon | Armour | Shield,
+  ): Promise<string> {
+    let prompt = "";
+
+    switch (eventType) {
+      case "Descriptive":
+        prompt = this.buildDescriptivePrompt(context);
+        break;
+      case "Environmental":
+        prompt = this.buildEnvironmentalPrompt(context);
+        break;
+      case "Combat":
+        prompt = this.buildCombatPrompt(context);
+        break;
+      case "Item_Drop":
+        prompt = this.buildItemDropPrompt(context, lootItem);
+        break;
+      default:
+        prompt = `Create a brief description for: ${eventType}`;
+    }
+
+    try {
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        config: this.generationConfig,
+      });
+
+      const text = result?.text?.trim() ?? "";
+
+      return text;
+    } catch (error) {
+      console.error(
+        `[LLMService] Error generating ${eventType} description:`,
+        error,
+      );
+      return this.getFallbackDescription(eventType, context, lootItem);
+    }
+  }
+
+  private buildDescriptivePrompt(context: LLMContext): string {
+    const lastEvent = context.recentEvents[0];
+    const previousContext = lastEvent
+      ? `\n\nPrevious event: ${lastEvent.message.substring(0, 150)}...`
+      : "";
+
+    return `You are a D&D dungeon master. Create an atmospheric description that flows naturally from the previous events.
+
+Character: ${context.character.name} is exploring an ancient dungeon.${previousContext}
+
+Create a SHORT (2-3 sentences) description that:
+- Builds upon or contrasts with the previous atmosphere
+- Introduces new environmental details
+- Maintains narrative continuity
+- Creates a sense of progression deeper into the dungeon
+
+Your description:`;
+  }
+
+  private buildEnvironmentalPrompt(context: LLMContext): string {
+    const healthPercent = Math.round(
+      (context.character.currentHealth / context.character.maxHealth) * 100,
+    );
+
+    return `You are a D&D dungeon master. Create a description of an environmental event that will affect the character.
+
+Character Status:
+- ${context.character.name}
+- HP: ${context.character.currentHealth}/${context.character.maxHealth} (${healthPercent}%)
+- Attack: ${context.character.attack}
+- Defense: ${context.character.defense}
+
+Create a SHORT (2-3 sentences) description of discovering an interactive environmental feature:
+- Examples: mystical fountain, ancient training grounds, blessed shrine, cursed altar, magical artifact
+- Should feel meaningful and impactful
+- The stat modification will be determined separately
+
+Your description:`;
+  }
+
+  private buildCombatPrompt(context: LLMContext): string {
+    const enemyName = context.enemy?.name || "an unknown creature";
+    const enemyStats = context.enemy
+      ? `HP: ${context.enemy.health}, ATK: ${context.enemy.attack}, DEF: ${context.enemy.defense}`
+      : "unknown power";
+
+    return `You are a D&D dungeon master. Create a dramatic combat encounter description.
+
+Character: ${context.character.name} (HP: ${context.character.currentHealth}/${context.character.maxHealth})
+Enemy: ${enemyName} (${enemyStats})
+
+Create a SHORT (2-3 sentences) description of the enemy appearing:
+- The enemy's appearance, movement, or behavior
+- The atmosphere and tension of the moment
+- A sense of immediate danger
+
+Build excitement and drama for the encounter.
+
+Your description:`;
   }
 
   /**
-   * Calls Gemini API with structured output
+   * Build item drop prompt with actual loot details, Uses item/equipment name and description directly
    */
-  private async callGemini(
-    prompt: string,
-    schema?: Record<string, unknown>
-  ): Promise<string> {
-    // Default schema for backwards compatibility (old single-call system)
-    const defaultSchema = {
-      type: "object",
-      properties: {
-        event: { type: "string" },
-        type: {
-          type: "string",
-          enum: ["Descriptive", "Combat", "Environmental", "Item_Drop"]
-        },
-        effects: {
-          type: "object",
-          properties: {
-            health: { type: "number" },
-            attack: { type: "number" },
-            defense: { type: "number" }
-          },
-          required: ["health", "attack", "defense"]
-        }
-      },
-      required: ["event", "type", "effects"]
+  private buildItemDropPrompt(
+    context: LLMContext,
+    lootItem?: Item | Weapon | Armour | Shield,
+  ): string {
+    // If no item provided (shouldn't happen), use generic prompt
+    if (!lootItem) {
+      return `You are a D&D dungeon master. Create a description of discovering loot.
+
+Character: ${context.character.name} is exploring the dungeon.
+
+Create a SHORT (2-3 sentences) description of finding loot:
+- Where it's located (ancient chest, fallen adventurer, hidden alcove, ceremonial pedestal)
+- Its physical appearance (color, glow, condition)
+- A hint of its properties
+
+Your description:`;
+    }
+
+    // Determine if it's equipment or item
+    const isEquipment =
+      "attack" in lootItem ||
+      "defense" in lootItem ||
+      ("health" in lootItem && !("statModified" in lootItem));
+
+    let lootType = "item";
+    let lootCategory = "consumable";
+
+    if (isEquipment) {
+      if ("attack" in lootItem) {
+        lootType = "weapon";
+        lootCategory = "weapon";
+      } else if ("defense" in lootItem) {
+        lootType = "shield";
+        lootCategory = "shield";
+      } else if ("health" in lootItem) {
+        lootType = "armour";
+        lootCategory = "armour piece";
+      }
+    } else {
+      lootType = "consumable item";
+      lootCategory = "potion or scroll";
+    }
+
+    // Use the actual item name and description for context
+    return `You are a D&D dungeon master. Create a description of discovering specific loot.
+
+Character: ${context.character.name} is exploring the dungeon.
+
+Loot Being Found:
+- Name: ${lootItem.name}
+- Type: ${lootType}
+- Description: ${lootItem.description || "A mysterious treasure"}
+
+Create a SHORT (2-3 sentences) description that:
+- Describes WHERE it's found (ancient chest, fallen adventurer, weapon rack, hidden alcove, ceremonial pedestal, dusty shelf)
+- Describes its APPEARANCE in a way that matches "${lootItem.name}"
+- Hints at what makes it special (based on the description)
+- ${
+      isEquipment
+        ? "Makes it clear this is equipment ready to be wielded/worn"
+        : "Makes it clear this is a consumable item"
+    }
+
+Important: 
+- DO NOT reveal the exact name "${lootItem.name}" in your description
+- Describe it generically as a ${lootCategory}
+- Match the tone and quality suggested by the name
+
+Your description:`;
+  }
+
+  private getFallbackDescription(
+    eventType: string,
+    context: LLMContext,
+    lootItem?: Item | Weapon | Armour | Shield,
+  ): string {
+    const fallbacks: Record<string, string> = {
+      Descriptive:
+        "The ancient dungeon corridor stretches before you, its stone walls weathered by countless centuries. Flickering torchlight casts dancing shadows across intricate carvings depicting long-forgotten legends.",
+      Environmental:
+        "You discover an ancient shrine emanating a strange mystical energy. The air around it seems to shimmer with power, beckoning you to approach.",
+      Combat: `A ${
+        context.enemy?.name || "fearsome creature"
+      } emerges from the shadows, its eyes gleaming with hostile intent!`,
+      Item_Drop: lootItem
+        ? `Something ${
+            "attack" in lootItem ||
+            "defense" in lootItem ||
+            ("health" in lootItem && !("statModified" in lootItem))
+              ? "gleams"
+              : "glints"
+          } in the dim light ahead—${
+            lootItem.name.toLowerCase().includes("potion")
+              ? "a mystical vial"
+              : lootItem.name.toLowerCase().includes("sword")
+                ? "a finely crafted blade"
+                : lootItem.name.toLowerCase().includes("shield")
+                  ? "a sturdy shield"
+                  : lootItem.name.toLowerCase().includes("armour")
+                    ? "protective gear"
+                    : "a valuable treasure"
+          } resting on a weathered stone pedestal.`
+        : "Something glints in the dim light ahead—a small vial resting on a weathered stone pedestal, its contents swirling with an otherworldly glow.",
     };
 
-    const response = await this.ai.models.generateContent({
-      model: this.model,
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }]
-        }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: schema || defaultSchema,
-        thinkingConfig: {
-          thinkingBudget: this.thinkingBudget
-        },
-        temperature: this.temperature,
-        maxOutputTokens: this.maxOutputTokens
-      }
-    });
-
-    return response?.text ?? "";
+    return fallbacks[eventType] || "You continue deeper into the dungeon.";
   }
 
-  /**
-   * Utility: Get random item from array
-   */
-  private getRandomItem<T>(array: T[]): T {
-    return array[Math.floor(Math.random() * array.length)];
-  }
+  // ==========================================================================
+  // STAT BOOST REQUEST (ENVIRONMENTAL EVENTS)
+  // ==========================================================================
 
   /**
-   * Generate only the event TYPE (called by game.service.ts)
-   * This is called first to determine what kind of event will occur
-   * LLM returns just the type, user accepts/rejects, then Event_type.ts handles execution
+   * Request stat boost type and value for Environmental events
+   * Validates and defaults to ensure non-zero values
    */
-  async generateEventType(context: LLMGameContext): Promise<EventTypeString> {
-    try {
-      const prompt = this.buildEventTypePrompt(context);
-      const response = await this.callGemini(prompt);
-      const parsed = JSON.parse(response);
-
-      const eventType = parsed.type;
-
-      if (!eventType) {
-        console.error("No event type in response:", parsed);
-        return "Descriptive";
-      }
-
-      return eventType as EventTypeString;
-    } catch (error) {
-      console.error("Failed to generate event type:", error);
-      return "Descriptive"; // Safe fallback
-    }
-  }
-
-  /**
-   * Generate event description (called by Event_type.ts and combat handler)
-   * Called after user accepts the event
-   * Returns narrative text describing what happened
-   */
-  async generateDescription(
-    eventType: EventTypeString,
-    context: LLMGameContext
-  ): Promise<string> {
-    try {
-      const prompt = this.buildDescriptionPrompt(eventType, context);
-
-      // Custom schema for description only
-      const schema = {
-        type: "object",
-        properties: {
-          description: { type: "string" }
-        },
-        required: ["description"]
-      };
-
-      const response = await this.callGemini(prompt, schema);
-      const parsed = JSON.parse(response);
-
-      if (!parsed.description) {
-        console.error("No description in response:", parsed);
-        return `A ${eventType} event occurs...`;
-      }
-
-      return parsed.description;
-    } catch (error) {
-      console.error("Failed to generate description:", error);
-      return `A ${eventType} event occurs...`;
-    }
-  }
-
-  /**
-   * Request stat modification from LLM (called by Event_type.ts)
-   * Returns which stat to modify and base value (before dice roll)
-   * Used for Environmental and Combat events
-   */
-  async requestStatBoost(
-    context: LLMGameContext,
-    eventType: EventTypeString
+  public async requestStatBoost(
+    context: LLMContext,
+    eventType: string,
   ): Promise<StatBoostResponse> {
-    try {
-      const prompt = this.buildStatBoostPrompt(eventType, context);
-
-      // Custom schema for stat boost
-      const schema = {
-        type: "object",
-        properties: {
-          statType: {
-            type: "string",
-            enum: ["health", "attack", "defense"]
-          },
-          baseValue: { type: "number" }
-        },
-        required: ["statType", "baseValue"]
-      };
-
-      const response = await this.callGemini(prompt, schema);
-      const parsed = JSON.parse(response);
-
-      if (!parsed.statType || parsed.baseValue === undefined) {
-        console.error("Invalid stat boost response:", parsed);
-        return { statType: "health", baseValue: 0 };
-      }
-
-      return {
-        statType: parsed.statType,
-        baseValue: parsed.baseValue
-      };
-    } catch (error) {
-      console.error("Failed to request stat boost:", error);
-      return { statType: "health", baseValue: 0 }; // Safe fallback
-    }
-  }
-
-  /**
-   * Build prompt for event type generation only
-   */
-  private buildEventTypePrompt(context: LLMGameContext): string {
-    const { character, enemy, recentEvents } = context;
-
-    const eventHistory =
-      recentEvents.length > 0
-        ? recentEvents
-            .map((event, i) => `${i + 1}. ${event.description} [${event.type}]`)
-            .join("\n")
-        : "(Adventure just beginning)";
-
-    return `You are a D&D Dungeon Master. Decide what TYPE of event happens next.
-
-CURRENT STATE:
-- Character: ${character.name} (HP: ${character.health}/${
-      character.vitality * HEALTH_PER_VITALITY
-    }, ATK: ${character.attack}, DEF: ${character.defense})
-- Enemy: ${enemy.name} (HP: ${enemy.health})
-
-RECENT EVENTS:
-${eventHistory}
-
-EVENT TYPES:
-- Descriptive: Pure story/atmosphere (no mechanical effects)
-- Environmental: Hazards or blessings that affect stats
-- Combat: Enemy encounter or combat scenario
-- Item_Drop: Find or lose items
-
-RULES:
-- Avoid multiple consecutive Descriptive events
-- Build tension toward boss encounters
-- Match event intensity to character's current health
-
-Return ONLY: {"type": "TYPE_HERE"}`;
-  }
-
-  /**
-   * Build prompt for event description
-   */
-  private buildDescriptionPrompt(
-    eventType: EventTypeString,
-    context: LLMGameContext
-  ): string {
-    const { character, scenario, trigger } = context;
-    const finalScenario = scenario || this.getRandomItem(SCENARIOS);
-    const finalTrigger = trigger || this.getRandomItem(EVENT_TRIGGERS);
-
-    return `You are a D&D Dungeon Master. Generate a vivid description for a ${eventType} event.
-
-CHARACTER: ${character.name} (HP: ${character.health}/${
-      character.vitality * HEALTH_PER_VITALITY
-    })
-LOCATION: ${finalScenario}
-CONTEXT: ${finalTrigger}
-
-Generate 1-2 dramatic sentences describing what happens.
-Keep it specific and engaging.
-
-Return JSON: {"description": "your description here"}`;
-  }
-
-  /**
-   * Build prompt for stat boost request
-   */
-  private buildStatBoostPrompt(
-    eventType: EventTypeString,
-    context: LLMGameContext
-  ): string {
-    const { character } = context;
-
-    return `You are a D&D Dungeon Master deciding stat modifications for a ${eventType} event.
-
-CHARACTER STATE:
-- HP: ${character.health}/${character.vitality * HEALTH_PER_VITALITY}
-- Attack: ${character.attack}
-- Defense: ${character.defense}
-
-Decide which stat to modify and base value (before dice roll applies formula).
-
-RULES:
-- Health: -10 to +10 (healing/damage)
-- Attack: -5 to +5 (buffs/debuffs)
-- Defense: -5 to +5 (protection changes)
-- Environmental events can be positive or negative
-- Consider character's current state
-
-Return JSON: {"statType": "health|attack|defense", "baseValue": number}`;
-  }
-
-  /**
-   * Request item drop from LLM (called by Event_type.ts and post-combat rewards)
-   * Used for Item_Drop event type and post-combat rewards
-   *
-   * @param context - Optional game context for contextual items
-   * @returns Item details from LLM
-   */
-  public async RequestItemDrop(context?: LLMGameContext): Promise<{
-    itemType: string;
-    itemName: string;
-    itemStats: Record<string, number>;
-  }> {
-    try {
-      const prompt = this.buildItemDropPrompt(context);
-
-      // Schema for item generation
-      const schema = {
-        type: "object",
-        properties: {
-          itemType: {
-            type: "string",
-            enum: ["weapon", "armor", "shield", "potion"]
-          },
-          itemName: { type: "string" },
-          itemStats: {
-            type: "object",
-            additionalProperties: { type: "number" }
-          }
-        },
-        required: ["itemType", "itemName", "itemStats"]
-      };
-
-      const response = await this.callGemini(prompt, schema);
-      const parsed = JSON.parse(response);
-
-      if (!parsed.itemType || !parsed.itemName || !parsed.itemStats) {
-        console.error("Invalid item drop response:", parsed);
-        return {
-          itemType: "potion",
-          itemName: "Health Potion",
-          itemStats: { healAmount: 20 }
-        };
-      }
-
-      return {
-        itemType: parsed.itemType,
-        itemName: parsed.itemName,
-        itemStats: parsed.itemStats
-      };
-    } catch (error) {
-      console.error("Failed to generate item drop:", error);
-      return {
-        itemType: "potion",
-        itemName: "Health Potion",
-        itemStats: { healAmount: 20 }
-      };
-    }
-  }
-
-  /**
-   * Request bonus stat on critical success (called by Event_type.ts)
-   * Used when player rolls 16-20 and deserves extra reward
-   *
-   * @param context - Optional game context for balanced bonuses
-   * @returns Bonus stat type and value
-   */
-  public async bonusStatRequest(context?: LLMGameContext): Promise<{
-    statType: "vitality" | "attack" | "defense";
-    value: number;
-  }> {
-    try {
-      const prompt = this.buildBonusStatPrompt(context);
-
-      // Schema for bonus stat
-      const schema = {
-        type: "object",
-        properties: {
-          statType: {
-            type: "string",
-            enum: ["vitality", "attack", "defense"]
-          },
-          value: {
-            type: "number",
-            minimum: 2,
-            maximum: 10
-          }
-        },
-        required: ["statType", "value"]
-      };
-
-      const response = await this.callGemini(prompt, schema);
-      const parsed = JSON.parse(response);
-
-      if (!parsed.statType || parsed.value === undefined) {
-        console.error("Invalid bonus stat response:", parsed);
-        return { statType: "vitality", value: 1 };
-      }
-
-      // Clamp value to 2-10 range
-      const clampedValue = Math.min(Math.max(parsed.value, 2), 10);
-
-      return {
-        statType: parsed.statType as "vitality" | "attack" | "defense",
-        value: clampedValue
-      };
-    } catch (error) {
-      console.error("Failed to generate bonus stat:", error);
-      return { statType: "vitality", value: 1 };
-    }
-  }
-
-  /**
-   * Build prompt for item drop generation
-   */
-  private buildItemDropPrompt(context?: LLMGameContext): string {
-    if (!context) {
-      return `You are a D&D dungeon master distributing loot.
-
-Generate ONE balanced item for an adventurer.
-
-Item Types:
-- weapon: Increases attack (example stats: { "attack": 5-15 })
-- armor: Increases defense (example stats: { "defense": 3-12 })
-- shield: Increases defense (example stats: { "defense": 2-8 })
-- potion: Heals character (example stats: { "healAmount": 10-30 })
-
-Requirements:
-- Give the item a creative, fantasy-appropriate name
-- Stats should be balanced (not overpowered)
-- Consider typical D&D naming conventions
-
-Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "itemStats": {}}`;
-    }
-
-    const { character } = context;
-    const healthPercentage = Math.round(
-      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
+    const healthPercent = Math.round(
+      (context.character.currentHealth / context.character.maxHealth) * 100,
     );
 
-    return `You are a D&D dungeon master distributing loot.
+    const prompt = `You are a D&D game master. Recommend a stat boost for an Environmental event based on the character's current state.
 
-Character: ${character.name}
-Current Stats:
-- Health: ${character.health}/${
-      character.vitality * HEALTH_PER_VITALITY
-    } (${healthPercentage}%)
-- Attack: ${character.attack}
-- Defense: ${character.defense}
+Character Status:
+- Name: ${context.character.name}
+- Current HP: ${context.character.currentHealth}/${context.character.maxHealth} (${healthPercent}%)
+- Attack: ${context.character.attack}
+- Defense: ${context.character.defense}
 
-Generate ONE item appropriate for this character's level and situation.
+Choose ONE stat type and provide a base value (can be positive OR negative):
 
-Item Types:
-- weapon: Increases attack (balanced for current attack ${character.attack})
-- armor: Increases defense (balanced for current defense ${character.defense})
-- shield: Increases defense (smaller bonus than armor)
-- potion: Heals character (consider current health ${healthPercentage}%)
+**health**: HP change (positive = heal, negative = damage from hazard)
+  - Base value: -5 to 15 HP
+  - Positive values for healing, negative for environmental hazards
+  - Priority: HIGH if HP < 50%
 
-Requirements:
-- Give the item a creative, fantasy-appropriate name
-- Stats should be balanced - don't give +50 attack if they have 10 attack!
-- Scale rewards to character level (estimate from stats)
-- If health is low (< 50%), slightly favor potions
+**attack**: Permanent attack change
+  - Base value: -3 to 4 points
+  - Usually positive, negative only for curses
 
-Return JSON: {"itemType": "weapon|armor|shield|potion", "itemName": "string", "itemStats": {}}
+**defense**: Permanent defense change
+  - Base value: -3 to 4 points
+  - Usually positive, negative only for curses
 
-Example for weapon: {"itemType": "weapon", "itemName": "Rusty Longsword", "itemStats": {"attack": 7}}
-Example for potion: {"itemType": "potion", "itemName": "Greater Health Potion", "itemStats": {"healAmount": 25}}`;
+CRITICAL FORMATTING RULES:
+1. Return ONLY a JSON object
+2. NO markdown code blocks (no \`\`\`json)
+3. NO explanatory text before or after
+4. Must be valid JSON with exact format below
+
+Required Format:
+{"statType": "health", "baseValue": 12}
+
+Valid statType values: "health", "attack", "defense"
+Valid baseValue ranges:
+- health: -5 to 15
+- attack: -3 to 4
+- defense: -3 to 4
+
+Your JSON response:`;
+
+    try {
+      const result = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        config: this.generationConfig,
+      });
+
+      let text = result?.text?.trim() ?? "";
+
+      // Remove markdown code blocks if present
+      text = text
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .trim();
+
+      // Extract JSON object using regex
+      const jsonMatch = text.match(/\{[^}]+\}/);
+      if (!jsonMatch) {
+        console.warn(
+          "[LLMService] No JSON object found in response, using intelligent default",
+        );
+        return this.getIntelligentStatBoost(context);
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]) as {
+        statType: string;
+        baseValue: number;
+      };
+
+      // Validate statType
+      const validStatTypes: Array<"health" | "attack" | "defense"> = [
+        "health",
+        "attack",
+        "defense",
+      ];
+      if (
+        !validStatTypes.includes(
+          parsed.statType as "health" | "attack" | "defense",
+        )
+      ) {
+        console.warn(
+          `[LLMService] Invalid statType: "${parsed.statType}", using intelligent default`,
+        );
+        return this.getIntelligentStatBoost(context);
+      }
+
+      // Validate and clamp baseValue
+      let baseValue = Number(parsed.baseValue);
+      if (isNaN(baseValue)) {
+        console.warn(
+          `[LLMService] Invalid baseValue: ${parsed.baseValue}, using intelligent default`,
+        );
+        return this.getIntelligentStatBoost(context);
+      }
+
+      // New ranges with negative values
+      if (parsed.statType === "health") {
+        baseValue = Math.max(-5, Math.min(15, Math.round(baseValue)));
+      } else {
+        baseValue = Math.max(-3, Math.min(4, Math.round(baseValue)));
+      }
+
+      return {
+        statType: parsed.statType as "health" | "attack" | "defense",
+        baseValue,
+      };
+    } catch (error) {
+      console.error("[LLMService] Error parsing stat boost:", error);
+      return this.getIntelligentStatBoost(context);
+    }
   }
 
   /**
-   * Build prompt for bonus stat generation
+   * Intelligent default stat boost based on character state
    */
-  private buildBonusStatPrompt(context?: LLMGameContext): string {
-    if (!context) {
-      return `You are a D&D dungeon master rewarding exceptional performance.
+  private getIntelligentStatBoost(context: LLMContext): StatBoostResponse {
+    const healthPercent =
+      (context.character.currentHealth / context.character.maxHealth) * 100;
 
-The player achieved a CRITICAL SUCCESS (rolled 16-20)!
-Grant them a bonus stat increase.
+    // 20% chance of negative effect
+    const isNegative = Math.random() < 0.2;
 
-Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
+    if (isNegative) {
+      // Negative effect (hazard/curse)
+      return { statType: "health", baseValue: -3 };
     }
 
-    const { character } = context;
-    const healthPercentage = Math.round(
-      (character.health / (character.vitality * HEALTH_PER_VITALITY)) * 100
-    );
+    // Positive effects
+    if (healthPercent < 50) {
+      return { statType: "health", baseValue: 12 };
+    } else if (healthPercent < 70) {
+      return { statType: "health", baseValue: 10 };
+    }
 
-    return `You are a D&D dungeon master rewarding exceptional performance.
-
-Character: ${character.name}
-Current Stats:
-- Vitality: ${character.vitality}
-- Attack: ${character.attack}
-- Defense: ${character.defense}
-
-The player achieved a CRITICAL SUCCESS (rolled 16-20)!
-Grant them a bonus stat increase (2-10 points).
-
-Guidelines:
-- If health is very low (< 30%), strongly favor health
-- If attack or defense are notably weak, consider boosting those
-- Keep bonuses meaningful but balanced (2-10 range)
-- Consider which stat would help them most right now
-
-Return JSON: {"statType": "health|attack|defense", "value": number (2-10)}`;
+    const roll = Math.random();
+    if (roll < 0.5) {
+      return { statType: "attack", baseValue: 3 };
+    } else {
+      return { statType: "defense", baseValue: 3 };
+    }
   }
 }
+
+// ============================================================================
+// SINGLETON EXPORT
+// ============================================================================
+
+export const llmService = new LLMService();
