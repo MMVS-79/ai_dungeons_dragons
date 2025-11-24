@@ -30,7 +30,7 @@ import type { Item } from "@/lib/types/game.types";
  */
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // Updated for Next.js 15
+  context: { params: Promise<{ id: string }> }, // Updated for Next.js 15
 ) {
   try {
     const { id } = await context.params; // Must await
@@ -40,14 +40,14 @@ export async function POST(
     if (isNaN(characterId)) {
       return NextResponse.json(
         { success: false, error: "Invalid character ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!body.itemId) {
       return NextResponse.json(
         { success: false, error: "Missing itemId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -57,7 +57,7 @@ export async function POST(
     // Step 4: Query full inventory
 
     console.log(
-      `[API] POST /api/characters/${characterId}/inventory - itemId: ${body.itemId}`
+      `[API] POST /api/characters/${characterId}/inventory - itemId: ${body.itemId}`,
     );
 
     // MOCK DATA - Replace with actual database operations
@@ -78,7 +78,7 @@ export async function POST(
     console.error("[API] Add inventory item error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to add item to inventory" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -109,7 +109,7 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // Updated for Next.js 15
+  context: { params: Promise<{ id: string }> }, // Updated for Next.js 15
 ) {
   try {
     const { id } = await context.params; // Must await
@@ -120,14 +120,14 @@ export async function DELETE(
     if (isNaN(characterId)) {
       return NextResponse.json(
         { success: false, error: "Invalid character ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!itemId) {
       return NextResponse.json(
         { success: false, error: "Missing itemId parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -136,7 +136,7 @@ export async function DELETE(
     // Step 3: Query full inventory
 
     console.log(
-      `[API] DELETE /api/characters/${characterId}/inventory - itemId: ${itemId}`
+      `[API] DELETE /api/characters/${characterId}/inventory - itemId: ${itemId}`,
     );
 
     // MOCK DATA - Replace with actual database delete
@@ -148,7 +148,7 @@ export async function DELETE(
     console.error("[API] Remove inventory item error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to remove item from inventory" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

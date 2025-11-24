@@ -4,7 +4,11 @@
  * In-memory storage for pending investigation prompts
  */
 
-export type EventTypeString = 'Descriptive' | 'Environmental' | 'Combat' | 'Item_Drop';
+export type EventTypeString =
+  | "Descriptive"
+  | "Environmental"
+  | "Combat"
+  | "Item_Drop";
 
 interface InvestigationPrompt {
   eventType: EventTypeString;
@@ -22,12 +26,14 @@ if (!global.investigationPrompts) {
 export function setInvestigationPrompt(
   campaignId: number,
   eventType: EventTypeString,
-  message: string
+  message: string,
 ): void {
   global.investigationPrompts!.set(campaignId, { eventType, message });
 }
 
-export function getInvestigationPrompt(campaignId: number): InvestigationPrompt | null {
+export function getInvestigationPrompt(
+  campaignId: number,
+): InvestigationPrompt | null {
   const prompt = global.investigationPrompts!.get(campaignId) || null;
   return prompt;
 }
