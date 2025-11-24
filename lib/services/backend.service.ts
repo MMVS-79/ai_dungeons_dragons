@@ -180,6 +180,41 @@ function mapCampaignRow(row: CampaignRow): Campaign {
   };
 }
 
+/*export interface RaceRow {
+  id: number;
+  name: string;
+  health: number;
+  attack: number;
+  defense: number;
+  sprite_path?: string;
+}
+
+export interface ClassRow {
+  id: number;
+  name: string;
+  health: number;
+  attack: number;
+  defense: number;
+  sprite_path?: string;
+}
+*/
+
+async function getRace(id: number): Promise<RaceRow> {
+  const sql = `SELECT * FROM races WHERE id = ?`;
+  const [rows] = await pool.query<RaceRow[]>(sql, [id]);
+
+  if (rows.length === 0) throw new Error(`Race ${id} not found`);
+  return rows[0];
+}
+
+async function getClass(id: number): Promise<ClassRow> {
+  const sql = `SELECT * FROM classes WHERE id = ?`;
+  const [rows] = await pool.query<ClassRow[]>(sql, [id]);
+
+  if (rows.length === 0) throw new Error(`Class ${id} not found`);
+  return rows[0];
+}
+
 // ---------------------------------------------------------------------------
 // Type for updates
 // ---------------------------------------------------------------------------
@@ -194,9 +229,65 @@ export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
 // ============================================================================
 
 /**
+ * Creates a new character
+ * Includes race, class, equipment, base stats, and final stats
+ */
+
+import { ResultSetHeader } from "mysql2";
+
+export async function createCharacter(
+  campaignId: number,
+  name: string,
+  raceId: number,
+  classId: number,
+): Promise<Character> {
+  try {
+    // 1. Load race + class data
+    const race = await getRace(raceId);
+    const cls = await getClass(classId);
+
+    // 2. Compute base stats
+    const baseHealth = race.health + cls.health;
+    const baseAttack = race.attack + cls.attack;
+    const baseDefense = race.defense + cls.defense;
+
+    // 3. Insert the new character
+    const sql = `
+      INSERT INTO characters (
+        name, current_health, max_health,
+        attack, defense, sprite_path,
+        campaign_id, race_id, class_id,
+        weapon_id, armour_id, shield_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
+    `;
+
+    const [result] = await pool.query<ResultSetHeader>(sql, [
+      name,
+      baseHealth, // current
+      baseHealth, // max
+      baseAttack,
+      baseDefense,
+      null, // sprite_path for character
+      campaignId,
+      raceId,
+      classId,
+    ]);
+
+    const newId = result.insertId;
+
+    // 4. Return it using same mapping as getCharacter
+    return await getCharacter(newId);
+  } catch (err) {
+    console.error("[BackendService] createCharacter failed:", err);
+    throw err;
+  }
+}
+
+/**
  * Fetch a character by ID from the database
  * Includes race, class, equipment, base stats, and final stats
  */
+
 export async function getCharacter(id: number): Promise<Character> {
   try {
     const sql = `
@@ -735,6 +826,45 @@ export async function getBossEnemy(): Promise<Enemy> {
 // ============================================================================
 // CAMPAIGN OPERATIONS
 // ============================================================================
+
+/**
+ * Creates a new campaign
+ * Returns the created Campaign object
+ */
+export async function createCampaign(
+  accountId: number,
+  name: string,
+  description?: string,
+): Promise<Campaign> {
+  try {
+    // 1. Insert new campaign into DB
+    const sql = `
+      INSERT INTO campaigns (
+        account_id,
+        name,
+        description,
+        state,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, NOW(), NOW())
+    `;
+
+    const [result] = await pool.query<ResultSetHeader>(sql, [
+      accountId,
+      name,
+      description || null,
+      "active", // default state
+    ]);
+
+    const newId = result.insertId;
+
+    // 2. Return the campaign using the same mapping as getCampaign
+    return await getCampaign(newId);
+  } catch (err) {
+    console.error("[BackendService] createCampaign failed:", err);
+    throw err;
+  }
+}
 
 /**
  * Get campaign by ID
