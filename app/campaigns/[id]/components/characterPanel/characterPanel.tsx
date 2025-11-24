@@ -1,6 +1,6 @@
-import React from 'react';
-import Image from 'next/image';
-import styles from './characterPanel.module.css';
+import React from "react";
+import Image from "next/image";
+import styles from "./characterPanel.module.css";
 
 interface Equipment {
   weapon?: {
@@ -41,23 +41,23 @@ interface CharacterPanelProps {
   temporaryBuffs?: { attack: number; defense: number };
 }
 
-export default function CharacterPanel({ 
-  playerState, 
-  playerAttack, 
-  playerDefense, 
+export default function CharacterPanel({
+  playerState,
+  playerAttack,
+  playerDefense,
   playerMaxHp,
-  temporaryBuffs = { attack: 0, defense: 0 }
+  temporaryBuffs = { attack: 0, defense: 0 },
 }: CharacterPanelProps) {
   const hpPercentage = (playerState.hp / playerMaxHp) * 100;
 
   return (
     <div className={styles.panel}>
       <h2 className={styles.header}>⚔️ Your Character</h2>
-      
+
       <div className={styles.characterInfo}>
         <div className={styles.characterImage}>
-          <Image 
-            src={playerState.image} 
+          <Image
+            src={playerState.image}
             alt={playerState.name}
             width={220}
             height={220}
@@ -66,15 +66,17 @@ export default function CharacterPanel({
         </div>
         <h3 className={styles.characterName}>{playerState.name}</h3>
       </div>
-      
+
       <div className={styles.statsContainer}>
         {/* HP Bar (No calculation shown) */}
         <div className={styles.statRow}>
           <span>HP:</span>
-          <span>{playerState.hp} / {playerMaxHp}</span>
+          <span>
+            {playerState.hp} / {playerMaxHp}
+          </span>
         </div>
         <div className={styles.hpBar}>
-          <div 
+          <div
             className={styles.hpBarFill}
             style={{ width: `${Math.max(0, Math.min(100, hpPercentage))}%` }}
           />
@@ -87,12 +89,14 @@ export default function CharacterPanel({
             {playerState.attack}
             {playerState.equipment.weapon && (
               <span className={styles.equipmentBonus}>
-                {' + '}{playerState.equipment.weapon.attack}
+                {" + "}
+                {playerState.equipment.weapon.attack}
               </span>
             )}
             {temporaryBuffs.attack !== 0 && (
               <span className={styles.tempBuff}>
-                {' + '}{temporaryBuffs.attack}
+                {" + "}
+                {temporaryBuffs.attack}
               </span>
             )}
           </span>
@@ -105,12 +109,14 @@ export default function CharacterPanel({
             {playerState.defense}
             {playerState.equipment.shield && (
               <span className={styles.equipmentBonus}>
-                {' + '}{playerState.equipment.shield.defense}
+                {" + "}
+                {playerState.equipment.shield.defense}
               </span>
             )}
             {temporaryBuffs.defense !== 0 && (
               <span className={styles.tempBuff}>
-                {' + '}{temporaryBuffs.defense}
+                {" + "}
+                {temporaryBuffs.defense}
               </span>
             )}
           </span>

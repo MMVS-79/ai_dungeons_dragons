@@ -81,8 +81,8 @@ export default function ItemPanel({
       item.statModified === "health"
         ? "HP"
         : item.statModified === "attack"
-        ? "Attack"
-        : "Defense";
+          ? "Attack"
+          : "Defense";
     return `${item.name}\n${item.statValue > 0 ? "+" : ""}${
       item.statValue
     } ${statName}`;
@@ -90,7 +90,7 @@ export default function ItemPanel({
 
   const getEquipmentTooltipText = (
     item: Weapon | Armour | Shield,
-    slot: string
+    slot: string,
   ) => {
     if (slot === "weapon" && "attack" in item) {
       return `${item.name}\n+${item.attack} Attack`;
@@ -274,7 +274,7 @@ export default function ItemPanel({
               >
                 {getEquipmentTooltipText(
                   hoveredEquipment.item,
-                  hoveredEquipment.slot
+                  hoveredEquipment.slot,
                 )}
               </div>
             )}

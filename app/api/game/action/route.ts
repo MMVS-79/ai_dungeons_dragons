@@ -9,14 +9,14 @@ const gameService = new GameService(process.env.GEMINI_API_KEY!);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     if (!body.campaignId || !body.actionType) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Missing required fields: campaignId and actionType" 
+        {
+          success: false,
+          error: "Missing required fields: campaignId and actionType",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,17 +24,17 @@ export async function POST(request: NextRequest) {
 
     // CHECK: Is campaign completed or game over?
     const campaign = await BackendService.getCampaign(campaignId);
-    
+
     if (campaign.state === "game_over" || campaign.state === "completed") {
-      
       const gameState = await gameService.getGameState(campaignId);
-      
+
       return NextResponse.json({
         success: true,
         gameState,
-        message: campaign.state === "game_over" 
-          ? "You have been defeated..." 
-          : "🎉 Victory is yours!",
+        message:
+          campaign.state === "game_over"
+            ? "You have been defeated..."
+            : "🎉 Victory is yours!",
         choices: [],
       });
     }
@@ -67,28 +67,30 @@ export async function POST(request: NextRequest) {
 
     if (!validActionTypes.includes(action.actionType)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Invalid actionType: ${action.actionType}` 
+        {
+          success: false,
+          error: `Invalid actionType: ${action.actionType}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const result: GameServiceResponse = await gameService.processPlayerAction(action);
+    const result: GameServiceResponse =
+      await gameService.processPlayerAction(action);
 
     return NextResponse.json(result, {
       status: result.success ? 200 : 500,
     });
-
   } catch (error) {
-    
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : "Failed to process game action" 
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to process game action",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -105,27 +107,26 @@ export async function GET(request: NextRequest) {
     if (!campaignId) {
       return NextResponse.json(
         { success: false, error: "Missing campaignId parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const validation = await gameService.validateGameState(parseInt(campaignId));
+    const validation = await gameService.validateGameState(
+      parseInt(campaignId),
+    );
 
     return NextResponse.json({
       success: true,
       validation,
     });
-
   } catch (error) {
-    
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error 
-          ? error.message 
-          : "Failed to fetch game state",
+        error:
+          error instanceof Error ? error.message : "Failed to fetch game state",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

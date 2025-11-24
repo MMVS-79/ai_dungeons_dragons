@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Missing required fields: campaignId, choiceType, and choice",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: `Invalid choiceType: ${body.choiceType}. Must be "event", "item", or "equipment"`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "itemId is required for equipment choices",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -98,22 +98,21 @@ export async function POST(request: NextRequest) {
             success: false,
             error: "Invalid choiceType",
           },
-          { status: 400 }
+          { status: 400 },
         );
     }
 
     console.log(
-      `[API Choice] Processing ${body.choiceType} choice (${body.choice}) for campaign ${body.campaignId}`
+      `[API Choice] Processing ${body.choiceType} choice (${body.choice}) for campaign ${body.campaignId}`,
     );
 
     // Call GameService orchestrator
-    const result: GameServiceResponse = await gameService.processPlayerAction(
-      action
-    );
+    const result: GameServiceResponse =
+      await gameService.processPlayerAction(action);
 
     // Log result for debugging
     console.log(
-      `[API Choice] Result: success=${result.success}, phase=${result.gameState.currentPhase}`
+      `[API Choice] Result: success=${result.success}, phase=${result.gameState.currentPhase}`,
     );
 
     // Return response
@@ -131,7 +130,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to process choice action",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

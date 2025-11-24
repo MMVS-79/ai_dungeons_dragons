@@ -75,7 +75,7 @@ export class GameService {
   // ==========================================================================
 
   async processPlayerAction(
-    action: PlayerAction
+    action: PlayerAction,
   ): Promise<GameServiceResponse> {
     try {
       const gameState = await this.getGameState(action.campaignId);
@@ -148,7 +148,7 @@ export class GameService {
 
   private async handleContinue(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const currentEventNumber =
       gameState.recentEvents.length > 0
@@ -160,7 +160,7 @@ export class GameService {
     if (nextEventNumber === 1) {
       const introText = await this.llmService.generateCampaignIntroduction(
         action.campaignId,
-        gameState
+        gameState,
       );
 
       await BackendService.saveEvent(
@@ -169,7 +169,7 @@ export class GameService {
         "Descriptive",
         {
           campaignIntro: true,
-        }
+        },
       );
 
       const updatedState = await this.getGameState(action.campaignId);
@@ -188,7 +188,7 @@ export class GameService {
       return await this.generateBossEncounter(
         action.campaignId,
         gameState,
-        nextEventNumber
+        nextEventNumber,
       );
     }
 
@@ -199,18 +199,21 @@ export class GameService {
     const recentEventTypes = gameState.recentEvents
       .slice(0, 5)
       .map((e) => e.eventType);
-    const eventTypeCounts = recentEventTypes.reduce((acc, type) => {
-      acc[type as EventTypeString] = (acc[type as EventTypeString] || 0) + 1;
-      return acc;
-    }, {} as Record<EventTypeString, number>);
+    const eventTypeCounts = recentEventTypes.reduce(
+      (acc, type) => {
+        acc[type as EventTypeString] = (acc[type as EventTypeString] || 0) + 1;
+        return acc;
+      },
+      {} as Record<EventTypeString, number>,
+    );
 
     // Count total descriptive events
     const allEvents = await BackendService.getRecentEvents(
       action.campaignId,
-      100
+      100,
     );
     const totalDescriptive = allEvents.filter(
-      (e) => e.eventType === "Descriptive"
+      (e) => e.eventType === "Descriptive",
     ).length;
 
     // Generate event type
@@ -228,7 +231,7 @@ export class GameService {
       ].filter(
         (type) =>
           (eventTypeCounts[type as EventTypeString] || 0) < 2 &&
-          type !== eventType
+          type !== eventType,
       );
 
       if (alternatives.length > 0) {
@@ -252,18 +255,18 @@ export class GameService {
         return await this.handleDescriptiveEvent(
           action.campaignId,
           gameState,
-          context
+          context,
         );
       case "Environmental":
         return await this.handleEnvironmentalPrompt(
           action.campaignId,
-          gameState
+          gameState,
         );
       case "Combat":
         return await this.handleCombatPrompt(
           action.campaignId,
           gameState,
-          nextEventNumber
+          nextEventNumber,
         );
       case "Item_Drop":
         return await this.handleItemDropPrompt(action.campaignId, gameState);
@@ -279,12 +282,12 @@ export class GameService {
   private async handleDescriptiveEvent(
     campaignId: number,
     gameState: GameState,
-    context: LLMContext
+    context: LLMContext,
   ): Promise<GameServiceResponse> {
     // Generate description
     const description = await this.llmService.generateDescription(
       "Descriptive",
-      context
+      context,
     );
 
     // Increment descriptive counter
@@ -313,7 +316,7 @@ export class GameService {
 
   private async handleEnvironmentalPrompt(
     campaignId: number,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const message =
       "The environment around you begins to shift... Do you want to investigate?";
@@ -342,7 +345,7 @@ export class GameService {
 
   private async handleItemDropPrompt(
     campaignId: number,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const message =
       "You notice something shiny nearby... Do you want to investigate?";
@@ -372,7 +375,7 @@ export class GameService {
   private async handleCombatPrompt(
     campaignId: number,
     gameState: GameState,
-    eventNumber: number
+    eventNumber: number,
   ): Promise<GameServiceResponse> {
     const message = "You sense danger nearby... Do you want to investigate?";
 
@@ -400,7 +403,7 @@ export class GameService {
 
   private async handleInvestigate(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     // Get stored investigation prompt
     const storedPrompt = getInvestigationPrompt(action.campaignId);
@@ -427,7 +430,7 @@ export class GameService {
           result = await this.processEnvironmentalEvent(
             action.campaignId,
             gameState,
-            diceRoll
+            diceRoll,
           );
           break;
 
@@ -435,7 +438,7 @@ export class GameService {
           result = await this.processItemDropEvent(
             action.campaignId,
             gameState,
-            diceRoll
+            diceRoll,
           );
           break;
 
@@ -443,13 +446,13 @@ export class GameService {
           result = await this.processCombatEvent(
             action.campaignId,
             gameState,
-            diceRoll
+            diceRoll,
           );
           break;
 
         default:
           console.error(
-            `[GameService] Unknown investigation type: ${eventType}`
+            `[GameService] Unknown investigation type: ${eventType}`,
           );
           throw new Error(`Unknown investigation type: ${eventType}`);
       }
@@ -462,7 +465,7 @@ export class GameService {
       console.error("[GameService] Error in handleInvestigate:", error);
       console.error(
         "[GameService] Error stack:",
-        error instanceof Error ? error.stack : "No stack"
+        error instanceof Error ? error.stack : "No stack",
       );
       throw error;
     }
@@ -474,7 +477,7 @@ export class GameService {
 
   private async handleDecline(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     // Get the prompt that was declined
     const storedPrompt = getInvestigationPrompt(action.campaignId);
@@ -509,7 +512,7 @@ export class GameService {
         eventTypeToLog as EventTypeString,
         {
           declined: true,
-        }
+        },
       );
 
       // Get updated state
@@ -536,7 +539,7 @@ export class GameService {
   private async processEnvironmentalEvent(
     campaignId: number,
     gameState: GameState,
-    diceRoll: number
+    diceRoll: number,
   ): Promise<GameServiceResponse> {
     try {
       const context = await this.buildLLMContext(gameState);
@@ -544,13 +547,13 @@ export class GameService {
       // Generate description
       const description = await this.llmService.generateDescription(
         "Environmental",
-        context
+        context,
       );
 
       // Request stat boost from LLM
       const statBoost = await this.llmService.requestStatBoost(
         context,
-        "Environmental"
+        "Environmental",
       );
 
       // Ensure baseValue is not 0, use defaults if needed
@@ -562,8 +565,8 @@ export class GameService {
           statBoost.statType === "health"
             ? 10
             : statBoost.statType === "attack"
-            ? 2
-            : 2;
+              ? 2
+              : 2;
       }
 
       // Apply dice roll modifier
@@ -583,7 +586,7 @@ export class GameService {
       const finalValue = Stat_Calc.applyRoll(
         diceRoll,
         statTypeMap[statBoost.statType],
-        statBoost.baseValue
+        statBoost.baseValue,
       );
 
       // Update character stats
@@ -617,8 +620,8 @@ export class GameService {
         rollClassification === "critical_success"
           ? "🎲✨ CRITICAL! "
           : rollClassification === "critical_failure"
-          ? "🎲💀 FAILURE! "
-          : "🎲 ";
+            ? "🎲💀 FAILURE! "
+            : "🎲 ";
 
       const message = `${description}\n\n${rollEmoji}Rolled ${diceRoll}: ${
         finalValue > 0 ? "+" : ""
@@ -658,7 +661,7 @@ export class GameService {
   private async processItemDropEvent(
     campaignId: number,
     gameState: GameState,
-    diceRoll: number
+    diceRoll: number,
   ): Promise<GameServiceResponse> {
     const context = await this.buildLLMContext(gameState);
     const eventNumber =
@@ -707,7 +710,7 @@ export class GameService {
       const description = await this.llmService.generateDescription(
         "Item_Drop",
         context,
-        lootItem
+        lootItem,
       );
 
       // AUTO-EQUIP the equipment (replace current equipment in that slot)
@@ -717,7 +720,7 @@ export class GameService {
         case "weapon":
           if (gameState.character.weaponId) {
             const oldWeapon = await BackendService.getWeapon(
-              gameState.character.weaponId
+              gameState.character.weaponId,
             );
             previousEquipment = oldWeapon.name;
           }
@@ -726,7 +729,7 @@ export class GameService {
         case "armour":
           if (gameState.character.armourId) {
             const oldArmour = await BackendService.getArmour(
-              gameState.character.armourId
+              gameState.character.armourId,
             );
             previousEquipment = oldArmour.name;
           }
@@ -735,7 +738,7 @@ export class GameService {
         case "shield":
           if (gameState.character.shieldId) {
             const oldShield = await BackendService.getShield(
-              gameState.character.shieldId
+              gameState.character.shieldId,
             );
             previousEquipment = oldShield.name;
           }
@@ -774,7 +777,7 @@ export class GameService {
       const description = await this.llmService.generateDescription(
         "Item_Drop",
         context,
-        lootItem
+        lootItem,
       );
 
       const MAX_INVENTORY = 10;
@@ -805,7 +808,7 @@ export class GameService {
       // Add item to inventory (this part stays the same)
       await BackendService.addItemToInventory(
         gameState.character.id,
-        lootItem.id
+        lootItem.id,
       );
 
       // Build message for consumable item
@@ -851,7 +854,7 @@ export class GameService {
   private async processCombatEvent(
     campaignId: number,
     gameState: GameState,
-    diceRoll: number
+    diceRoll: number,
   ): Promise<GameServiceResponse> {
     try {
       //  Use actual event number from most recent event, not array length
@@ -867,7 +870,7 @@ export class GameService {
       const enemy = await BackendService.getEnemyByDifficulty(
         targetDifficulty,
         3,
-        true
+        true,
       );
 
       // Generate encounter description
@@ -883,7 +886,7 @@ export class GameService {
             attack: enemy.attack,
             defense: enemy.defense,
           },
-        }
+        },
       );
 
       // Reset descriptive counter
@@ -949,7 +952,7 @@ export class GameService {
       console.error("[GameService] Error in processCombatEvent:", error);
       console.error(
         "[GameService] Error stack:",
-        error instanceof Error ? error.stack : "No stack"
+        error instanceof Error ? error.stack : "No stack",
       );
       throw error;
     }
@@ -961,7 +964,7 @@ export class GameService {
   private async generateBossEncounter(
     campaignId: number,
     gameState: GameState,
-    eventNumber: number
+    eventNumber: number,
   ): Promise<GameServiceResponse> {
     // Get random boss
     const boss = await BackendService.getBossEnemy();
@@ -978,7 +981,7 @@ export class GameService {
           attack: boss.attack,
           defense: boss.defense,
         },
-      }
+      },
     );
 
     // Build encounter message
@@ -1045,7 +1048,7 @@ export class GameService {
   private async handleCombatAction(
     action: PlayerAction,
     gameState: GameState,
-    combatAction: "attack" | "flee"
+    combatAction: "attack" | "flee",
   ): Promise<GameServiceResponse> {
     const snapshot = getCombatSnapshot(action.campaignId);
 
@@ -1069,7 +1072,7 @@ export class GameService {
         // Add to combat log
         addCombatLogEntry(
           action.campaignId,
-          "You cannot escape from this powerful foe!"
+          "You cannot escape from this powerful foe!",
         );
 
         // Get updated state (still in combat)
@@ -1122,11 +1125,11 @@ export class GameService {
         // Failed flee - enemy attacks
         const enemyDamage = Math.max(
           1,
-          snapshot.enemy.attack - getEffectiveDefense(snapshot)
+          snapshot.enemy.attack - getEffectiveDefense(snapshot),
         );
         const newCharacterHp = Math.max(
           0,
-          snapshot.characterSnapshot.currentHealth - enemyDamage
+          snapshot.characterSnapshot.currentHealth - enemyDamage,
         );
 
         updateCharacterHp(action.campaignId, newCharacterHp);
@@ -1149,7 +1152,7 @@ export class GameService {
               phase: "conclusion",
               outcome: "character_defeated",
               diceRoll,
-            }
+            },
           );
 
           // Commit snapshot (character death)
@@ -1195,7 +1198,7 @@ export class GameService {
     // FORMULA: Base damage + dice modifier
     const baseDamage = Math.max(
       0,
-      getEffectiveAttack(snapshot) - snapshot.enemy.defense
+      getEffectiveAttack(snapshot) - snapshot.enemy.defense,
     );
     const diceModifier = diceRoll - 10; // -9 to +10 range
     const characterDamage = Math.max(1, baseDamage + diceModifier);
@@ -1203,7 +1206,7 @@ export class GameService {
     // Enemy counterattack damage
     const baseEnemyDamage = Math.max(
       0,
-      snapshot.enemy.attack - getEffectiveDefense(snapshot)
+      snapshot.enemy.attack - getEffectiveDefense(snapshot),
     );
     const enemyDiceModifier = -(diceRoll - 10); // Inverse for defense (high roll = less damage taken)
     const enemyDamage = Math.max(1, baseEnemyDamage + enemyDiceModifier);
@@ -1250,7 +1253,7 @@ export class GameService {
             phase: "conclusion",
             outcome: "boss_defeated",
             diceRoll,
-          }
+          },
         );
 
         await this.commitCombatSnapshot(snapshot);
@@ -1278,13 +1281,13 @@ export class GameService {
         // EQUIPMENT REWARD (75%)
         rewardRarity = calculateCombatRewardRarity(
           snapshot.enemy.difficulty,
-          diceRoll
+          diceRoll,
         );
         const { message, equipment } = await this.processCombatRewards(
           action.campaignId,
           snapshot,
           rewardRarity,
-          diceRoll
+          diceRoll,
         );
         rewardMessage = message;
         rewardEquipment = equipment;
@@ -1306,7 +1309,7 @@ export class GameService {
 
           await BackendService.addItemToInventory(
             snapshot.characterSnapshot.id,
-            item.id
+            item.id,
           );
 
           rewardMessage = `💰 Victory Rewards:\nYou found: ${item.name}! (${item.description})`;
@@ -1325,7 +1328,7 @@ export class GameService {
           outcome: "enemy_defeated",
           diceRoll,
           rewardRarity,
-        }
+        },
       );
 
       // Commit snapshot changes
@@ -1354,7 +1357,7 @@ export class GameService {
 
     const newCharacterHp = Math.max(
       0,
-      snapshot.characterSnapshot.currentHealth - enemyDamage
+      snapshot.characterSnapshot.currentHealth - enemyDamage,
     );
 
     updateCharacterHp(action.campaignId, newCharacterHp);
@@ -1374,7 +1377,7 @@ export class GameService {
           phase: "conclusion",
           outcome: "character_defeated",
           diceRoll,
-        }
+        },
       );
 
       // Commit snapshot
@@ -1433,7 +1436,7 @@ export class GameService {
 
   private async handleUseItemInCombat(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const itemId = action.actionData?.itemId;
     if (!itemId) {
@@ -1476,7 +1479,7 @@ export class GameService {
 
       const newHp = Math.min(
         trueMaxHp, // Use true max HP, not base
-        snapshot.characterSnapshot.currentHealth + item.statValue
+        snapshot.characterSnapshot.currentHealth + item.statValue,
       );
 
       updateCharacterHp(action.campaignId, newHp);
@@ -1539,7 +1542,7 @@ export class GameService {
     campaignId: number,
     snapshot: CombatSnapshot,
     rewardRarity: number,
-    diceRoll: number
+    diceRoll: number,
   ): Promise<{
     message: string;
     equipment: Weapon | Armour | Shield;
@@ -1555,7 +1558,7 @@ export class GameService {
       const weapon = await BackendService.getWeaponByRarity(rewardRarity);
       await BackendService.equipWeapon(
         snapshot.characterSnapshot.id,
-        weapon.id
+        weapon.id,
       );
       rewardMessage += `You found: ${weapon.name}! (+${weapon.attack} ATK)`;
       equipment = weapon;
@@ -1564,7 +1567,7 @@ export class GameService {
       const armour = await BackendService.getArmourByRarity(rewardRarity);
       await BackendService.equipArmour(
         snapshot.characterSnapshot.id,
-        armour.id
+        armour.id,
       );
       rewardMessage += `You found: ${armour.name}! (+${armour.health} Max HP)`;
       equipment = armour;
@@ -1573,7 +1576,7 @@ export class GameService {
       const shield = await BackendService.getShieldByRarity(rewardRarity);
       await BackendService.equipShield(
         snapshot.characterSnapshot.id,
-        shield.id
+        shield.id,
       );
       rewardMessage += `You found: ${shield.name}! (+${shield.defense} DEF)`;
       equipment = shield;
@@ -1596,21 +1599,27 @@ export class GameService {
       // Handle backwards compatibility for old snapshots
       if (!snapshot.originalInventoryIds) {
         console.warn(
-          `[GameService] Old snapshot format detected, no originalInventoryIds`
+          `[GameService] Old snapshot format detected, no originalInventoryIds`,
         );
         return;
       }
 
       // Count occurrences of each item ID
-      const originalCounts = snapshot.originalInventoryIds.reduce((acc, id) => {
-        acc[id] = (acc[id] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>);
+      const originalCounts = snapshot.originalInventoryIds.reduce(
+        (acc, id) => {
+          acc[id] = (acc[id] || 0) + 1;
+          return acc;
+        },
+        {} as Record<number, number>,
+      );
 
-      const currentCounts = snapshot.inventorySnapshot.reduce((acc, item) => {
-        acc[item.id] = (acc[item.id] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>);
+      const currentCounts = snapshot.inventorySnapshot.reduce(
+        (acc, item) => {
+          acc[item.id] = (acc[item.id] || 0) + 1;
+          return acc;
+        },
+        {} as Record<number, number>,
+      );
 
       // Find items that were used (compare counts)
       const itemsToRemove: number[] = [];
@@ -1631,13 +1640,13 @@ export class GameService {
       for (const itemId of itemsToRemove) {
         await BackendService.removeItemFromInventory(
           snapshot.characterSnapshot.id,
-          itemId
+          itemId,
         );
       }
 
       // Verify items were removed
       const finalInventory = await BackendService.getInventory(
-        snapshot.characterSnapshot.id
+        snapshot.characterSnapshot.id,
       );
     } catch (error) {
       console.error(`[GameService] Error committing combat snapshot:`, error);
@@ -1737,7 +1746,7 @@ export class GameService {
 
   private validateAction(
     action: PlayerAction,
-    gameState: GameState
+    gameState: GameState,
   ): GameValidation {
     const errors: string[] = [];
 
