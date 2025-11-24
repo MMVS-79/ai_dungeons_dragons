@@ -31,3 +31,6 @@ public
 # Logs
 *.log
 npm-debug.log*
+
+# Settings
+.vscode/settings.json

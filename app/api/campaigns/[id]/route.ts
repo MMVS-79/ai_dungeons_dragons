@@ -67,11 +67,11 @@ export async function GET(
         id: 1,
         name: "Mock Hero",
         currentHealth: 50,
-        vitality: 20,
+        maxHealth: 20,
         attack: 10,
         defense: 5,
-        race: { id: 1, name: "Human", vitality: 20, attack: 10, defense: 5 },
-        class: { id: 1, name: "Warrior", vitality: 20, attack: 10, defense: 5 },
+        raceId: 1,
+        classId: 1,
         campaignId: campaignId,
         spritePath: "/characters/player/warrior.png"
       } as Character,
@@ -161,12 +161,12 @@ export async function PUT(
       gameState.character.id,
       {
         currentHealth: gameState.character.currentHealth,
-        vitality: gameState.character.vitality,
+        maxHealth: gameState.character.maxHealth,
         attack: gameState.character.attack,
         defense: gameState.character.defense,
-        weapon: gameState.character.weapon,
-        armor: gameState.character.armor,
-        shield: gameState.character.shield
+        weaponId: gameState.character.weaponId,
+        armourId: gameState.character.armourId,
+        shieldId: gameState.character.shieldId
       }
     );
 

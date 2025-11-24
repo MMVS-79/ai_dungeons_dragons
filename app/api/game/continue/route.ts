@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "@/lib/services/game.service";
 import type { 
-  ContinueActionRequest,
   PlayerAction, 
   GameServiceResponse 
 } from "@/lib/types/game.types";
+
+interface ContinueActionRequest {
+  campaignId: number;
+}
 
 // Initialize GameService with API key
 const gameService = new GameService(process.env.GEMINI_API_KEY!);

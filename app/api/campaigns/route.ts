@@ -131,11 +131,11 @@ export async function POST(request: NextRequest) {
         id: 1,
         name: body.character.name,
         currentHealth: 100,
-        vitality: 20,
+        maxHealth: 20,
         attack: 10,
         defense: 5,
-        race: body.character.race,
-        class: body.character.class,
+        raceId: body.character.raceId,
+        classId: body.character.classId,
         campaignId: 1,
         spritePath: body.character.spritePath
       } as Character

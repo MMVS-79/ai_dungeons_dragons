@@ -9,125 +9,178 @@ interface EnemyState {
   attack: number;
   defense: number;
   image: string;
-  isBoss?: boolean;
 }
 
 interface Item {
-  id: string;
+  id: number;
   name: string;
-  type: "weapon" | "armor" | "shield" | "potion";
-  image: string;
-  attack?: number;
-  defense?: number;
-  hpBonus?: number;
-  healAmount?: number;
-  description: string;
+  rarity: number;
+  statModified: "health" | "attack" | "defense";
+  statValue: number;
+  description?: string;
+  spritePath?: string;
 }
 
-export type GameEvent =
-  | { type: "combat"; data: EnemyState }
-  | { type: "item"; data: Item }
-  | { type: "equipment"; data: Item }
-  | { type: "story"; data?: undefined }
-  | { type: null; data?: undefined };
+export interface Weapon {
+  id: number;
+  name: string;
+  rarity: number;
+  attack: number;
+  description?: string;
+  spritePath?: string;
+}
 
-export interface GameStateContext {
-  enemyState: EnemyState | null;
-  playerAttack: number;
-  playerDefense: number;
+export interface Armour {
+  id: number;
+  name: string;
+  rarity: number;
+  health: number;
+  description?: string;
+  spritePath?: string;
+}
+
+export interface Shield {
+  id: number;
+  name: string;
+  rarity: number;
+  defense: number;
+  description?: string;
+  spritePath?: string;
 }
 
 interface EventPanelProps {
-  currentEvent: GameEvent;
-  enemyState: EnemyState | null;
+  enemy: EnemyState | null;
+  itemFound?: Weapon | Armour | Shield | Item | null;
 }
 
+// Helper function to normalize image path
+const normalizeImagePath = (path?: string): string => {
+  if (!path) return '/items/placeholder.png';
+  
+  // Add .png extension if missing
+  const normalizedPath = path.endsWith('.png') ? path : `${path}.png`;
+  
+  return normalizedPath;
+};
+
+// Helper function to handle image load errors
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  const target = e.target as HTMLImageElement;
+  target.src = '/items/placeholder.png';
+};
+
 export default function EventPanel({ 
-  currentEvent, 
-  enemyState 
+  enemy,
+  itemFound
 }: EventPanelProps) {
-  // Don't show panel if no event
-  if (currentEvent.type === null || currentEvent.type === 'story') {
+  // Show enemy if in combat
+  if (enemy && enemy.hp > 0) {
     return (
       <div className={styles.panel}>
-        <h2 className={styles.header}>📜 Current Status</h2>
-        <div className={styles.emptyState}>
-          <p>Exploring the dungeon...</p>
+        <h2 className={styles.header}>💀 Enemy</h2>
+        <h3 className={styles.eventHeader}>{enemy.name}</h3>
+        <div className={styles.enemyImage}>
+          <Image 
+            src={enemy.image} 
+            alt={enemy.name}
+            width={220}
+            height={220}
+            unoptimized
+            onError={handleImageError}
+          />
+        </div>
+        
+        <div className={styles.statsContainer}>
+          <div className={styles.statRow}>
+            <span>HP:</span>
+            <span>{enemy.hp} / {enemy.maxHp}</span>
+          </div>
+          <div className={styles.hpBar}>
+            <div 
+              className={styles.hpBarFill}
+              style={{ width: `${(enemy.hp / enemy.maxHp) * 100}%` }}
+            />
+          </div>
+          
+          <div className={styles.statRow}>
+            <span>⚔️ Attack: {enemy.attack}</span>
+            <span>🛡️ Defense: {enemy.defense}</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className={styles.panel}>
-      {currentEvent.type === 'combat' && enemyState && enemyState.hp > 0 && (
-        <>
-          <h2 className={styles.header}>💀 Enemy</h2>
-          <h3 className={styles.eventHeader}>{enemyState.name}</h3>
-          <div className={styles.enemyImage}>
+  // Show item/equipment if found
+  if (itemFound) {
+    const isEquipment = 'attack' in itemFound || 'defense' in itemFound || 
+                        ('health' in itemFound && !('statModified' in itemFound));
+    
+    const imagePath = normalizeImagePath(itemFound.spritePath);
+    
+    return (
+      <div className={styles.panel}>
+        <h2 className={styles.header}>{isEquipment ? '⚔️ Equipment Found!' : '🧪 Item Found!'}</h2>
+        <div className={styles.itemFound}>
+          {/* Show actual item/equipment image with error handling */}
+          <div className={styles.itemImage}>
             <Image 
-              src={enemyState.image} 
-              alt={enemyState.name}
-              width={512}
-              height={512}
+              src={imagePath}
+              alt={itemFound.name}
+              width={180}
+              height={180}
+              unoptimized
+              onError={handleImageError}
             />
           </div>
           
-          <div className={styles.statsContainer}>
-            <div className={styles.statRow}>
-              <span>HP:</span>
-              <span>{enemyState.hp} / {enemyState.maxHp}</span>
-            </div>
-            <div className={styles.hpBar}>
-              <div 
-                className={styles.hpBarFill}
-                style={{ width: `${(enemyState.hp / enemyState.maxHp) * 100}%` }}
-              />
-            </div>
-            
-            <div className={styles.statRow}>
-              <span>⚔️ Attack: {enemyState.attack}</span>
-              <span>🛡️ Defense: {enemyState.defense}</span>
-            </div>
+          <div className={styles.itemName}>{itemFound.name}</div>
+          
+          {itemFound.description && (
+            <div className={styles.itemDescription}>{itemFound.description}</div>
+          )}
+          
+          {/* Show stats */}
+          <div className={styles.itemStats}>
+            {isEquipment ? (
+              <>
+                {'attack' in itemFound && itemFound.attack && (
+                  <div className={styles.statBadge}>⚔️ +{itemFound.attack} Attack</div>
+                )}
+                {'defense' in itemFound && itemFound.defense && (
+                  <div className={styles.statBadge}>🛡️ +{itemFound.defense} Defense</div>
+                )}
+                {'health' in itemFound && itemFound.health && (
+                  <div className={styles.statBadge}>❤️ +{itemFound.health} Max HP</div>
+                )}
+              </>
+            ) : (
+              <>
+                {('statModified' in itemFound) && (
+                  <div className={styles.statBadge}>
+                    {itemFound.statModified === 'health' && '❤️'}
+                    {itemFound.statModified === 'attack' && '⚔️'}
+                    {itemFound.statModified === 'defense' && '🛡️'}
+                    {' '}
+                    {itemFound.statValue > 0 ? '+' : ''}{itemFound.statValue} {itemFound.statModified}
+                    {itemFound.statModified === 'health' && ' HP'}
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        </>
-      )}
+        </div>
+      </div>
+    );
+  }
 
-      {currentEvent.type === 'item' && currentEvent.data && (
-        <>
-          <h2 className={styles.header}>✨ Item Found!</h2>
-          <div className={styles.itemFound}>
-            <div className={styles.itemImage}>
-              <Image 
-                src={currentEvent.data.image} 
-                alt={currentEvent.data.name}
-                width={512}
-                height={512}
-              />
-            </div>
-            <div className={styles.itemName}>{currentEvent.data.name}</div>
-            <div className={styles.itemDescription}>{currentEvent.data.description}</div>
-          </div>
-        </>
-      )}
-
-      {currentEvent.type === 'equipment' && currentEvent.data && (
-        <>
-          <h2 className={styles.header}>⚔️ Equipment Found!</h2>
-          <div className={styles.itemFound}>
-            <div className={styles.itemImage}>
-              <Image 
-                src={currentEvent.data.image} 
-                alt={currentEvent.data.name}
-                width={512}
-                height={512}
-              />
-            </div>
-            <div className={styles.itemName}>{currentEvent.data.name}</div>
-            <div className={styles.itemDescription}>{currentEvent.data.description}</div>
-          </div>
-        </>
-      )}
+  // Empty state (exploring)
+  return (
+    <div className={styles.panel}>
+      <h2 className={styles.header}>📜 Current Status</h2>
+      <div className={styles.emptyState}>
+        <p>Exploring the dungeon...</p>
+      </div>
     </div>
   );
 }
