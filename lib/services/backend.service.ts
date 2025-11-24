@@ -335,6 +335,28 @@ export async function getCharacterWithFullData(campaignId: number): Promise<{
 }
 
 // ============================================================================
+// RACE & CLASS GETTERS
+// ============================================================================
+
+export async function getAllRaces(): Promise<RaceRow[]> {
+  const [rows] = await pool.query<RaceRow[]>(
+    `SELECT * FROM races
+     ORDER BY name ASC`
+  );
+
+  return rows;
+}
+
+export async function getAllClasses(): Promise<ClassRow[]> {
+  const [rows] = await pool.query<ClassRow[]>(
+    `SELECT * FROM classes
+     ORDER BY name ASC`
+  );
+
+  return rows;
+}
+
+// ============================================================================
 // EQUIPMENT GETTERS
 // ============================================================================
 
@@ -832,3 +854,4 @@ export async function getRecentEvents(
     createdAt: new Date(row.created_at),
   }));
 }
+
