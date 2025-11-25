@@ -1,10 +1,7 @@
 app/api/auth/[...nextauth]/route.ts
 app/api/campaigns/[id]/route.ts
 app/api/campaigns/route.ts
-app/api/characters/[id]/inventory/route.ts
-app/api/characters/[id]/route.ts
 app/api/classes/route.ts
-app/api/enemies/[id]/route.ts
 app/api/game/action/route.ts
 app/api/game/choice/route.ts
 app/api/game/combat/route.ts
