@@ -824,6 +824,54 @@ export async function getBossEnemy(): Promise<Enemy> {
 }
 
 // ============================================================================
+// ACCOUNT OPERATIONS
+// ============================================================================
+
+interface AccountRow extends RowDataPacket {
+  id: number;
+  email: string;
+}
+
+/**
+ * Get account by email, creating one if it doesn't exist
+ *
+ * @param email - User's email from Google OAuth session
+ * @returns Database account ID (integer)
+ *
+ * Used by API routes to convert session.user.email to database accountId.
+ * This enables multi-user support where each Google account maps to a unique
+ * database account, and all campaigns are linked to that account.
+ *
+ * Example:
+ *   const accountId = await getOrCreateAccount("user@gmail.com");
+ *   // First call: Creates account, returns new ID (e.g., 5)
+ *   // Subsequent calls: Returns existing ID (5)
+ */
+export async function getOrCreateAccount(email: string): Promise<number> {
+  try {
+    // Try to find existing account by email
+    const [rows] = await pool.query<AccountRow[]>(
+      "SELECT id FROM accounts WHERE email = ?",
+      [email],
+    );
+
+    if (rows.length > 0) {
+      return rows[0].id;
+    }
+
+    // Create new account if not found
+    const [result] = await pool.query<InsertResult>(
+      "INSERT INTO accounts (email) VALUES (?)",
+      [email],
+    );
+
+    return result.insertId;
+  } catch (err) {
+    throw err;
+  }
+}
+
+// ============================================================================
 // CAMPAIGN OPERATIONS
 // ============================================================================
 
@@ -911,6 +959,79 @@ export async function updateCampaign(
   );
 
   return getCampaign(campaignId);
+}
+
+/**
+ * Get all campaigns for a user account
+ *
+ * @param accountId - User account ID to fetch campaigns for
+ * @returns Array of Campaign objects ordered by updated_at DESC (most recent first)
+ *
+ * Example usage:
+ *   const campaigns = await getCampaignsByAccount(1);
+ *
+ * Database query:
+ *   SELECT * FROM campaigns
+ *   WHERE account_id = ?
+ *   ORDER BY updated_at DESC
+ */
+export async function getCampaignsByAccount(
+  accountId: number,
+): Promise<Campaign[]> {
+  try {
+    // Query all campaigns for this user, ordered by most recently updated first
+    const sql =
+      "SELECT * FROM campaigns WHERE account_id = ? ORDER BY updated_at DESC";
+
+    // Execute query and map database rows to Campaign objects
+    const [rows] = await pool.query<CampaignRow[]>(sql, [accountId]);
+    return rows.map(mapCampaignRow);
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * Delete campaign and all associated data (hard delete)
+ *
+ * @param campaignId - Campaign ID to delete
+ * @throws Error if campaign not found or deletion fails
+ *
+ * This function performs a hard delete of the campaign. Database CASCADE
+ * constraints automatically handle cleanup of related records:
+ *
+ * Cascade deletions (automatic via foreign key constraints):
+ *   - characters table: WHERE campaign_id = ?
+ *   - character_items table: WHERE character_id IN (campaign's characters)
+ *   - logs table: WHERE campaign_id = ?
+ *
+ * Database requirements:
+ *   Foreign keys MUST have ON DELETE CASCADE:
+ *   - characters.campaign_id -> campaigns.id
+ *   - character_items.character_id -> characters.id
+ *   - logs.campaign_id -> campaigns.id
+ *
+ * Example usage:
+ *   await deleteCampaign(123);  // Deletes campaign 123 and all related data
+ *
+ * Note:
+ *   This is a permanent deletion.
+ */
+export async function deleteCampaign(campaignId: number): Promise<void> {
+  try {
+    // Verify campaign exists first (throws if not found)
+    await getCampaign(campaignId);
+
+    // Delete campaign record
+    // Database CASCADE will automatically delete:
+    // - Character record (via campaign_id foreign key)
+    // - Character's inventory items (via character_id foreign key)
+    // - All event logs (via campaign_id foreign key)
+    const sql = "DELETE FROM campaigns WHERE id = ?";
+    await pool.query(sql, [campaignId]);
+  } catch (err) {
+    throw err;
+  }
 }
 
 // ============================================================================

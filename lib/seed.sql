@@ -181,3 +181,56 @@ INSERT INTO shields (name, rarity, defense, description, sprite_path) VALUES
 -- LEGENDARY (81+)
 ('Shield of the Gods', 85, 22, 'Divine protection incarnate', '/items/placeholder.png'),
 ('Infinity Shield', 95, 25, 'Absolute defensive power', '/items/placeholder.png');
+
+-- ============================================================================
+-- CAMPAIGNS (Sample campaigns for testing)
+-- Note: account_id = 1 references the admin account created above
+-- ============================================================================
+
+INSERT INTO campaigns (account_id, name, description, state) VALUES
+(1, 'The Quest for the Ancient Relic', 'A brave warrior seeks to recover the lost artifact of power', 'active'),
+(1, 'Mystic Shadows', 'An elven mage explores the dark depths of forbidden magic', 'active'),
+(1, 'Underground Kingdoms', 'A dwarven rogue navigates treacherous underground passages', 'active'),
+(1, 'The Last Stand', 'A veteran campaign nearing its epic conclusion', 'active');
+
+-- ============================================================================
+-- CHARACTERS (Sample characters with correct stat calculations)
+-- Stats formula: character.stat = race.stat + class.stat
+-- 
+-- Race stats:
+--   Human:   HP=100, ATK=10, DEF=10
+--   Elf:     HP=80,  ATK=15, DEF=5
+--   Dwarf:   HP=120, ATK=8,  DEF=15
+--
+-- Class stats:
+--   Warrior: HP=120, ATK=15, DEF=10
+--   Mage:    HP=70,  ATK=25, DEF=5
+--   Rogue:   HP=90,  ATK=20, DEF=8
+--
+-- Example calculations:
+--   Human Warrior:   HP=220 (100+120), ATK=25 (10+15), DEF=20 (10+10)
+--   Elf Mage:        HP=150 (80+70),   ATK=40 (15+25), DEF=10 (5+5)
+--   Dwarf Rogue:     HP=210 (120+90),  ATK=28 (8+20),  DEF=23 (15+8)
+-- ============================================================================
+
+INSERT INTO characters (
+  campaign_id,
+  race_id,
+  class_id,
+  name,
+  current_health,
+  max_health,
+  attack,
+  defense
+) VALUES
+-- Campaign 1: Human Warrior
+(1, 1, 1, 'Aragorn the Brave', 220, 220, 25, 20),
+
+-- Campaign 2: Elf Mage
+(2, 2, 2, 'Elara Moonwhisper', 150, 150, 40, 10),
+
+-- Campaign 3: Dwarf Rogue
+(3, 3, 3, 'Thorin Ironfoot', 210, 210, 28, 23),
+
+-- Campaign 4: Human Mage (different combination)
+(4, 1, 2, 'Gandalf the Wise', 170, 170, 35, 15);
