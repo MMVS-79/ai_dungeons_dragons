@@ -55,11 +55,7 @@ if [ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ] || [ "$FORCE" -eq 1 ]; then
       schema/tables/items.sql \
       schema/tables/armours.sql \
       schema/tables/weapons.sql \
-      schema/tables/shields.sql \
-      schema/tables/character_items.sql \
-      schema/tables/character_armours.sql \
-      schema/tables/character_weapons.sql \
-      schema/tables/character_shields.sql >> $TMP_SQL
+      schema/tables/shields.sql \ >> $TMP_SQL
 
   echo "SET FOREIGN_KEY_CHECKS = 1;" >> $TMP_SQL
 
