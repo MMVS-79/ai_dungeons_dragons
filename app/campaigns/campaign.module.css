@@ -106,3 +106,101 @@
 .deleteButton:hover {
   background-color: #bb6666;
 }
+
+/* Delete Confirmation Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: linear-gradient(to bottom right, #1f2937, #111827);
+  border: 2px solid #aa5555;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modalTitle {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
+
+.modalText {
+  font-size: 1rem;
+  color: #d1d5db;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.modalButtonCancel,
+.modalButtonConfirm {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modalButtonCancel {
+  background-color: #4a5568;
+  color: white;
+}
+
+.modalButtonCancel:hover {
+  background-color: #5a6578;
+  transform: translateY(-2px);
+}
+
+.modalButtonConfirm {
+  background-color: #aa5555;
+  color: white;
+}
+
+.modalButtonConfirm:hover {
+  background-color: #cc6666;
+  transform: translateY(-2px);
+}

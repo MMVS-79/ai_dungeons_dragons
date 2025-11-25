@@ -824,6 +824,61 @@ export async function getBossEnemy(): Promise<Enemy> {
 }
 
 // ============================================================================
+// ACCOUNT OPERATIONS
+// ============================================================================
+
+interface AccountRow extends RowDataPacket {
+  id: number;
+  email: string;
+}
+
+/**
+ * Get account by email, creating one if it doesn't exist
+ *
+ * @param email - User's email from Google OAuth session
+ * @returns Database account ID (integer)
+ *
+ * Used by API routes to convert session.user.email to database accountId.
+ * This enables multi-user support where each Google account maps to a unique
+ * database account, and all campaigns are linked to that account.
+ *
+ * Example:
+ *   const accountId = await getOrCreateAccount("user@gmail.com");
+ *   // First call: Creates account, returns new ID (e.g., 5)
+ *   // Subsequent calls: Returns existing ID (5)
+ */
+export async function getOrCreateAccount(email: string): Promise<number> {
+  try {
+    // Try to find existing account by email
+    const [rows] = await pool.query<AccountRow[]>(
+      "SELECT id FROM accounts WHERE email = ?",
+      [email]
+    );
+
+    if (rows.length > 0) {
+      return rows[0].id;
+    }
+
+    // Create new account if not found
+    const [result] = await pool.query<InsertResult>(
+      "INSERT INTO accounts (email) VALUES (?)",
+      [email]
+    );
+
+    // TODO: Remove console.log after development
+    console.log(
+      `[BackendService] Created new account for ${email}: id=${result.insertId}`
+    );
+
+    return result.insertId;
+  } catch (err) {
+    // TODO: Remove console.log after development
+    console.error(`[BackendService] getOrCreateAccount(${email}) failed:`, err);
+    throw err;
+  }
+}
+
+// ============================================================================
 // CAMPAIGN OPERATIONS
 // ============================================================================
 

@@ -148,12 +148,11 @@ export default function NewCampaignPage() {
         throw new Error("Invalid race or class selection");
       }
 
-      // Create campaign via API
+      // Create campaign via API (accountId derived from session on server)
       const response = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          accountId: 1, // TODO: Get from auth session
           campaignName: campaignName,
           campaignDescription: `A ${selectedRace.name} ${selectedClass.name} adventure`,
           character: {

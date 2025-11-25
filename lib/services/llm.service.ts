@@ -15,10 +15,10 @@ import type {
 import { pool } from "../db";
 import type { RaceRow, ClassRow } from "../types/db.types";
 
-const apiKey = process.env.GOOGLE_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
-  throw new Error("GOOGLE_API_KEY is not set in environment variables");
+  throw new Error("GEMINI_API_KEY is not set in environment variables");
 }
 
 // ============================================================================
