@@ -54,8 +54,8 @@ export default function NewCampaignPage() {
         const { classes } = await classesRes.json();
         setDbRaces(races);
         setDbClasses(classes);
-      } catch (error) {
-        console.error("Failed to fetch character options:", error);
+      } catch {
+        // Failed to fetch character options
       } finally {
         setIsLoading(false);
       }
