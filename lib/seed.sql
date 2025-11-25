@@ -1,7 +1,4 @@
 -- seed.sql (UPDATED)
--- sqlfluff: disable rule.L040
--- sqlfluff: disable rule.L014
--- sqlfluff: disable rule.L003
 -- Seed admin user
 INSERT INTO accounts (email) VALUES ('admin@example.com');
 
