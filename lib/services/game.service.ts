@@ -158,7 +158,6 @@ export class GameService {
     // First event is campaign introduction
     if (nextEventNumber === 1) {
       const introText = await this.llmService.generateCampaignIntroduction(
-        action.campaignId,
         gameState,
       );
 
@@ -187,7 +186,6 @@ export class GameService {
       return await this.generateBossEncounter(
         action.campaignId,
         gameState,
-        nextEventNumber,
       );
     }
 
@@ -545,7 +543,6 @@ export class GameService {
       // Request stat boost from LLM
       const statBoost = await this.llmService.requestStatBoost(
         context,
-        "Environmental",
       );
 
       // Ensure baseValue is not 0, use defaults if needed

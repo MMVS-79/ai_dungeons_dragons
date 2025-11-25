@@ -4,7 +4,7 @@ import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
 import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
 
-const gameService = new GameService(process.env.GEMINI_API_KEY!);
+const gameService = new GameService();
 
 export async function POST(request: NextRequest) {
   try {

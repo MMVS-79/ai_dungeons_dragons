@@ -9,7 +9,7 @@ import {
 import type { CombatSnapshot } from "@/lib/types/game.types";
 import type { CombatEncounterEventData } from "@/lib/types/db.types";
 
-const gameService = new GameService(process.env.GEMINI_API_KEY!);
+const gameService = new GameService();
 
 /**
  * GET /api/game/state
