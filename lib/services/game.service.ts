@@ -262,9 +262,7 @@ export class GameService {
           gameState,
         );
       case "Combat":
-        return await this.handleCombatPrompt(
-          action.campaignId,
-        );
+        return await this.handleCombatPrompt(action.campaignId);
       case "Item_Drop":
         return await this.handleItemDropPrompt(action.campaignId);
       default:
