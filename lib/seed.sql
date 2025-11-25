@@ -73,23 +73,93 @@ INSERT INTO items (name, rarity, stat_modified, stat_value, description, sprite_
 ),
 
 -- ATTACK BUFFS (Scrolls/Elixirs - Temporary combat boost)
-('Strength Berries', 10, 'attack', 3, 'Temporarily increases attack by 3', '/items/strength_berries.png'),
-('Strength Scroll', 30, 'attack', 5, 'Temporarily increases attack by 5', '/items/strength_scroll.png'),
-('Greater Strength Scroll', 50, 'attack', 8, 'Temporarily increases attack by 8', '/items/greater_strength_scroll.png'),
-('Berserker Elixir', 70, 'attack', 12, 'Temporarily increases attack by 12', '/items/berserker_potion.png'),
+(
+    'Strength Berries',
+    10,
+    'attack',
+    3,
+    'Temporarily increases attack by 3',
+    '/items/strength_berries.png'
+),
+(
+    'Strength Scroll',
+    30,
+    'attack',
+    5,
+    'Temporarily increases attack by 5',
+    '/items/strength_scroll.png'
+),
+(
+    'Greater Strength Scroll',
+    50,
+    'attack',
+    8,
+    'Temporarily increases attack by 8',
+    '/items/greater_strength_scroll.png'
+),
+(
+    'Berserker Elixir',
+    70,
+    'attack',
+    12,
+    'Temporarily increases attack by 12',
+    '/items/berserker_potion.png'
+),
 ('Titan Elixir', 90, 'attack', 15, 'Temporarily increases attack by 15', '/items/titan_potion.png'),
 
 -- DEFENSE BUFFS (Temporary combat boost)
-('Fortifying Ginger', 10, 'defense', 3, 'Temporarily increases defense by 3', '/items/fortifying_ginger.png'),
-('Protection Scroll', 30, 'defense', 5, 'Temporarily increases defense by 5', '/items/protection_scroll.png'),
-('Greater Protection Scroll', 50, 'defense', 8, 'Temporarily increases defense by 8', '/items/greater_protection_scroll.png'),
-('Stone Skin Elixir', 70, 'defense', 10, 'Temporarily increases defense by 10', '/items/sturdy_potion.png'),
-('Invulnerability Elixir', 90, 'defense', 15, 'Temporarily increases defense by 15', '/items/invulnerability_potion.png'),
+(
+    'Fortifying Ginger',
+    10,
+    'defense',
+    3,
+    'Temporarily increases defense by 3',
+    '/items/fortifying_ginger.png'
+),
+(
+    'Protection Scroll',
+    30,
+    'defense',
+    5,
+    'Temporarily increases defense by 5',
+    '/items/protection_scroll.png'
+),
+(
+    'Greater Protection Scroll',
+    50,
+    'defense',
+    8,
+    'Temporarily increases defense by 8',
+    '/items/greater_protection_scroll.png'
+),
+(
+    'Stone Skin Elixir',
+    70,
+    'defense',
+    10,
+    'Temporarily increases defense by 10',
+    '/items/sturdy_potion.png'
+),
+(
+    'Invulnerability Elixir',
+    90,
+    'defense',
+    15,
+    'Temporarily increases defense by 15',
+    '/items/invulnerability_potion.png'
+),
 
 -- CURSED ITEMS (Negative stats - clogs inventory)
 ('Cursed Vial', 5, 'health', -10, 'A toxic vial that damages you', '/items/placeholder.png'),
 ('Weakness Curse', 15, 'attack', -5, 'Temporarily reduces attack by 3', '/items/placeholder.png'),
-('Fragility Curse', 15, 'defense', -5, 'Temporarily reduces defense by 3', '/items/fragility_curse.png');
+(
+    'Fragility Curse',
+    15,
+    'defense',
+    -5,
+    'Temporarily reduces defense by 3',
+    '/items/fragility_curse.png'
+);
 
 -- ============================================================================
 -- WEAPONS (Rarity-based system)
@@ -187,7 +257,12 @@ INSERT INTO shields (name, rarity, defense, description, sprite_path) VALUES
 -- ============================================================================
 
 INSERT INTO campaigns (account_id, name, description, state) VALUES
-(1, 'The Quest for the Ancient Relic', 'A brave warrior seeks to recover the lost artifact of power', 'active'),
+(
+    1,
+    'The Quest for the Ancient Relic',
+    'A brave warrior seeks to recover the lost artifact of power',
+    'active'
+),
 (1, 'Mystic Shadows', 'An elven mage explores the dark depths of forbidden magic', 'active'),
 (1, 'Underground Kingdoms', 'A dwarven rogue navigates treacherous underground passages', 'active'),
 (1, 'The Last Stand', 'A veteran campaign nearing its epic conclusion', 'active');
@@ -213,14 +288,14 @@ INSERT INTO campaigns (account_id, name, description, state) VALUES
 -- ============================================================================
 
 INSERT INTO characters (
-  campaign_id,
-  race_id,
-  class_id,
-  name,
-  current_health,
-  max_health,
-  attack,
-  defense
+    campaign_id,
+    race_id,
+    class_id,
+    name,
+    current_health,
+    max_health,
+    attack,
+    defense
 ) VALUES
 -- Campaign 1: Human Warrior
 (1, 1, 1, 'Aragorn the Brave', 220, 220, 25, 20),
