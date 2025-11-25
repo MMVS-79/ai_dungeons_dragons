@@ -5,7 +5,6 @@ source schema/tables/accounts.sql;
 
 -- Campaigns table and related tables
 source schema/tables/campaigns.sql;
-source schema/tables/chats.sql;
 source schema/tables/logs.sql;
 
 -- Unit tables
