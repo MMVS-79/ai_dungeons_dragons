@@ -40,7 +40,7 @@ import * as BackendService from "@/lib/services/backend.service";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }, // Next.js 15 requires params to be async
+  context: { params: Promise<{ id: string }> } // Next.js 15 requires params to be async
 ) {
   try {
     // Extract and parse campaign ID from URL parameter
@@ -52,7 +52,7 @@ export async function GET(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -71,11 +71,6 @@ export async function GET(
     // Ordered by event_number DESC (most recent first)
     const recentEvents = await BackendService.getRecentEvents(campaignId, 10);
 
-    // TODO: Remove console.log after development
-    console.log(
-      `[API] GET /api/campaigns/${campaignId} - Loaded campaign, character, ${inventory.length} items, ${recentEvents.length} events`,
-    );
-
     // Return all data in single response to minimize client round trips
     return NextResponse.json({
       success: true,
@@ -83,14 +78,12 @@ export async function GET(
       character,
       equipment,
       recentEvents,
-      inventory,
+      inventory
     });
-  } catch (error) {
-    // TODO: Remove console.log after development
-    console.error("[API] Get campaign error:", error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaign" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -139,7 +132,7 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }, // Next.js 15 requires async params
+  context: { params: Promise<{ id: string }> } // Next.js 15 requires async params
 ) {
   try {
     // Extract and parse campaign ID from URL parameter
@@ -150,7 +143,7 @@ export async function DELETE(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -164,22 +157,15 @@ export async function DELETE(
     //    - All event logs for this campaign
     await BackendService.deleteCampaign(campaignId);
 
-    // TODO: Remove console.log after development
-    console.log(
-      `[API] DELETE /api/campaigns/${campaignId} - Campaign and all associated data deleted successfully`,
-    );
-
     // Return success message
     return NextResponse.json({
       success: true,
-      message: `Campaign ${campaignId} deleted successfully`,
+      message: `Campaign ${campaignId} deleted successfully`
     });
-  } catch (error) {
-    // TODO: Remove console.log after development
-    console.error("[API] Delete campaign error:", error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to delete campaign" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -48,7 +48,7 @@ export default function NewCampaignPage() {
       try {
         const [racesRes, classesRes] = await Promise.all([
           fetch("/api/races"),
-          fetch("/api/classes"),
+          fetch("/api/classes")
         ]);
         const { races } = await racesRes.json();
         const { classes } = await classesRes.json();
@@ -84,7 +84,7 @@ export default function NewCampaignPage() {
     return {
       hp: (selectedRace?.health || 0) + (selectedClass?.health || 0),
       attack: (selectedRace?.attack || 0) + (selectedClass?.attack || 0),
-      defense: (selectedRace?.defense || 0) + (selectedClass?.defense || 0),
+      defense: (selectedRace?.defense || 0) + (selectedClass?.defense || 0)
     };
   };
 
@@ -158,9 +158,9 @@ export default function NewCampaignPage() {
           character: {
             name: characterName,
             raceId: selectedRace.id,
-            classId: selectedClass.id,
-          },
-        }),
+            classId: selectedClass.id
+          }
+        })
       });
 
       if (!response.ok) {
@@ -169,9 +169,7 @@ export default function NewCampaignPage() {
 
       const { campaign } = await response.json();
       router.push(`/campaigns/${campaign.id}`);
-    } catch (error) {
-      // TODO: Remove console.log after development
-      console.error("Failed to create campaign:", error);
+    } catch {
       alert("Failed to create campaign. Please try again.");
     }
   };
@@ -365,7 +363,10 @@ export default function NewCampaignPage() {
           {/* Navigation Buttons */}
           <div className={styles.navigationButtons}>
             {currentStep !== "campaignName" && (
-              <button className={styles.backButton} onClick={handleBack}>
+              <button
+                className={styles.backButton}
+                onClick={handleBack}
+              >
                 Back
               </button>
             )}

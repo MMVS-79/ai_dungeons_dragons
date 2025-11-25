@@ -42,35 +42,28 @@ export async function GET() {
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
     // Get database accountId from email (creates account if first login)
     const accountId = await BackendService.getOrCreateAccount(
-      session.user.email,
+      session.user.email
     );
 
     // Query all campaigns for this user from database
     // Returns campaigns ordered by updated_at DESC (most recent first)
     const campaigns = await BackendService.getCampaignsByAccount(accountId);
 
-    // TODO: Remove console.log after development
-    console.log(
-      `[API] GET /api/campaigns - Found ${campaigns.length} campaigns for ${session.user.email} (accountId: ${accountId})`,
-    );
-
     // Return successful response with campaigns array
     return NextResponse.json({
       success: true,
-      campaigns: campaigns,
+      campaigns: campaigns
     });
-  } catch (error) {
-    // TODO: Remove console.log after development
-    console.error("[API] List campaigns error:", error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaigns" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -130,13 +123,13 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
     // Get database accountId from email (creates account if first login)
     const accountId = await BackendService.getOrCreateAccount(
-      session.user.email,
+      session.user.email
     );
 
     // Parse request body
@@ -152,7 +145,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -160,7 +153,7 @@ export async function POST(request: NextRequest) {
     const campaign = await BackendService.createCampaign(
       accountId,
       body.campaignName,
-      body.campaignDescription,
+      body.campaignDescription
     );
 
     // Step 2: Create the player's character linked to the campaign
@@ -169,26 +162,19 @@ export async function POST(request: NextRequest) {
       campaign.id,
       body.character.name,
       body.character.raceId,
-      body.character.classId,
-    );
-
-    // TODO: Remove console.log after development
-    console.log(
-      `[API] POST /api/campaigns - Created campaign ${campaign.id} with character ${character.id} for ${session.user.email}`,
+      body.character.classId
     );
 
     // Return both created objects with their generated IDs
     return NextResponse.json({
       success: true,
       campaign,
-      character,
+      character
     });
-  } catch (error) {
-    // TODO: Remove console.log after development
-    console.error("[API] Create campaign error:", error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to create campaign" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
