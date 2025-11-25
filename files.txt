@@ -3,9 +3,6 @@ app/api/campaigns/[id]/route.ts
 app/api/campaigns/route.ts
 app/api/classes/route.ts
 app/api/game/action/route.ts
-app/api/game/choice/route.ts
-app/api/game/combat/route.ts
-app/api/game/continue/route.ts
 app/api/game/state/route.ts
 app/api/races/route.ts
 app/campaigns/[id]/components/characterPanel/characterPanel.tsx
