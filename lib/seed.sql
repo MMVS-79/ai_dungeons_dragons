@@ -46,17 +46,17 @@ INSERT INTO enemies (name, difficulty, health, attack, defense, sprite_path) VAL
 -- RACES
 -- ============================================================================
 INSERT INTO races (name, health, attack, defense, sprite_path) VALUES
-('Human', 100, 10, 10, '/characters/player/human.png'),
-('Elf', 80, 15, 5, '/characters/player/elf.png'),
-('Dwarf', 120, 8, 15, '/characters/player/dwarf.png');
+('Human', 50, 5, 5, '/characters/player/human.png'),
+('Elf', 90, 2, 4, '/characters/player/elf.png'),
+('Dwarf', 40, 4, 7, '/characters/player/dwarf.png');
 
 -- ============================================================================
 -- CLASSES
 -- ============================================================================
 INSERT INTO classes (name, health, attack, defense, sprite_path) VALUES
-('Warrior', 120, 15, 10, '/characters/player/warrior.png'),
-('Mage', 70, 25, 5, '/characters/player/mage.png'),
-('Rogue', 90, 20, 8, '/characters/player/rogue.png');
+('Warrior', 60, 7, 2, '/characters/player/warrior.png'),
+('Mage', 30, 4, 8, '/characters/player/mage.png'),
+('Rogue', 20, 10, 3, '/characters/player/rogue.png');
 
 -- ============================================================================
 -- ITEMS (Rarity-based system with stat modification)
