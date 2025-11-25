@@ -20,10 +20,7 @@ app/campaigns/page.tsx
 app/components/Navbar.tsx
 app/dragon-demo/page.tsx
 app/login/page.tsx
-lib/services/Event_type.ts
-lib/services/Stat_calc.ts
 lib/services/backend.service.ts
-lib/services/dice_roll.ts
 lib/services/game.service.ts
 lib/services/llm.service.ts
 lib/types/db.types.ts
