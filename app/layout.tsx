@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "DumbgeonsAI",
   description: "The best D&D experience",
   icons: {
-    icon: "/icons/black logo - circle.png"
+    icon: "/icons/black_logo_circle.png"
   }
 };
 

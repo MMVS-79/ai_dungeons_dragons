@@ -67,9 +67,9 @@ export default function Home() {
       const response = await fetch("/api/dragon", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ damage: ATTACK_DAMAGE }),
+        body: JSON.stringify({ damage: ATTACK_DAMAGE })
       });
 
       const data = await response.json();
@@ -94,17 +94,23 @@ export default function Home() {
     <div>
       <div className={styles.container}>
         <div className={`${styles.layer} ${styles.background}`}></div>
-        <div ref={dragonRef} className={styles.dragon}></div>
+        <div
+          ref={dragonRef}
+          className={styles.dragon}
+        ></div>
         <Image
           ref={knightRef}
-          src="/Knight.png"
+          src="/temp/Knight.png"
           alt="Knight"
           className={styles.knight}
           width={200}
           height={200}
           priority
         />
-        <div ref={hitRef} className={styles.hit}></div>
+        <div
+          ref={hitRef}
+          className={styles.hit}
+        ></div>
       </div>
 
       {/* NEW: HP Display */}

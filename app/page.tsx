@@ -19,7 +19,7 @@ export default function Landing() {
             </p>
             <div className={styles.mainInfoImage}>
               <Image
-                src="/webpage-images/20 Dice image.png"
+                src="/webpage-images/20_dice_image.png"
                 alt="D&D Illustration"
                 width={512}
                 height={512}
@@ -29,7 +29,10 @@ export default function Landing() {
         </div>
 
         {/* About Us Section */}
-        <section id="about-us" className={styles.aboutUs}>
+        <section
+          id="about-us"
+          className={styles.aboutUs}
+        >
           <h2>Our Team</h2>
           <h3>
             Programming projects should be fun so why not create an interactive
@@ -48,14 +51,27 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                >
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -72,14 +88,27 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                >
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -96,14 +125,27 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                >
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -120,14 +162,27 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                >
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -144,14 +199,27 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                >
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -168,18 +236,30 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                >
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
-
           </div>
         </section>
       </main>
