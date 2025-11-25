@@ -55,10 +55,6 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 - `GET` - Get full campaign details
   - Returns: `{ campaign, character, recentEvents, inventory }`
   
-- `PUT` - Sync database with current game state
-  - No body required (only campaign ID from URL)
-  - Returns: `{ campaign: Campaign, character: Character }`
-  
 - `DELETE` - Delete campaign and all associated data
   - Returns: `{ message: string }`
 
@@ -126,8 +122,7 @@ This document lists all API endpoints in the AI Dungeons & Dragons system. All e
 
 ### Phase 2: Enhanced Features
 
-5. `PUT /api/campaigns/[id]` - Update campaigns
-6. `PUT /api/characters/[id]` - Character updates
+5. `PUT /api/characters/[id]` - Character updates
 7. `POST/DELETE /api/characters/[id]/inventory` - Inventory management
 
 ### Phase 3: Admin & Polish
