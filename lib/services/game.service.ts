@@ -33,7 +33,7 @@ import {
   getEffectiveDefense,
 } from "../utils/combatSnapshot";
 
-import type { EventHistoryEntry, EventTypeString } from "../types/llm.types";
+import type { EventTypeString } from "../types/llm.types";
 import type { LLMContext } from "./llm.service";
 import type {
   PlayerAction,
@@ -54,12 +54,11 @@ import {
   clearInvestigationPrompt,
 } from "../utils/investigationPrompt";
 import * as BackendService from "./backend.service";
-import { pool } from "../db";
 
 export class GameService {
   private llmService: LLMService;
 
-  constructor(llmApiKey: string) {
+  constructor() {
     this.llmService = new LLMService();
   }
 
@@ -265,11 +264,9 @@ export class GameService {
       case "Combat":
         return await this.handleCombatPrompt(
           action.campaignId,
-          gameState,
-          nextEventNumber,
         );
       case "Item_Drop":
-        return await this.handleItemDropPrompt(action.campaignId, gameState);
+        return await this.handleItemDropPrompt(action.campaignId);
       default:
         throw new Error(`Unknown event type: ${eventType}`);
     }
@@ -345,7 +342,6 @@ export class GameService {
 
   private async handleItemDropPrompt(
     campaignId: number,
-    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const message =
       "You notice something shiny nearby... Do you want to investigate?";
@@ -374,8 +370,6 @@ export class GameService {
 
   private async handleCombatPrompt(
     campaignId: number,
-    gameState: GameState,
-    eventNumber: number,
   ): Promise<GameServiceResponse> {
     const message = "You sense danger nearby... Do you want to investigate?";
 
@@ -964,7 +958,6 @@ export class GameService {
   private async generateBossEncounter(
     campaignId: number,
     gameState: GameState,
-    eventNumber: number,
   ): Promise<GameServiceResponse> {
     // Get random boss
     const boss = await BackendService.getBossEnemy();
