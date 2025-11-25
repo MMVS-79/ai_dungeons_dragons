@@ -157,9 +157,8 @@ export class GameService {
 
     // First event is campaign introduction
     if (nextEventNumber === 1) {
-      const introText = await this.llmService.generateCampaignIntroduction(
-        gameState,
-      );
+      const introText =
+        await this.llmService.generateCampaignIntroduction(gameState);
 
       await BackendService.saveEvent(
         action.campaignId,
@@ -183,10 +182,7 @@ export class GameService {
 
     // Check boss encounter (event 48)
     if (nextEventNumber >= BALANCE_CONFIG.BOSS_FORCED_EVENT_START) {
-      return await this.generateBossEncounter(
-        action.campaignId,
-        gameState,
-      );
+      return await this.generateBossEncounter(action.campaignId, gameState);
     }
 
     // Build context
@@ -541,9 +537,7 @@ export class GameService {
       );
 
       // Request stat boost from LLM
-      const statBoost = await this.llmService.requestStatBoost(
-        context,
-      );
+      const statBoost = await this.llmService.requestStatBoost(context);
 
       // Ensure baseValue is not 0, use defaults if needed
       let baseValue = statBoost.baseValue;
