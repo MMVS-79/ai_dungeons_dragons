@@ -10,4 +10,4 @@ CREATE TABLE enemies (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_difficulty (difficulty)
-)
+);
