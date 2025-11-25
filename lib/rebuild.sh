@@ -43,19 +43,8 @@ if [ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ] || [ "$FORCE" -eq 1 ]; then
   TMP_SQL="full_rebuild.sql"
   echo "SET FOREIGN_KEY_CHECKS = 0;" > $TMP_SQL
 
-  # Concatenate all table SQL files in your preferred order
-  cat schema/tables/accounts.sql \
-      schema/tables/campaigns.sql \
-      schema/tables/chats.sql \
-      schema/tables/logs.sql \
-      schema/tables/races.sql \
-      schema/tables/classes.sql \
-      schema/tables/enemies.sql \
-      schema/tables/characters.sql \
-      schema/tables/items.sql \
-      schema/tables/armours.sql \
-      schema/tables/weapons.sql \
-      schema/tables/shields.sql \ >> $TMP_SQL
+  # Concatenate all table SQL files in sorted order for robustness
+  cat $(ls schema/tables/*.sql | sort) >> $TMP_SQL
 
   echo "SET FOREIGN_KEY_CHECKS = 1;" >> $TMP_SQL
 
