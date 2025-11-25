@@ -41,7 +41,7 @@ export default function CampaignsPage() {
       } catch (err) {
         console.error("Failed to fetch campaigns:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to load campaigns"
+          err instanceof Error ? err.message : "Failed to load campaigns",
         );
       } finally {
         setIsLoading(false);
@@ -72,7 +72,7 @@ export default function CampaignsPage() {
 
     try {
       const response = await fetch(`/api/campaigns/${campaignToDelete}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -159,10 +159,7 @@ export default function CampaignsPage() {
 
       {/* Delete Confirmation Modal */}
       {campaignToDelete !== null && (
-        <div
-          className={styles.modalOverlay}
-          onClick={closeDeleteModal}
-        >
+        <div className={styles.modalOverlay} onClick={closeDeleteModal}>
           <div
             className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
