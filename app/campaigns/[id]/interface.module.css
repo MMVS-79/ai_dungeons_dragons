@@ -17,9 +17,11 @@
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(200px, 1fr) minmax(300px, 2fr) minmax(200px, 1fr);
-  grid-template-areas: 
-    "left center right";
+  grid-template-columns: minmax(200px, 1fr) minmax(300px, 2fr) minmax(
+      200px,
+      1fr
+    );
+  grid-template-areas: "left center right";
   gap: 1rem;
 }
 
@@ -43,7 +45,9 @@
   grid-area: right;
 }
 
-.leftColumn, .centerColumns, .rightColumn {
+.leftColumn,
+.centerColumns,
+.rightColumn {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -55,7 +59,7 @@
     margin-top: 20px;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
-    grid-template-areas: 
+    grid-template-areas:
       "center center"
       "left right";
   }
@@ -77,8 +81,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContent {
@@ -93,8 +101,14 @@
 }
 
 @keyframes slideUp {
-  from { transform: translateY(50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modalTitle {
@@ -149,4 +163,30 @@
   z-index: 999;
   pointer-events: all;
   cursor: not-allowed;
+}
+
+/* Loading and error screen styles */
+.loadingScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--navbar-height) - 2rem);
+  text-align: center;
+  color: #d1d5db;
+  font-size: 1.5rem;
+}
+
+.loadingScreen h2 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #fbbf24;
+  margin-bottom: 1rem;
+}
+
+.loadingScreen p {
+  font-size: 1.25rem;
+  color: #9ca3af;
+  margin-bottom: 2rem;
+  max-width: 400px;
 }
