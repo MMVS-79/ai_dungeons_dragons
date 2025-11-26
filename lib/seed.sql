@@ -87,7 +87,7 @@ INSERT INTO items (name, rarity, stat_modified, stat_value, description, sprite_
 -- CURSED ITEMS
 ('Cursed Vial',       5,  'health', -10, 'A toxic vial that damages you', '/items/placeholder.png'),
 ('Weakness Curse',   15,  'attack',  -5,  'Temporarily reduces attack by 3', '/items/placeholder.png'),
-('Fragility Curse',  15,  'defense', -5,  'Temporarily reduces defense by 3', '/items/fragility_curse.png');
+('Fragility Curse',  15,  'defense', -5,  'Temporarily reduces defense by 3', '/items/placeholder.png');
 
 -- ============================================================================
 -- WEAPONS
