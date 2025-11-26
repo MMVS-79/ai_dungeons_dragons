@@ -6,7 +6,7 @@ import * as BackendService from "@/lib/services/backend.service";
 import {
   getCombatSnapshot,
   clearCombatSnapshot,
-  createCombatSnapshot
+  createCombatSnapshot,
 } from "@/lib/utils/combatSnapshot";
 import type { CombatSnapshot } from "@/lib/types/game.types";
 import type { CombatEncounterEventData } from "@/lib/types/db.types";
@@ -24,13 +24,13 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Get database account ID from session email
     const accountId = await BackendService.getOrCreateAccount(
-      session.user.email
+      session.user.email,
     );
 
     const { searchParams } = new URL(request.url);
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     if (!campaignId) {
       return NextResponse.json(
         { success: false, error: "Missing campaignId parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (isNaN(id)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaignId - must be a number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -102,17 +102,17 @@ export async function GET(request: NextRequest) {
           currentHealth: character.currentHealth,
           maxHealth: character.maxHealth,
           baseAttack: character.attack,
-          baseDefense: character.defense
+          baseDefense: character.defense,
         },
         equipment: equipment,
         inventorySnapshot: [...inventory],
         originalInventoryIds: inventory.map((item) => item.id),
         temporaryBuffs: {
           attack: 0,
-          defense: 0
+          defense: 0,
         },
         combatLog: [],
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       createCombatSnapshot(freshSnapshot);
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ...gameState,
-      success: true
+      success: true,
     });
   } catch (error) {
     console.log("[API] Game state fetch error:", error);
@@ -135,9 +135,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Campaign not found or access denied"
+          error: "Campaign not found or access denied",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -145,9 +145,9 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error:
-          error instanceof Error ? error.message : "Failed to fetch game state"
+          error instanceof Error ? error.message : "Failed to fetch game state",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

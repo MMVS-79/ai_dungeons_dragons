@@ -110,9 +110,9 @@ export async function GET() {
  *   6. Returns both created objects with generated IDs
  *
  * Error Handling:
-   *   - 401: Not authenticated (no session or missing email)
-   *   - 400: Missing required fields or campaign limit reached (max 5)
-   *   - 500: Database insertion failure or invalid race/class IDs
+ *   - 401: Not authenticated (no session or missing email)
+ *   - 400: Missing required fields or campaign limit reached (max 5)
+ *   - 500: Database insertion failure or invalid race/class IDs
  */
 export async function POST(request: NextRequest) {
   try {

@@ -130,7 +130,7 @@ export default function CampaignPage() {
   const [showVictory, setShowVictory] = useState(false);
   const [temporaryBuffs, setTemporaryBuffs] = useState({
     attack: 0,
-    defense: 0
+    defense: 0,
   });
 
   const generateMessageId = () => {
@@ -150,17 +150,17 @@ export default function CampaignPage() {
 
       // Use GET to load state without triggering new event
       const response = await fetch(`/api/game/state?campaignId=${params.id}`, {
-        method: "GET"
+        method: "GET",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         console.log("[Frontend] Failed to load game state:", errorData);
-        
+
         // Handle 404 (not found or access denied) specifically
         if (response.status === 404) {
           setError(
-            "You don't have access to this campaign or it doesn't exist."
+            "You don't have access to this campaign or it doesn't exist.",
           );
         } else {
           setError(errorData.error || "Failed to load game state");
@@ -190,7 +190,7 @@ export default function CampaignPage() {
           attack: char.attack,
           defense: char.defense,
           inventory: inv,
-          equipment: equip
+          equipment: equip,
         });
       }
 
@@ -204,7 +204,7 @@ export default function CampaignPage() {
           hp: combatState?.enemyCurrentHp || result.enemy.health,
           maxHp: result.enemy.health,
           attack: result.enemy.attack,
-          defense: result.enemy.defense
+          defense: result.enemy.defense,
         });
       }
 
@@ -225,7 +225,7 @@ export default function CampaignPage() {
         .map((event: GameEvent) => ({
           id: generateMessageId(),
           text: event.message,
-          choices: []
+          choices: [],
         }));
 
       // Determine current choices based on phase
@@ -273,8 +273,8 @@ export default function CampaignPage() {
           {
             id: generateMessageId(),
             text: currentMessageText,
-            choices: currentChoices
-          }
+            choices: currentChoices,
+          },
         ];
       } else if (result.currentPhase === "investigation_prompt") {
         // Investigation prompt - add it as current message
@@ -283,8 +283,8 @@ export default function CampaignPage() {
           {
             id: generateMessageId(),
             text: currentMessageText,
-            choices: currentChoices
-          }
+            choices: currentChoices,
+          },
         ];
       } else {
         // Normal case - last log message gets the choices
@@ -300,7 +300,7 @@ export default function CampaignPage() {
     } catch (error) {
       console.error("[Frontend] Error loading game state:", error);
       setError(
-        error instanceof Error ? error.message : "Unknown error occurred"
+        error instanceof Error ? error.message : "Unknown error occurred",
       );
       setLoading(false);
     }
@@ -330,7 +330,7 @@ export default function CampaignPage() {
       }
 
       console.log(
-        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`
+        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`,
       );
 
       const response = await fetch("/api/game/action", {
@@ -339,8 +339,8 @@ export default function CampaignPage() {
         body: JSON.stringify({
           campaignId: Number(params.id),
           actionType: actionType,
-          actionData: needsDiceRoll ? { diceRoll: diceResult } : {}
-        })
+          actionData: needsDiceRoll ? { diceRoll: diceResult } : {},
+        }),
       });
 
       if (!response.ok) {
@@ -359,8 +359,8 @@ export default function CampaignPage() {
           {
             id: generateMessageId(),
             text: `Error: ${result.error || "Unknown error"}`,
-            choices: ["Continue Forward"]
-          }
+            choices: ["Continue Forward"],
+          },
         ]);
         setActionLocked(false);
         return;
@@ -380,7 +380,7 @@ export default function CampaignPage() {
           attack: char.attack,
           defense: char.defense,
           inventory: inv,
-          equipment: equip
+          equipment: equip,
         });
       }
 
@@ -398,7 +398,7 @@ export default function CampaignPage() {
           hp: combatState?.enemyCurrentHp || result.gameState.enemy.health,
           maxHp: result.gameState.enemy.health,
           attack: result.gameState.enemy.attack,
-          defense: result.gameState.enemy.defense
+          defense: result.gameState.enemy.defense,
         });
 
         // Update temporary buffs
@@ -430,8 +430,8 @@ export default function CampaignPage() {
         {
           id: generateMessageId(),
           text: result.message,
-          choices: result.choices || ["Continue Forward"]
-        }
+          choices: result.choices || ["Continue Forward"],
+        },
       ]);
 
       // Handle game phase changes
@@ -449,8 +449,8 @@ export default function CampaignPage() {
           text: `Error: ${
             error instanceof Error ? error.message : "Unknown error"
           }`,
-          choices: ["Continue Forward"]
-        }
+          choices: ["Continue Forward"],
+        },
       ]);
     } finally {
       setActionLocked(false);
@@ -469,8 +469,8 @@ export default function CampaignPage() {
         body: JSON.stringify({
           campaignId: Number(params.id),
           actionType: "use_item_combat",
-          actionData: { itemId: item.id }
-        })
+          actionData: { itemId: item.id },
+        }),
       });
 
       if (!response.ok) {
@@ -497,7 +497,7 @@ export default function CampaignPage() {
             attack: char.attack,
             defense: char.defense,
             inventory: inv,
-            equipment: equip
+            equipment: equip,
           });
 
           if (result.gameState.currentPhase === "game_over") {
@@ -518,8 +518,8 @@ export default function CampaignPage() {
           {
             id: generateMessageId(),
             text: result.message,
-            choices: result.choices || ["Attack", "Flee"]
-          }
+            choices: result.choices || ["Attack", "Flee"],
+          },
         ]);
       }
     } catch (error) {
@@ -602,14 +602,8 @@ export default function CampaignPage() {
 
         {/* Right Column */}
         <div className={styles.rightColumn}>
-          <EventPanel
-            enemy={enemyState}
-            itemFound={itemFound}
-          />
-          <DicePanel
-            isRolling={diceRolling}
-            lastResult={lastDiceResult}
-          />
+          <EventPanel enemy={enemyState} itemFound={itemFound} />
+          <DicePanel isRolling={diceRolling} lastResult={lastDiceResult} />
         </div>
       </div>
 
@@ -672,7 +666,7 @@ function mapChoiceToAction(choice: string): string {
     Decline: "decline",
     Attack: "attack",
     Flee: "flee",
-    "Use Item": "use_item_combat"
+    "Use Item": "use_item_combat",
   };
 
   const result = mapping[choice] || "continue";

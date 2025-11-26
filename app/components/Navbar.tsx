@@ -92,10 +92,7 @@ export default function Navbar() {
       >
         {/* Brand */}
         <div className={styles.brand}>
-          <Link
-            href="/"
-            className={styles.logoLink}
-          >
+          <Link href="/" className={styles.logoLink}>
             <Image
               src="/icons/white_logo_circle.png"
               alt="Logo"
@@ -109,17 +106,11 @@ export default function Navbar() {
 
         {/* Desktop Buttons */}
         <div className={styles.buttons}>
-          <Link
-            href="/campaigns"
-            className={styles.button}
-          >
+          <Link href="/campaigns" className={styles.button}>
             Play Campaign
           </Link>
 
-          <Link
-            href="/#about-us"
-            className={styles.button}
-          >
+          <Link href="/#about-us" className={styles.button}>
             About Us
           </Link>
 
@@ -146,10 +137,7 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <Link
-              href="/login"
-              className={`${styles.button} ${styles.login}`}
-            >
+            <Link href="/login" className={`${styles.button} ${styles.login}`}>
               <Image
                 src="/icons/login_icon.png"
                 alt="Login icon"
@@ -190,10 +178,7 @@ export default function Navbar() {
 
         {/* Mobile slide-out menu */}
         <div className={`${styles.mobileMenu} ${menuOpen ? styles.open : ""}`}>
-          <div
-            className={styles.hamburger}
-            onClick={() => setMenuOpen(false)}
-          >
+          <div className={styles.hamburger} onClick={() => setMenuOpen(false)}>
             <div></div>
             <div></div>
             <div></div>

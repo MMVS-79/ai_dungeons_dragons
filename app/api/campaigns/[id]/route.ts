@@ -42,7 +42,7 @@ import * as BackendService from "@/lib/services/backend.service";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // Next.js 15 requires params to be async
+  context: { params: Promise<{ id: string }> }, // Next.js 15 requires params to be async
 ) {
   try {
     // Verify user is authenticated
@@ -50,13 +50,13 @@ export async function GET(
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Get database account ID from session email
     const accountId = await BackendService.getOrCreateAccount(
-      session.user.email
+      session.user.email,
     );
 
     // Extract and parse campaign ID from URL parameter
@@ -68,7 +68,7 @@ export async function GET(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,7 +76,7 @@ export async function GET(
     // Returns 404 for both not found and unauthorized to prevent ID enumeration
     const campaign = await BackendService.verifyCampaignOwnership(
       campaignId,
-      accountId
+      accountId,
     );
 
     // Fetch character with complete data:
@@ -97,7 +97,7 @@ export async function GET(
       character,
       equipment,
       recentEvents,
-      inventory
+      inventory,
     });
   } catch (error) {
     // Check if it's an ownership/not found error
@@ -107,13 +107,13 @@ export async function GET(
     ) {
       return NextResponse.json(
         { success: false, error: "Campaign not found or access denied" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaign" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -162,7 +162,7 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // Next.js 15 requires async params
+  context: { params: Promise<{ id: string }> }, // Next.js 15 requires async params
 ) {
   try {
     // Verify user is authenticated
@@ -170,13 +170,13 @@ export async function DELETE(
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Get database account ID from session email
     const accountId = await BackendService.getOrCreateAccount(
-      session.user.email
+      session.user.email,
     );
 
     // Extract and parse campaign ID from URL parameter
@@ -187,7 +187,7 @@ export async function DELETE(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -205,12 +205,12 @@ export async function DELETE(
     // Return success message
     return NextResponse.json({
       success: true,
-      message: `Campaign ${campaignId} deleted successfully`
+      message: `Campaign ${campaignId} deleted successfully`,
     });
   } catch {
     return NextResponse.json(
       { success: false, error: "Failed to delete campaign" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
