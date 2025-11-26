@@ -29,7 +29,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install SQLFluff
-        run: pip install sqlfluff==3.2.0
+        run: pip install --upgrade sqlfluff
       
       - name: Run SQLFluff fix
         run: |
@@ -81,7 +81,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install SQLFluff
-        run: pip install sqlfluff==3.2.0
+        run: pip install --upgrade sqlfluff
       
       - name: Lint SQL files
         run: |
