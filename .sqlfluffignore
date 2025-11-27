@@ -1,3 +1,4 @@
 knowledge_base/archived/
 lib/rebuild.sql
 lib/schema/tables/logs.sql
+lib/seed.sql
