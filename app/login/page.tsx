@@ -27,7 +27,7 @@ export default function LoginPage() {
     <div className={styles.container}>
       <div className={styles.loginCard}>
         <img
-          src="/icons/white logo - circle.png"
+          src="/icons/white_logo_circle.png"
           alt="Logo"
           className={styles.logo}
         />

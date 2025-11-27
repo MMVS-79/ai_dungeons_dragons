@@ -63,7 +63,7 @@ export default function Navbar() {
         >
           <div className={styles.collapsedBrand}>
             <Image
-              src="/icons/white logo - circle.png"
+              src="/icons/white_logo_circle.png"
               alt="Logo"
               className={styles.collapsedLogo}
               width={64}
@@ -94,7 +94,7 @@ export default function Navbar() {
         <div className={styles.brand}>
           <Link href="/" className={styles.logoLink}>
             <Image
-              src="/icons/white logo - circle.png"
+              src="/icons/white_logo_circle.png"
               alt="Logo"
               className={styles.logo}
               width={64}
@@ -139,7 +139,7 @@ export default function Navbar() {
           ) : (
             <Link href="/login" className={`${styles.button} ${styles.login}`}>
               <Image
-                src="/icons/Login icon.png"
+                src="/icons/login_icon.png"
                 alt="Login icon"
                 className={styles.loginIcon}
                 width={20}
@@ -230,7 +230,7 @@ export default function Navbar() {
               onClick={() => setMenuOpen(false)}
             >
               <Image
-                src="/icons/Login icon.png"
+                src="/icons/login_icon.png"
                 alt="Login icon"
                 className={styles.loginIcon}
                 width={20}

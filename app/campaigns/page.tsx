@@ -18,6 +18,7 @@ export default function CampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [campaignToDelete, setCampaignToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const router = useRouter();
 
@@ -65,11 +66,13 @@ export default function CampaignsPage() {
 
   const closeDeleteModal = () => {
     setCampaignToDelete(null);
+    setIsDeleting(false);
   };
 
   const confirmDelete = async () => {
-    if (campaignToDelete === null) return;
+    if (campaignToDelete === null || isDeleting) return;
 
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/campaigns/${campaignToDelete}`, {
         method: "DELETE",
@@ -85,7 +88,8 @@ export default function CampaignsPage() {
     } catch (err) {
       console.error("Failed to delete campaign:", err);
       alert("Failed to delete campaign. Please try again.");
-      closeDeleteModal();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -173,14 +177,16 @@ export default function CampaignsPage() {
               <button
                 className={styles.modalButtonCancel}
                 onClick={closeDeleteModal}
+                disabled={isDeleting}
               >
                 Cancel
               </button>
               <button
                 className={styles.modalButtonConfirm}
                 onClick={confirmDelete}
+                disabled={isDeleting}
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

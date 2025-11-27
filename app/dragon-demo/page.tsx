@@ -97,7 +97,7 @@ export default function Home() {
         <div ref={dragonRef} className={styles.dragon}></div>
         <Image
           ref={knightRef}
-          src="/Knight.png"
+          src="/temp/Knight.png"
           alt="Knight"
           className={styles.knight}
           width={200}

@@ -111,7 +111,7 @@ export async function GET() {
  *
  * Error Handling:
  *   - 401: Not authenticated (no session or missing email)
- *   - 400: Missing required fields (campaignName, character data)
+ *   - 400: Missing required fields or campaign limit reached (max 5)
  *   - 500: Database insertion failure or invalid race/class IDs
  */
 export async function POST(request: NextRequest) {
@@ -131,6 +131,16 @@ export async function POST(request: NextRequest) {
     const accountId = await BackendService.getOrCreateAccount(
       session.user.email,
     );
+
+    // Check campaign limit (max 5 campaigns per user)
+    const existingCampaigns =
+      await BackendService.getCampaignsByAccount(accountId);
+    if (existingCampaigns.length >= 5) {
+      return NextResponse.json(
+        { success: false, error: "Campaign limit reached (max 5)" },
+        { status: 400 },
+      );
+    }
 
     // Parse request body
     const body = await request.json();

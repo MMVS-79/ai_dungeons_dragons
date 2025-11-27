@@ -16,9 +16,29 @@
 .innerContainer {
   width: 100%;
   padding: 20px 0px;
-  overflow-x: auto; /* horizontal scroll for panels */
+  overflow-x: scroll; /* always show scrollbar */
   padding-bottom: 1rem;
   border-top: 1px solid grey;
+}
+
+.innerContainer::-webkit-scrollbar {
+  height: 12px;
+}
+
+.innerContainer::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.innerContainer::-webkit-scrollbar-thumb {
+  background: linear-gradient(to right, #6b7280, #9ca3af);
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+}
+
+.innerContainer::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to right, #9ca3af, #d1d5db);
 }
 
 .panelsContainer {
@@ -190,7 +210,7 @@
   color: white;
 }
 
-.modalButtonCancel:hover {
+.modalButtonCancel:hover:not(:disabled) {
   background-color: #5a6578;
   transform: translateY(-2px);
 }
@@ -200,7 +220,14 @@
   color: white;
 }
 
-.modalButtonConfirm:hover {
+.modalButtonConfirm:hover:not(:disabled) {
   background-color: #cc6666;
   transform: translateY(-2px);
+}
+
+.modalButtonCancel:disabled,
+.modalButtonConfirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
