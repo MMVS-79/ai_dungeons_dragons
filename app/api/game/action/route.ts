@@ -1,5 +1,7 @@
 // app/api/game/action/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
 import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
@@ -8,6 +10,20 @@ const gameService = new GameService();
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+
+    // Get database account ID from session email
+    const accountId = await BackendService.getOrCreateAccount(
+      session.user.email,
+    );
+
     const body = await request.json();
 
     if (!body.campaignId || !body.actionType) {
@@ -22,8 +38,11 @@ export async function POST(request: NextRequest) {
 
     const campaignId = Number(body.campaignId);
 
-    // CHECK: Is campaign completed or game over?
-    const campaign = await BackendService.getCampaign(campaignId);
+    // Verify campaign exists and belongs to authenticated user
+    const campaign = await BackendService.verifyCampaignOwnership(
+      campaignId,
+      accountId,
+    );
 
     if (campaign.state === "game_over" || campaign.state === "completed") {
       const gameState = await gameService.getGameState(campaignId);
@@ -101,6 +120,20 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Verify user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+
+    // Get database account ID from session email
+    const accountId = await BackendService.getOrCreateAccount(
+      session.user.email,
+    );
+
     const { searchParams } = new URL(request.url);
     const campaignId = searchParams.get("campaignId");
 
@@ -111,9 +144,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const validation = await gameService.validateGameState(
-      parseInt(campaignId),
-    );
+    const id = parseInt(campaignId);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid campaignId - must be a number" },
+        { status: 400 },
+      );
+    }
+
+    // Verify campaign exists and belongs to authenticated user
+    await BackendService.verifyCampaignOwnership(id, accountId);
+
+    const validation = await gameService.validateGameState(id);
 
     return NextResponse.json({
       success: true,

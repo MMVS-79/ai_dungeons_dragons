@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import * as BackendService from "@/lib/services/backend.service";
 
 /**
@@ -43,6 +45,20 @@ export async function GET(
   context: { params: Promise<{ id: string }> }, // Next.js 15 requires params to be async
 ) {
   try {
+    // Verify user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+
+    // Get database account ID from session email
+    const accountId = await BackendService.getOrCreateAccount(
+      session.user.email,
+    );
+
     // Extract and parse campaign ID from URL parameter
     // Next.js 15 requires awaiting the params Promise
     const { id } = await context.params;
@@ -56,9 +72,12 @@ export async function GET(
       );
     }
 
-    // Fetch campaign metadata (name, description, state, timestamps)
-    // Throws error if campaign not found
-    const campaign = await BackendService.getCampaign(campaignId);
+    // Verify campaign exists and belongs to authenticated user
+    // Returns 404 for both not found and unauthorized to prevent ID enumeration
+    const campaign = await BackendService.verifyCampaignOwnership(
+      campaignId,
+      accountId,
+    );
 
     // Fetch character with complete data:
     // - Character stats (HP, attack, defense)
@@ -80,7 +99,18 @@ export async function GET(
       recentEvents,
       inventory,
     });
-  } catch {
+  } catch (error) {
+    // Check if it's an ownership/not found error
+    if (
+      error instanceof Error &&
+      error.message === "Campaign not found or access denied"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Campaign not found or access denied" },
+        { status: 404 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaign" },
       { status: 500 },
@@ -135,6 +165,20 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }, // Next.js 15 requires async params
 ) {
   try {
+    // Verify user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+
+    // Get database account ID from session email
+    const accountId = await BackendService.getOrCreateAccount(
+      session.user.email,
+    );
+
     // Extract and parse campaign ID from URL parameter
     const { id } = await context.params;
     const campaignId = parseInt(id);
@@ -147,11 +191,12 @@ export async function DELETE(
       );
     }
 
+    // Verify campaign exists and belongs to authenticated user
+    // Returns 404 for both not found and unauthorized to prevent ID enumeration
+    await BackendService.verifyCampaignOwnership(campaignId, accountId);
+
     // Delete campaign from database
-    // This function:
-    // 1. Verifies campaign exists (throws if not found)
-    // 2. Deletes the campaign record
-    // 3. Database CASCADE automatically deletes:
+    // Database CASCADE automatically deletes:
     //    - Character associated with this campaign
     //    - All items in character's inventory
     //    - All event logs for this campaign

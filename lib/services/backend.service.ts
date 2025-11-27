@@ -912,6 +912,33 @@ export async function getCampaign(campaignId: number): Promise<Campaign> {
 }
 
 /**
+ * Verify campaign exists and belongs to the specified account
+ *
+ * @param campaignId - Campaign ID to verify
+ * @param accountId - Account ID that should own the campaign
+ * @returns Campaign object if ownership is verified
+ * @throws Error if campaign not found or doesn't belong to account
+ *
+ * Use this instead of getCampaign() in API routes that need authorization.
+ * Returns 404-style error to prevent ID enumeration attacks.
+ */
+export async function verifyCampaignOwnership(
+  campaignId: number,
+  accountId: number,
+): Promise<Campaign> {
+  const [rows] = await pool.query<CampaignRow[]>(
+    "SELECT * FROM campaigns WHERE id = ? AND account_id = ?",
+    [campaignId, accountId],
+  );
+
+  if (rows.length === 0) {
+    throw new Error("Campaign not found or access denied");
+  }
+
+  return mapCampaignRow(rows[0]);
+}
+
+/**
  * Update campaign state
  */
 export async function updateCampaign(

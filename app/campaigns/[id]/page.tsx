@@ -116,6 +116,7 @@ export default function CampaignPage() {
 
   const messageIdCounter = useRef(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [enemyState, setEnemyState] = useState<EnemyState | null>(null);
   const [itemFound, setItemFound] = useState<
@@ -145,6 +146,7 @@ export default function CampaignPage() {
   const loadGameState = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       // Use GET to load state without triggering new event
       const response = await fetch(`/api/game/state?campaignId=${params.id}`, {
@@ -153,8 +155,18 @@ export default function CampaignPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("[Frontend] Failed to load game state:", errorData);
-        throw new Error(errorData.error || "Failed to load game state");
+        console.log("[Frontend] Failed to load game state:", errorData);
+
+        // Handle 404 (not found or access denied) specifically
+        if (response.status === 404) {
+          setError(
+            "You don't have access to this campaign or it doesn't exist.",
+          );
+        } else {
+          setError(errorData.error || "Failed to load game state");
+        }
+        setLoading(false);
+        return;
       }
 
       const result = await response.json();
@@ -287,15 +299,9 @@ export default function CampaignPage() {
       setLoading(false);
     } catch (error) {
       console.error("[Frontend] Error loading game state:", error);
-      setMessages([
-        {
-          id: generateMessageId(),
-          text: `Failed to load game: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
-          choices: [],
-        },
-      ]);
+      setError(
+        error instanceof Error ? error.message : "Unknown error occurred",
+      );
       setLoading(false);
     }
   };
@@ -527,7 +533,32 @@ export default function CampaignPage() {
     router.push("/campaigns");
   };
 
-  if (loading || !playerState) {
+  if (loading) {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.loadingScreen}>Loading campaign...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.loadingScreen}>
+          <h2>Access Denied</h2>
+          <p>{error}</p>
+          <button
+            className={styles.modalButton}
+            onClick={handleReturnToCampaigns}
+          >
+            Return to Campaigns
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!playerState) {
     return (
       <div className={styles.pageContainer}>
         <div className={styles.loadingScreen}>Loading campaign...</div>

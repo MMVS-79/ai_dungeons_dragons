@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
 import {
@@ -17,6 +19,20 @@ const gameService = new GameService();
  */
 export async function GET(request: NextRequest) {
   try {
+    // Verify user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
+      );
+    }
+
+    // Get database account ID from session email
+    const accountId = await BackendService.getOrCreateAccount(
+      session.user.email,
+    );
+
     const { searchParams } = new URL(request.url);
     const campaignId = searchParams.get("campaignId");
 
@@ -35,6 +51,9 @@ export async function GET(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Verify campaign exists and belongs to authenticated user
+    await BackendService.verifyCampaignOwnership(id, accountId);
 
     // Single check and creation logic
     let shouldRecreateCombat = false;
@@ -106,7 +125,21 @@ export async function GET(request: NextRequest) {
       success: true,
     });
   } catch (error) {
-    console.error("[API] Game state fetch error:", error);
+    console.log("[API] Game state fetch error:", error);
+
+    // Check if it's an ownership/not found error
+    if (
+      error instanceof Error &&
+      error.message === "Campaign not found or access denied"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Campaign not found or access denied",
+        },
+        { status: 404 },
+      );
+    }
 
     return NextResponse.json(
       {
