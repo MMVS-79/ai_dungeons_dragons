@@ -1259,7 +1259,7 @@ export class GameService {
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.80) {
+      if (rewardRoll < 0.8) {
         // EQUIPMENT REWARD (80%)
         rewardRarity = calculateCombatRewardRarity(
           snapshot.enemy.difficulty,

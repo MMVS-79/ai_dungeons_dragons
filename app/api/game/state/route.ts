@@ -14,15 +14,15 @@ import type { CombatEncounterEventData } from "@/lib/types/db.types";
 /**
  * Game State API Route
  * =====================
- * 
+ *
  * GET /api/game/state
  * -------------------
  * Load current game state without triggering any new events.
  * Used on page load/refresh to initialize the UI.
- * 
+ *
  * Query Parameters:
  *   campaignId: number (required) - ID of the campaign to load
- * 
+ *
  * Response:
  *   {
  *     success: boolean;
@@ -31,7 +31,7 @@ import type { CombatEncounterEventData } from "@/lib/types/db.types";
  *     choices: string[];        // Available actions for current phase
  *     error?: string;           // Present if load fails
  *   }
- * 
+ *
  * What This Endpoint Does:
  *   1. Validates campaignId parameter
  *   2. Checks for existing combat snapshot in memory
@@ -49,26 +49,26 @@ import type { CombatEncounterEventData } from "@/lib/types/db.types";
  *      - victory: Campaign completed (boss defeated)
  *      - game_over: Character defeated
  *   5. Returns appropriate message and choices for phase
- * 
+ *
  * Combat Snapshot Recovery:
  *   If last event is a Combat encounter without conclusion:
  *   - Loads enemy from database by ID
  *   - Recreates combat snapshot with current character state
  *   - Restores combat phase (temporary buffs are reset)
- * 
+ *
  * Investigation Prompt Handling:
  *   Investigation prompts are stored in memory and lost on:
  *   - Server restart
  *   - Page refresh
  *   When lost, the investigation is auto-declined and a new event
  *   is generated on next continue action.
- * 
+ *
  * Error Responses:
  *   400 - Missing campaignId parameter
  *   400 - Invalid campaignId format (not a number)
  *   404 - Campaign not found in database
  *   500 - Server error during state loading
- * 
+ *
  * Use Cases:
  *   - Initial page load: Load campaign state
  *   - Page refresh: Restore game state
