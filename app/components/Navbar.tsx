@@ -110,8 +110,8 @@ export default function Navbar() {
             Play Campaign
           </Link>
 
-          <Link href="/#about-us" className={styles.button}>
-            About Us
+          <Link href="/#our-team" className={styles.button}>
+            Our Team
           </Link>
 
           {status === "loading" ? (
@@ -193,11 +193,11 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/#about-us"
+            href="/#our-team"
             className={styles.mobileButton}
             onClick={() => setMenuOpen(false)}
           >
-            About Us
+            Our Team
           </Link>
 
           {session ? (

@@ -1,5 +1,58 @@
 import styles from "./home.module.css";
 import Image from "next/image";
+import TeamMember from "./components/TeamMember";
+
+// Team member data - easy to update and maintain
+const teamMembers = [
+  {
+    name: "Jason Tieh",
+    role: "Frontend Developer",
+    background: "",
+    imagePath: "/webpage-images/jason.jpg",
+    linkedinUrl: "https://www.linkedin.com/in/jason-tieh/",
+    githubUrl: "https://github.com/jktieh",
+  },
+  {
+    name: "Cameron Dunn",
+    role: "Technical Lead / Project Manager",
+    background: "",
+    imagePath: "/webpage-images/cameron.png",
+    linkedinUrl: "https://www.linkedin.com/in/camdnnn/",
+    githubUrl: "https://github.com/camdnnn",
+  },
+  {
+    name: "Edmund Yu",
+    role: "Backend Developer & AI",
+    background: "",
+    imagePath: "/webpage-images/edmund.jpeg",
+    linkedinUrl: "https://www.linkedin.com",
+    githubUrl: "https://github.com/Nolelle",
+  },
+  {
+    name: "Jason Chiu",
+    role: "Fullstack Developer",
+    background: "",
+    imagePath: "/webpage-images/default.png",
+    linkedinUrl: "https://linkedin.com",
+    githubUrl: "https://github.com/jaschdev",
+  },
+  {
+    name: "Manuja Senanayake",
+    role: "DevOps Engineer",
+    background: "",
+    imagePath: "/webpage-images/manuja.jpg",
+    linkedinUrl: "https://linkedin.com",
+    githubUrl: "https://github.com/MMVS-79",
+  },
+  {
+    name: "Le Song",
+    role: "Backend Developer",
+    background: "",
+    imagePath: "/webpage-images/default.png",
+    linkedinUrl: "https://linkedin.com",
+    githubUrl: "https://github.com/LS-Song-UC",
+  },
+];
 
 export default function Landing() {
   return (
@@ -19,7 +72,7 @@ export default function Landing() {
             </p>
             <div className={styles.mainInfoImage}>
               <Image
-                src="/webpage-images/20 Dice image.png"
+                src="/webpage-images/20_dice_image.png"
                 alt="D&D Illustration"
                 width={512}
                 height={512}
@@ -28,158 +81,21 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* About Us Section */}
-        <section id="about-us" className={styles.aboutUs}>
+        {/* Our Team Section */}
+        <section id="our-team" className={styles.aboutUs}>
           <h2>Our Team</h2>
-          <h3>
-            Programming projects should be fun so why not create an interactive
-            llm driven story DnD narrator!
-          </h3>
           <div className={styles.aboutUsGrid}>
-            <div className={styles.profile}>
-              <Image
-                src="/webpage-images/profile_test.png"
-                alt="name1"
-                className={styles.memberPicture}
-                width={100}
-                height={100}
+            {teamMembers.map((member, index) => (
+              <TeamMember
+                key={index}
+                name={member.name}
+                role={member.role}
+                background={member.background}
+                imagePath={member.imagePath}
+                linkedinUrl={member.linkedinUrl}
+                githubUrl={member.githubUrl}
               />
-              <p className={styles.memberName}> Name 1 </p>
-              <p className={styles.memberRole}> Role 1 </p>
-              <p className={styles.memberBackground}> background 1 </p>
-              <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
-                </a>
-                <a
-                  href="https://github.com/MMVS-79/ai_dungeons_dragons"
-                  target="_blank"
-                >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
-                </a>
-              </div>
-            </div>
-
-            <div className={styles.profile}>
-              <Image
-                src="/webpage-images/profile_test.png"
-                alt="name1"
-                className={styles.memberPicture}
-                width={100}
-                height={100}
-              />
-              <p className={styles.memberName}> Name 1 </p>
-              <p className={styles.memberRole}> Role 1 </p>
-              <p className={styles.memberBackground}> background 1 </p>
-              <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
-                </a>
-                <a
-                  href="https://github.com/MMVS-79/ai_dungeons_dragons"
-                  target="_blank"
-                >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
-                </a>
-              </div>
-            </div>
-
-            <div className={styles.profile}>
-              <Image
-                src="/webpage-images/profile_test.png"
-                alt="name1"
-                className={styles.memberPicture}
-                width={100}
-                height={100}
-              />
-              <p className={styles.memberName}> Name 1 </p>
-              <p className={styles.memberRole}> Role 1 </p>
-              <p className={styles.memberBackground}> background 1 </p>
-              <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
-                </a>
-                <a
-                  href="https://github.com/MMVS-79/ai_dungeons_dragons"
-                  target="_blank"
-                >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
-                </a>
-              </div>
-            </div>
-
-            <div className={styles.profile}>
-              <Image
-                src="/webpage-images/profile_test.png"
-                alt="name1"
-                className={styles.memberPicture}
-                width={100}
-                height={100}
-              />
-              <p className={styles.memberName}> Name 1 </p>
-              <p className={styles.memberRole}> Role 1 </p>
-              <p className={styles.memberBackground}> background 1 </p>
-              <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
-                </a>
-                <a
-                  href="https://github.com/MMVS-79/ai_dungeons_dragons"
-                  target="_blank"
-                >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
-                </a>
-              </div>
-            </div>
-
-            <div className={styles.profile}>
-              <Image
-                src="/webpage-images/profile_test.png"
-                alt="name1"
-                className={styles.memberPicture}
-                width={100}
-                height={100}
-              />
-              <p className={styles.memberName}> Name 1 </p>
-              <p className={styles.memberRole}> Role 1 </p>
-              <p className={styles.memberBackground}> background 1 </p>
-              <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
-                </a>
-                <a
-                  href="https://github.com/MMVS-79/ai_dungeons_dragons"
-                  target="_blank"
-                >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
-                </a>
-              </div>
-            </div>
-
-            <div className={styles.profile}>
-              <Image
-                src="/webpage-images/profile_test.png"
-                alt="name1"
-                className={styles.memberPicture}
-                width={100}
-                height={100}
-              />
-              <p className={styles.memberName}> Name 1 </p>
-              <p className={styles.memberRole}> Role 1 </p>
-              <p className={styles.memberBackground}> background 1 </p>
-              <div className={styles.profileLinks}>
-                <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
-                </a>
-                <a
-                  href="https://github.com/MMVS-79/ai_dungeons_dragons"
-                  target="_blank"
-                >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
-                </a>
-              </div>
-            </div>
-
+            ))}
           </div>
         </section>
       </main>
