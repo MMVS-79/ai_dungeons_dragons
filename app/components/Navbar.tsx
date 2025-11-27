@@ -119,13 +119,36 @@ export default function Navbar() {
           ) : session ? (
             <>
               <div className={styles.userInfo}>
-                {session.user?.image && (
-                  <img
+                {session.user?.image ? (
+                  <Image
                     src={session.user.image}
                     alt="Profile"
+                    width={40}
+                    height={40}
                     className={styles.profileImage}
+                    unoptimized
+                    onError={(e) => {
+                      // Hide the failed image
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = "none";
+
+                      // Show the fallback
+                      const fallback =
+                        target.nextElementSibling as HTMLElement | null;
+                      if (fallback) {
+                        fallback.style.display = "flex";
+                      }
+                    }}
                   />
-                )}
+                ) : null}
+
+                {/* Fallback for failed image loads or no image */}
+                <div
+                  className={styles.profileFallback}
+                  style={{ display: session.user?.image ? "none" : "flex" }}
+                >
+                  {session.user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
                 <span>{session.user?.name}</span>
               </div>
 
@@ -203,13 +226,36 @@ export default function Navbar() {
           {session ? (
             <>
               <div className={styles.userInfoMobile}>
-                {session.user?.image && (
-                  <img
+                {session.user?.image ? (
+                  <Image
                     src={session.user.image}
                     alt="Profile"
+                    width={40}
+                    height={40}
                     className={styles.profileImage}
+                    unoptimized
+                    onError={(e) => {
+                      // Hide the failed image
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = "none";
+
+                      // Show the fallback
+                      const fallback =
+                        target.nextElementSibling as HTMLElement | null;
+                      if (fallback) {
+                        fallback.style.display = "flex";
+                      }
+                    }}
                   />
-                )}
+                ) : null}
+
+                {/* Fallback for failed image loads or no image */}
+                <div
+                  className={styles.profileFallback}
+                  style={{ display: session.user?.image ? "none" : "flex" }}
+                >
+                  {session.user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
                 <span>{session.user?.name}</span>
               </div>
 

@@ -84,6 +84,7 @@ interface PlayerState {
   defense: number;
   inventory: Item[];
   equipment: Equipment;
+  class?: string;
 }
 
 interface EnemyState {
@@ -191,6 +192,7 @@ export default function CampaignPage() {
           defense: char.defense,
           inventory: inv,
           equipment: equip,
+          class: char.class?.name,
         });
       }
 
@@ -381,6 +383,7 @@ export default function CampaignPage() {
           defense: char.defense,
           inventory: inv,
           equipment: equip,
+          class: char.class?.name,
         });
       }
 
@@ -498,6 +501,7 @@ export default function CampaignPage() {
             defense: char.defense,
             inventory: inv,
             equipment: equip,
+            class: char.class?.name,
           });
 
           if (result.gameState.currentPhase === "game_over") {

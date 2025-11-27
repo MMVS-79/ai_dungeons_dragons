@@ -221,6 +221,7 @@ export async function createCharacter(
   name: string,
   raceId: number,
   classId: number,
+  spritePath?: string | "characters/player/warrior.png",
 ): Promise<Character> {
   try {
     // 1. Load race + class data
@@ -232,7 +233,10 @@ export async function createCharacter(
     const baseAttack = race.attack + cls.attack;
     const baseDefense = race.defense + cls.defense;
 
-    // 3. Insert the new character
+    // 3. Use provided spritePath, or fall back to race sprite_path
+    const characterSprite = spritePath || race.sprite_path || null;
+
+    // 4. Insert the new character
     const sql = `
       INSERT INTO characters (
         name, current_health, max_health,
@@ -248,7 +252,7 @@ export async function createCharacter(
       baseHealth, // max
       baseAttack,
       baseDefense,
-      null, // sprite_path for character
+      characterSprite, // sprite_path for character
       campaignId,
       raceId,
       classId,
@@ -256,7 +260,7 @@ export async function createCharacter(
 
     const newId = result.insertId;
 
-    // 4. Return it using same mapping as getCharacter
+    // 5. Return it using same mapping as getCharacter
     return await getCharacter(newId);
   } catch (err) {
     console.error("[BackendService] createCharacter failed:", err);
@@ -989,7 +993,7 @@ export async function getCampaignsByAccount(
   try {
     // Query all campaigns for this user, ordered by most recently updated first
     const sql =
-      "SELECT * FROM campaigns WHERE account_id = ? ORDER BY updated_at DESC";
+      "SELECT * FROM campaigns WHERE account_id = ? ORDER BY created_at DESC";
 
     // Execute query and map database rows to Campaign objects
     const [rows] = await pool.query<CampaignRow[]>(sql, [accountId]);

@@ -11,11 +11,12 @@ export default function Landing() {
 
           <div className={styles.mainInfoBody}>
             <p className={styles.mainInfoText}>
-              Step into the tavern with nothing but your imagination—our
-              intelligent Game Master takes it from there. No prep, no
-              spreadsheets—just fair rulings, smart prompts, and a living world
-              that remembers each adventure. Start your campaign, roll the dice,
-              and let your story unfold..
+              Enter a world where strategy meets storytelling. Build your
+              character, engage in tactical turn-based combat, and explore an
+              ever-evolving narrative crafted by AI. Each dice roll determines
+              your fate as you battle enemies, collect legendary equipment, and
+              forge your own epic tale through dynamic encounters and strategic
+              choices.
             </p>
             <div className={styles.mainInfoImage}>
               <Image
@@ -29,10 +30,7 @@ export default function Landing() {
         </div>
 
         {/* About Us Section */}
-        <section
-          id="about-us"
-          className={styles.aboutUs}
-        >
+        <section id="about-us" className={styles.aboutUs}>
           <h2>Our Team</h2>
           <h3>
             Programming projects should be fun so why not create an interactive
@@ -51,10 +49,7 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                >
+                <a href="https://linkedin.com" target="_blank">
                   <Image
                     src="/icons/icon_linkedin.png"
                     alt="linkedin logo icon"
@@ -88,10 +83,7 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                >
+                <a href="https://linkedin.com" target="_blank">
                   <Image
                     src="/icons/icon_linkedin.png"
                     alt="linkedin logo icon"
@@ -125,10 +117,7 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                >
+                <a href="https://linkedin.com" target="_blank">
                   <Image
                     src="/icons/icon_linkedin.png"
                     alt="linkedin logo icon"
@@ -162,10 +151,7 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                >
+                <a href="https://linkedin.com" target="_blank">
                   <Image
                     src="/icons/icon_linkedin.png"
                     alt="linkedin logo icon"
@@ -199,10 +185,7 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                >
+                <a href="https://linkedin.com" target="_blank">
                   <Image
                     src="/icons/icon_linkedin.png"
                     alt="linkedin logo icon"
@@ -236,10 +219,7 @@ export default function Landing() {
               <p className={styles.memberRole}> Role 1 </p>
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                >
+                <a href="https://linkedin.com" target="_blank">
                   <Image
                     src="/icons/icon_linkedin.png"
                     alt="linkedin logo icon"

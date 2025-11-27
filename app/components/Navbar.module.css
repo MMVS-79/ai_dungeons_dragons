@@ -103,7 +103,7 @@
 .mobileMenu {
   position: fixed;
   top: -100;
-  right: -100%;       /* hidden by default */
+  right: -100%;
   width: 350px;
   height: 110vh;
   background-color: rgba(0, 0, 0, 0.8);
@@ -297,6 +297,9 @@ html {
 
 /* Ensure navbar has smooth transitions */
 .navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   transition: all 0.4s ease;
 }
 
@@ -347,13 +350,14 @@ html {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 0 20px;
   color: white;
 }
 
 .userInfoMobile {
   display: flex;
   align-items: center;
+  height: 50px;
   gap: 12px;
   padding: 20px 30px;
   color: white;
@@ -367,4 +371,69 @@ html {
   height: 32px;
   border-radius: 50%;
   border: 2px solid white;
+}
+
+.profileFallback {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: rgb(0, 80, 172);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  border: 2px solid white;
+}
+
+@media (max-width: 550px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .logo {
+    width: 35px;
+    height: 35px;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .navLinks {
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .profileImage,
+  .profileFallback {
+    width: 35px;
+    height: 35px;
+  }
+
+  .profileFallback {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .navbar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .navLinks {
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .profileImage,
+  .profileFallback {
+    width: 30px;
+    height: 30px;
+  }
 }

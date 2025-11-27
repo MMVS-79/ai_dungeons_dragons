@@ -161,6 +161,11 @@ export default function NewCampaignPage() {
 
       setIsCreating(true);
 
+      // Fetch race data to get sprite_path
+      const raceResponse = await fetch(`/api/races`);
+      const { races } = await raceResponse.json();
+      const raceData = races.find((r: any) => r.id === selectedRace.id);
+
       // Create campaign via API (accountId derived from session on server)
       const response = await fetch("/api/campaigns", {
         method: "POST",
@@ -172,6 +177,7 @@ export default function NewCampaignPage() {
             name: characterName,
             raceId: selectedRace.id,
             classId: selectedClass.id,
+            spritePath: raceData?.sprite_path || "characters/player/warrior.png",
           },
         }),
       });
