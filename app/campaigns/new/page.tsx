@@ -177,7 +177,8 @@ export default function NewCampaignPage() {
             name: characterName,
             raceId: selectedRace.id,
             classId: selectedClass.id,
-            spritePath: raceData?.sprite_path || "characters/player/warrior.png",
+            spritePath:
+              raceData?.sprite_path || "characters/player/warrior.png",
           },
         }),
       });

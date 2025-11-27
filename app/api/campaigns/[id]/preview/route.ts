@@ -1,15 +1,15 @@
 /**
  * Campaign Preview API Route
  * ===========================
- * 
+ *
  * GET /api/campaigns/[id]/preview
  * --------------------------------
  * Fetch preview data for a campaign to display on campaigns dashboard.
- * 
+ *
  * Purpose:
  *   Provides data to show a campaign preview card without loading
  *   full game state
- * 
+ *
  * Response:
  *   {
  *     success: boolean;
@@ -23,7 +23,7 @@
  *     };
  *     error?: string;
  *   }
- * 
+ *
  * Implementation:
  *   1. Get campaign ID from URL params
  *   2. Load campaign from database
@@ -31,7 +31,7 @@
  *   4. Get most recent event (1 event limit)
  *   5. Count inventory items
  *   6. Return preview data
- * 
+ *
  * Error Responses:
  *   400 - Invalid campaign ID
  *   404 - Campaign not found
@@ -43,7 +43,7 @@ import * as BackendService from "@/lib/services/backend.service";
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await context.params;
@@ -52,7 +52,7 @@ export async function GET(
     if (isNaN(campaignId)) {
       return NextResponse.json(
         { success: false, error: "Invalid campaign ID" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,7 +60,7 @@ export async function GET(
     const campaign = await BackendService.getCampaign(campaignId);
 
     // Load character with full equipment data
-    const { character, equipment, inventory } = 
+    const { character, equipment, inventory } =
       await BackendService.getCharacterWithFullData(campaignId);
 
     // Get most recent event for last message
@@ -83,17 +83,17 @@ export async function GET(
     });
   } catch (error) {
     console.error("[API] Get campaign preview error:", error);
-    
+
     if (error instanceof Error && error.message.includes("not found")) {
       return NextResponse.json(
         { success: false, error: "Campaign not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Failed to fetch campaign preview" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
