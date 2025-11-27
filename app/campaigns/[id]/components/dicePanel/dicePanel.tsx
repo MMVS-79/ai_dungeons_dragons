@@ -123,10 +123,6 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
         vertices: [v1.clone(), v2.clone(), v3.clone()],
       });
 
-      // const edge1 = new THREE.Vector3().subVectors(v2, v1);
-      // const edge2 = new THREE.Vector3().subVectors(v3, v1);
-      // const normal = new THREE.Vector3().crossVectors(edge1, edge2).normalize(); // Unused Variable
-
       // Assign number to this face (1-20)
       const numberForFace = i + 1;
       faceToNumberMap.current.set(i, numberForFace);
@@ -307,7 +303,7 @@ export default function DicePanel({ isRolling, lastResult }: DicePanelProps) {
     return euler;
   };
 
-  // === Show or hide result text smoothly inside the dice box ===
+  // Show or hide result text smoothly inside the dice box
   useEffect(() => {
     if (resultRef.current) {
       resultRef.current.style.opacity = lastResult ? "1" : "0";

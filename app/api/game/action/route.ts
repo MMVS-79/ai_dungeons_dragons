@@ -6,6 +6,98 @@ import { GameService } from "@/lib/services/game.service";
 import * as BackendService from "@/lib/services/backend.service";
 import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
 
+/**
+ * Game Action API Route
+ * ======================
+ * 
+ * Main game loop endpoint that processes all player actions during gameplay.
+ * 
+ * POST /api/game/action
+ * ---------------------
+ * Process a player action and return updated game state.
+ * 
+ * Request Body:
+ *   {
+ *     campaignId: number;
+ *     actionType: "continue" | "investigate" | "decline" | "attack" | "flee" | "use_item_combat";
+ *     actionData?: {
+ *       itemId?: number;  // Required for "use_item_combat" action
+ *     };
+ *   }
+ * 
+ * Response:
+ *   {
+ *     success: boolean;
+ *     gameState: GameState;          // Complete current game state
+ *     message: string;               // Narrative text for the event
+ *     choices: string[];             // Available action buttons
+ *     combatResult?: CombatResult;   // Present during combat
+ *     itemFound?: Item | Equipment;  // Present when loot is found
+ *     error?: string;                // Present if action fails
+ *   }
+ * 
+ * Game Phases and Valid Actions:
+ *   - exploration: ["continue"]
+ *   - investigation_prompt: ["investigate", "decline"]
+ *   - combat: ["attack", "flee", "use_item_combat"]
+ *   - victory: [] (no actions, campaign completed)
+ *   - game_over: [] (no actions, player defeated)
+ * 
+ * Action Details:
+ *   
+ *   continue:
+ *     - Advances to next event (increments event number)
+ *     - Triggers boss fight at event 48+
+ *     - Calls LLM to generate event type and description
+ *     - May present investigation prompt for Environmental/Item_Drop events
+ *     - May start combat encounter
+ *   
+ *   investigate:
+ *     - Resolves pending investigation prompt
+ *     - Grants stat boost for Environmental events
+ *     - Grants loot for Item_Drop events
+ *     - Returns to exploration phase after resolution
+ *   
+ *   decline:
+ *     - Skips pending investigation prompt without benefits
+ *     - Generates new event immediately
+ *     - Returns to exploration phase
+ *   
+ *   attack:
+ *     - Attacks enemy in combat
+ *     - Damage = max(playerAttack - enemyDefense, 1)
+ *     - Enemy counterattacks if still alive
+ *     - Victory if enemy HP reaches 0 (generates loot)
+ *     - Defeat if player HP reaches 0 (game over)
+ *   
+ *   flee:
+ *     - Attempts to escape from combat (50% chance)
+ *     - Success: Returns to exploration, generates new event
+ *     - Failure: Enemy counterattacks
+ *   
+ *   use_item_combat:
+ *     - Uses item from inventory during combat
+ *     - Grants temporary buff for remainder of combat
+ *     - Item removed from inventory after use
+ *     - Requires itemId in actionData
+ * 
+ * Special Features:
+ *   - Combat Snapshots: Preserves combat state across server restarts
+ *   - Investigation Prompts: Lost on page refresh (auto-declined)
+ *   - Boss Encounters: Forced at event 48 with difficulty >= 1000
+ *   - Loot Scaling: Rarity based on enemy difficulty and dice rolls
+ *   - Two-Phase Combat Logging: Separate logs for encounter and conclusion
+ * 
+ * Error Responses:
+ *   400 - Missing or invalid campaignId
+ *   400 - Invalid action for current game phase
+ *   500 - Server error during action processing
+ * 
+ * Implementation:
+ *   All game logic handled by GameService.processPlayerAction()
+ *   which orchestrates LLM calls, database updates, and state transitions.
+ */
+
 const gameService = new GameService();
 
 export async function POST(request: NextRequest) {

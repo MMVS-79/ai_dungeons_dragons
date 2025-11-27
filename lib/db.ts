@@ -1,12 +1,15 @@
 /**
  * Database Connection Handler
  * ---------------------------
- * Creates and exports a reusable database client for MySQL/PostgreSQL.
+ * MySQL connection pool for the application.
  * 
- * Responsibilities:
- * - query(): execute SQL statements from schema/tables/
- * - connect(): establish DB connection
- * - close(): clean up connection
+ * Configuration loaded from .env.local:
+ * - DB_HOST
+ * - DB_USER
+ * - DB_PASS
+ * - DB_NAME
+ * 
+ * Exported as 'pool' for use throughout the application.
  * 
  * Used by:
  * - gameEngine.service.ts → read/write player and campaign data

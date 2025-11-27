@@ -1259,22 +1259,20 @@ export class GameService {
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.75) {
-        // EQUIPMENT REWARD (75%)
+      if (rewardRoll < 0.80) {
+        // EQUIPMENT REWARD (80%)
         rewardRarity = calculateCombatRewardRarity(
           snapshot.enemy.difficulty,
           diceRoll,
         );
         const { message, equipment } = await this.processCombatRewards(
-          action.campaignId,
           snapshot,
           rewardRarity,
-          diceRoll,
         );
         rewardMessage = message;
         rewardEquipment = equipment;
       } else {
-        // ITEM REWARD (25%)
+        // ITEM REWARD (20%)
         // Check snapshot inventory, not database inventory
         const MAX_INVENTORY = 10;
 
@@ -1521,10 +1519,8 @@ export class GameService {
   // ==========================================================================
 
   private async processCombatRewards(
-    campaignId: number,
     snapshot: CombatSnapshot,
     rewardRarity: number,
-    diceRoll: number,
   ): Promise<{
     message: string;
     equipment: Weapon | Armour | Shield;
