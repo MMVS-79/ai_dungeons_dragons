@@ -89,7 +89,6 @@ export class LLMService {
   // ==========================================================================
 
   public async generateCampaignIntroduction(
-    campaignId: number,
     gameState: GameState,
   ): Promise<string> {
     // Get character race and class names from database
@@ -469,7 +468,6 @@ Your description:`;
    */
   public async requestStatBoost(
     context: LLMContext,
-    eventType: string,
   ): Promise<StatBoostResponse> {
     const healthPercent = Math.round(
       (context.character.currentHealth / context.character.maxHealth) * 100,

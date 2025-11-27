@@ -33,7 +33,7 @@ import {
   getEffectiveDefense,
 } from "../utils/combatSnapshot";
 
-import type { EventHistoryEntry, EventTypeString } from "../types/llm.types";
+import type { EventTypeString } from "../types/llm.types";
 import type { LLMContext } from "./llm.service";
 import type {
   PlayerAction,
@@ -54,12 +54,11 @@ import {
   clearInvestigationPrompt,
 } from "../utils/investigationPrompt";
 import * as BackendService from "./backend.service";
-import { pool } from "../db";
 
 export class GameService {
   private llmService: LLMService;
 
-  constructor(llmApiKey: string) {
+  constructor() {
     this.llmService = new LLMService();
   }
 
@@ -158,10 +157,8 @@ export class GameService {
 
     // First event is campaign introduction
     if (nextEventNumber === 1) {
-      const introText = await this.llmService.generateCampaignIntroduction(
-        action.campaignId,
-        gameState,
-      );
+      const introText =
+        await this.llmService.generateCampaignIntroduction(gameState);
 
       await BackendService.saveEvent(
         action.campaignId,
@@ -185,11 +182,7 @@ export class GameService {
 
     // Check boss encounter (event 48)
     if (nextEventNumber >= BALANCE_CONFIG.BOSS_FORCED_EVENT_START) {
-      return await this.generateBossEncounter(
-        action.campaignId,
-        gameState,
-        nextEventNumber,
-      );
+      return await this.generateBossEncounter(action.campaignId, gameState);
     }
 
     // Build context
@@ -263,13 +256,9 @@ export class GameService {
           gameState,
         );
       case "Combat":
-        return await this.handleCombatPrompt(
-          action.campaignId,
-          gameState,
-          nextEventNumber,
-        );
+        return await this.handleCombatPrompt(action.campaignId);
       case "Item_Drop":
-        return await this.handleItemDropPrompt(action.campaignId, gameState);
+        return await this.handleItemDropPrompt(action.campaignId);
       default:
         throw new Error(`Unknown event type: ${eventType}`);
     }
@@ -345,7 +334,6 @@ export class GameService {
 
   private async handleItemDropPrompt(
     campaignId: number,
-    gameState: GameState,
   ): Promise<GameServiceResponse> {
     const message =
       "You notice something shiny nearby... Do you want to investigate?";
@@ -374,8 +362,6 @@ export class GameService {
 
   private async handleCombatPrompt(
     campaignId: number,
-    gameState: GameState,
-    eventNumber: number,
   ): Promise<GameServiceResponse> {
     const message = "You sense danger nearby... Do you want to investigate?";
 
@@ -551,10 +537,7 @@ export class GameService {
       );
 
       // Request stat boost from LLM
-      const statBoost = await this.llmService.requestStatBoost(
-        context,
-        "Environmental",
-      );
+      const statBoost = await this.llmService.requestStatBoost(context);
 
       // Ensure baseValue is not 0, use defaults if needed
       let baseValue = statBoost.baseValue;
@@ -964,7 +947,6 @@ export class GameService {
   private async generateBossEncounter(
     campaignId: number,
     gameState: GameState,
-    eventNumber: number,
   ): Promise<GameServiceResponse> {
     // Get random boss
     const boss = await BackendService.getBossEnemy();
@@ -1277,22 +1259,20 @@ export class GameService {
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.75) {
-        // EQUIPMENT REWARD (75%)
+      if (rewardRoll < 0.8) {
+        // EQUIPMENT REWARD (80%)
         rewardRarity = calculateCombatRewardRarity(
           snapshot.enemy.difficulty,
           diceRoll,
         );
         const { message, equipment } = await this.processCombatRewards(
-          action.campaignId,
           snapshot,
           rewardRarity,
-          diceRoll,
         );
         rewardMessage = message;
         rewardEquipment = equipment;
       } else {
-        // ITEM REWARD (25%)
+        // ITEM REWARD (20%)
         // Check snapshot inventory, not database inventory
         const MAX_INVENTORY = 10;
 
@@ -1539,10 +1519,8 @@ export class GameService {
   // ==========================================================================
 
   private async processCombatRewards(
-    campaignId: number,
     snapshot: CombatSnapshot,
     rewardRarity: number,
-    diceRoll: number,
   ): Promise<{
     message: string;
     equipment: Weapon | Armour | Shield;

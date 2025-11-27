@@ -180,25 +180,6 @@ function mapCampaignRow(row: CampaignRow): Campaign {
   };
 }
 
-/*export interface RaceRow {
-  id: number;
-  name: string;
-  health: number;
-  attack: number;
-  defense: number;
-  sprite_path?: string;
-}
-
-export interface ClassRow {
-  id: number;
-  name: string;
-  health: number;
-  attack: number;
-  defense: number;
-  sprite_path?: string;
-}
-*/
-
 async function getRace(id: number): Promise<RaceRow> {
   const sql = `SELECT * FROM races WHERE id = ?`;
   const [rows] = await pool.query<RaceRow[]>(sql, [id]);
