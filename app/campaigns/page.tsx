@@ -131,7 +131,7 @@ export default function CampaignsPage() {
           campaigns.map(async (campaign) => {
             try {
               const response = await fetch(
-                `/api/campaigns/${campaign.id}/preview`
+                `/api/campaigns/${campaign.id}/preview`,
               );
               const data = await response.json();
 
@@ -141,10 +141,10 @@ export default function CampaignsPage() {
             } catch (err) {
               console.error(
                 `Failed to load preview for campaign ${campaign.id}:`,
-                err
+                err,
               );
             }
-          })
+          }),
         );
 
         setCampaignPreviews(previews);

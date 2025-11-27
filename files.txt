@@ -1,4 +1,5 @@
 app/api/auth/[...nextauth]/route.ts
+app/api/campaigns/[id]/preview/route.ts
 app/api/campaigns/[id]/route.ts
 app/api/campaigns/route.ts
 app/api/classes/route.ts
@@ -11,6 +12,7 @@ app/campaigns/[id]/components/dicePanel/dicePanel.tsx
 app/campaigns/[id]/components/eventPanel/eventPanel.tsx
 app/campaigns/[id]/components/itemPanel/itemPanel.tsx
 app/campaigns/[id]/page.tsx
+app/campaigns/components/campaignPreviewCard.tsx
 app/campaigns/new/page.tsx
 app/campaigns/page.tsx
 app/components/Navbar.tsx
