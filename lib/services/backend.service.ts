@@ -1,7 +1,6 @@
 /**
- * Backend Service (Database Layer) - UPDATED FOR NEW ARCHITECTURE
+ * Backend Service (Database Layer)
  * ================================================================
- * Complete database abstraction layer with full implementations
  *
  * KEY FEATURES:
  * - Character operations with equipment and inventory loading

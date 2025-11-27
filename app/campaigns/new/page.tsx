@@ -41,7 +41,7 @@ export default function NewCampaignPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Track which steps have been completed (coworker's addition)
+  // Track which steps have been completed
   const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set());
 
   // Fetch races and classes from database on mount
@@ -152,7 +152,7 @@ export default function NewCampaignPage() {
   };
 
   const handleStartCampaign = async () => {
-    if (isCreating) return; // Prevent double-clicks
+    if (isCreating) return; // Prevent double clicks
 
     try {
       if (!selectedRace?.id || !selectedClass?.id) {

@@ -354,7 +354,7 @@ Your description:`;
     context: LLMContext,
     lootItem?: Item | Weapon | Armour | Shield,
   ): string {
-    // If no item provided (shouldn't happen), use generic prompt
+    // If no item provided (shouldnt happen), use generic prompt
     if (!lootItem) {
       return `You are a D&D dungeon master. Create a description of discovering loot.
 
