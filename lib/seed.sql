@@ -1,9 +1,6 @@
 -- seed.sql (BALANCED FOR 60-TURN CAMPAIGNS)
 -- This seed provides balanced progression for ~50% win rate with strategic play
 
-INSERT INTO accounts (email, created_at, updated_at)
-VALUES ('test@example.com', NOW(), NOW());
-
 -- ============================================================================
 -- ENEMIES (Balanced for 60-turn progression)
 -- ============================================================================
