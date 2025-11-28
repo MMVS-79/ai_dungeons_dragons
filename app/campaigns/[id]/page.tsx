@@ -171,7 +171,7 @@ export default function CampaignPage() {
     }
 
     console.log(
-      `[Music] Switching from ${currentMusicState.current} to ${desiredState}`
+      `[Music] Switching from ${currentMusicState.current} to ${desiredState}`,
     );
     currentMusicState.current = desiredState;
 
@@ -179,7 +179,10 @@ export default function CampaignPage() {
     BackgroundMusicService.fadeOut(1500);
     setTimeout(() => {
       if (desiredState === "combat") {
-        BackgroundMusicService.play("/music/dramatic-orchestral-combat-music-loop-382814.mp3", 2000);
+        BackgroundMusicService.play(
+          "/music/dramatic-orchestral-combat-music-loop-382814.mp3",
+          2000,
+        );
       } else {
         BackgroundMusicService.play("/music/rpg-city-8381.mp3", 2000);
       }
@@ -203,7 +206,7 @@ export default function CampaignPage() {
         // Handle 404 (not found or access denied)
         if (response.status === 404) {
           setError(
-            "You don't have access to this campaign or it doesn't exist."
+            "You don't have access to this campaign or it doesn't exist.",
           );
         } else {
           setError(errorData.error || "Failed to load game state");
@@ -354,7 +357,7 @@ export default function CampaignPage() {
     } catch (error) {
       console.error("[Frontend] Error loading game state:", error);
       setError(
-        error instanceof Error ? error.message : "Unknown error occurred"
+        error instanceof Error ? error.message : "Unknown error occurred",
       );
       setLoading(false);
     }
@@ -384,7 +387,7 @@ export default function CampaignPage() {
       }
 
       console.log(
-        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`
+        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`,
       );
 
       const response = await fetch("/api/game/action", {
