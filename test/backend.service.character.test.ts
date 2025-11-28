@@ -133,12 +133,7 @@ describe('Backend Service - Character Operations', () => {
       return Promise.resolve([[], []]);
     });
 
-    // FIX: Clear mocks for internal dependencies before each test
-    (getCharacterByCampaign as jest.Mock)?.mockClear();
-    (getWeapon as jest.Mock)?.mockClear();
-    (getArmour as jest.Mock)?.mockClear();
-    (getShield as jest.Mock)?.mockClear();
-    (getInventory as jest.Mock)?.mockClear();
+
   });
   
   // =====================================================================
