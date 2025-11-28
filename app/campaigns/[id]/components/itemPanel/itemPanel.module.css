@@ -358,3 +358,42 @@
 .closeButtonAction:hover {
   background-color: #374151;
 }
+
+@media (max-width: 550px) {
+  .panel {
+    padding: 0.75rem;
+    min-height: 400px;
+  }
+
+  .header {
+    font-size: 1rem;
+  }
+
+  .sectionHeader {
+    font-size: 0.8rem;
+  }
+
+  .equippedGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+
+  .equippedSlot {
+    padding: 0.4rem;
+    min-height: 80px;
+    max-width: 15vw;
+  }
+
+  .slotLabel {
+    font-size: 0.7rem;
+  }
+
+  .itemsGrid {
+    grid-template-columns: repeat(4, 1fr); /* 4 columns instead of 5 */
+    gap: 0.4rem;
+  }
+
+  .itemSlot {
+    min-height: 45px;
+  }
+}

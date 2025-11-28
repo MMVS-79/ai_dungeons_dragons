@@ -84,6 +84,7 @@ interface PlayerState {
   defense: number;
   inventory: Item[];
   equipment: Equipment;
+  class?: string;
 }
 
 interface EnemyState {
@@ -157,7 +158,7 @@ export default function CampaignPage() {
         const errorData = await response.json();
         console.log("[Frontend] Failed to load game state:", errorData);
 
-        // Handle 404 (not found or access denied) specifically
+        // Handle 404 (not found or access denied)
         if (response.status === 404) {
           setError(
             "You don't have access to this campaign or it doesn't exist.",
@@ -191,6 +192,7 @@ export default function CampaignPage() {
           defense: char.defense,
           inventory: inv,
           equipment: equip,
+          class: char.class?.name,
         });
       }
 
@@ -381,6 +383,7 @@ export default function CampaignPage() {
           defense: char.defense,
           inventory: inv,
           equipment: equip,
+          class: char.class?.name,
         });
       }
 
@@ -498,6 +501,7 @@ export default function CampaignPage() {
             defense: char.defense,
             inventory: inv,
             equipment: equip,
+            class: char.class?.name,
           });
 
           if (result.gameState.currentPhase === "game_over") {

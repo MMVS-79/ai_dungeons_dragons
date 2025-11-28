@@ -41,7 +41,7 @@ export default function NewCampaignPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Track which steps have been completed (coworker's addition)
+  // Track which steps have been completed
   const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set());
 
   // Fetch races and classes from database on mount
@@ -152,7 +152,7 @@ export default function NewCampaignPage() {
   };
 
   const handleStartCampaign = async () => {
-    if (isCreating) return; // Prevent double-clicks
+    if (isCreating) return; // Prevent double clicks
 
     try {
       if (!selectedRace?.id || !selectedClass?.id) {
@@ -160,6 +160,11 @@ export default function NewCampaignPage() {
       }
 
       setIsCreating(true);
+
+      // Fetch race data to get sprite_path
+      const raceResponse = await fetch(`/api/races`);
+      const { races } = await raceResponse.json();
+      const raceData = races.find((r: any) => r.id === selectedRace.id);
 
       // Create campaign via API (accountId derived from session on server)
       const response = await fetch("/api/campaigns", {
@@ -172,6 +177,8 @@ export default function NewCampaignPage() {
             name: characterName,
             raceId: selectedRace.id,
             classId: selectedClass.id,
+            spritePath:
+              raceData?.sprite_path || "characters/player/warrior.png",
           },
         }),
       });

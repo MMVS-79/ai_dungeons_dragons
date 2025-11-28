@@ -425,7 +425,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .pageContainer {
     flex-direction: column;
     padding-top: 120px;

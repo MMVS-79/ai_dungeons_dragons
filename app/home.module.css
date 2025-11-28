@@ -133,22 +133,3 @@
   }
 }
 
-/* CTA buttons */
-/* .ctas {
-  display: flex;
-  justify-content: flex-start;
-  gap: 16px;
-}
-
-.primary {
-  background: var(--foreground);
-  color: var(--background);
-  border-radius: 24px;
-  padding: 12px 24px;
-  font-weight: 500;
-  transition: 0.2s;
-}
-
-.primary:hover {
-  background: #383838;
-} */

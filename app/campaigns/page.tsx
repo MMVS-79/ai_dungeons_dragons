@@ -2,28 +2,94 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import CampaignPreviewCard from "./components/campaignPreviewCard";
 import styles from "./campaign.module.css";
 
 interface Campaign {
   id: number;
   name: string;
   description?: string;
-  state: string;
+  state: "active" | "completed" | "game_over";
   createdAt: string;
   updatedAt: string;
 }
 
+interface Character {
+  id: number;
+  name: string;
+  currentHealth: number;
+  maxHealth: number;
+  attack: number;
+  defense: number;
+  spritePath?: string;
+}
+
+interface Equipment {
+  weapon?: {
+    id: number;
+    name: string;
+    attack: number;
+    spritePath?: string;
+  };
+  armour?: {
+    id: number;
+    name: string;
+    health: number;
+    spritePath?: string;
+  };
+  shield?: {
+    id: number;
+    name: string;
+    defense: number;
+    spritePath?: string;
+  };
+}
+
+interface CampaignPreview {
+  campaign: Campaign;
+  character: Character;
+  equipment: Equipment;
+  inventory: Item[];
+  lastEvent: {
+    message: string;
+  } | null;
+  currentEventNumber: number;
+}
+
+interface Item {
+  id: number;
+  name: string;
+  rarity: number;
+  statModified: "health" | "attack" | "defense";
+  statValue: number;
+  description?: string;
+  spritePath?: string;
+}
+
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignPreviews, setCampaignPreviews] = useState<
+    Map<number, CampaignPreview>
+  >(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [campaignToDelete, setCampaignToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loadingPreviews, setLoadingPreviews] = useState(false);
 
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   // Fetch campaigns from API on mount
   useEffect(() => {
+    if (status === "loading") return;
+
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
     const fetchCampaigns = async () => {
       try {
         const response = await fetch("/api/campaigns");
@@ -50,7 +116,47 @@ export default function CampaignsPage() {
     };
 
     fetchCampaigns();
-  }, [router]);
+  }, [router, session, status]);
+
+  // Fetch preview data for each campaign
+  useEffect(() => {
+    if (campaigns.length === 0) return;
+
+    const fetchPreviews = async () => {
+      setLoadingPreviews(true);
+      const previews = new Map<number, CampaignPreview>();
+
+      try {
+        await Promise.all(
+          campaigns.map(async (campaign) => {
+            try {
+              const response = await fetch(
+                `/api/campaigns/${campaign.id}/preview`,
+              );
+              const data = await response.json();
+
+              if (data.success && data.preview) {
+                previews.set(campaign.id, data.preview);
+              }
+            } catch (err) {
+              console.error(
+                `Failed to load preview for campaign ${campaign.id}:`,
+                err,
+              );
+            }
+          }),
+        );
+
+        setCampaignPreviews(previews);
+      } catch (err) {
+        console.error("Failed to load campaign previews:", err);
+      } finally {
+        setLoadingPreviews(false);
+      }
+    };
+
+    fetchPreviews();
+  }, [campaigns]);
 
   const goToNewCampaign = () => {
     if (campaigns.length >= 5) {
@@ -84,6 +190,11 @@ export default function CampaignsPage() {
 
       // Remove from local state
       setCampaigns((prev) => prev.filter((c) => c.id !== campaignToDelete));
+      setCampaignPreviews((prev) => {
+        const newPreviews = new Map(prev);
+        newPreviews.delete(campaignToDelete);
+        return newPreviews;
+      });
       closeDeleteModal();
     } catch (err) {
       console.error("Failed to delete campaign:", err);
@@ -98,7 +209,7 @@ export default function CampaignsPage() {
   };
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || status === "loading") {
     return (
       <div className={styles.pageContainer}>
         <h1 className={styles.header}>Your Campaigns</h1>
@@ -138,26 +249,42 @@ export default function CampaignsPage() {
             <span>New Campaign</span>
           </div>
 
-          {/* Render campaigns in order: newest first (from API) */}
-          {campaigns.map((c) => (
-            <div
-              key={c.id}
-              className={styles.campaignPanel}
-              onClick={() => goToCampaign(c.id)}
-              style={{ cursor: "pointer" }}
-            >
-              <div className={styles.campaignInfo}>{c.name}</div>
-              <button
-                className={styles.deleteButton}
-                onClick={(e) => {
+          {/* Render campaign preview cards */}
+          {campaigns.map((campaign) => {
+            const preview = campaignPreviews.get(campaign.id);
+
+            // Show loading skeleton if preview not loaded yet
+            if (!preview) {
+              return (
+                <div
+                  key={campaign.id}
+                  className={styles.campaignPanel}
+                  style={{ opacity: 0.6 }}
+                >
+                  <div className={styles.campaignInfo}>
+                    {loadingPreviews ? "Loading..." : campaign.name}
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <CampaignPreviewCard
+                key={campaign.id}
+                campaign={preview.campaign}
+                character={preview.character}
+                equipment={preview.equipment}
+                inventory={preview.inventory}
+                lastEventMessage={preview.lastEvent?.message || null}
+                currentEventNumber={preview.currentEventNumber}
+                onClick={() => goToCampaign(campaign.id)}
+                onDelete={(e) => {
                   e.stopPropagation();
-                  openDeleteModal(c.id);
+                  openDeleteModal(campaign.id);
                 }}
-              >
-                Delete Campaign
-              </button>
-            </div>
-          ))}
+              />
+            );
+          })}
         </div>
       </div>
 

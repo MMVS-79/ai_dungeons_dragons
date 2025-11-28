@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
       body.character.name,
       body.character.raceId,
       body.character.classId,
+      body.character.spritePath,
     );
 
     // Return both created objects with their generated IDs

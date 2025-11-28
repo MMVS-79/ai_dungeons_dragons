@@ -1,5 +1,5 @@
 /**
- * Game Service - COMPLETE REWRITE FOR NEW ARCHITECTURE
+ * Game Service
  * =====================================================
  * Key changes:
  * - Forced event engagement (no accept/reject)
@@ -180,7 +180,7 @@ export class GameService {
       };
     }
 
-    // Check boss encounter (event 48)
+    // Check if boss encounter
     if (nextEventNumber >= BALANCE_CONFIG.BOSS_FORCED_EVENT_START) {
       return await this.generateBossEncounter(action.campaignId, gameState);
     }
@@ -840,7 +840,6 @@ export class GameService {
     diceRoll: number,
   ): Promise<GameServiceResponse> {
     try {
-      //  Use actual event number from most recent event, not array length
       const eventNumber =
         gameState.recentEvents.length > 0
           ? gameState.recentEvents[0].eventNumber + 1
@@ -967,7 +966,7 @@ export class GameService {
     );
 
     // Build encounter message
-    const encounterMessage = `${encounterDescription}\n\n🔥 BOSS ENCOUNTER: ${boss.name}! (HP: ${boss.health}, ATK: ${boss.attack}, DEF: ${boss.defense})`;
+    const encounterMessage = `${encounterDescription}\n\n🔥🔥🔥 BOSS ENCOUNTER: ${boss.name}! (HP: ${boss.health}, ATK: ${boss.attack}, DEF: ${boss.defense})`;
 
     // LOG #1: Boss encounter
     await BackendService.saveEvent(campaignId, encounterMessage, "Combat", {
@@ -1649,8 +1648,8 @@ export class GameService {
     let enemy: Enemy | null = null;
     let combatState: GameState["combatState"] = undefined;
     let investigationPrompt: GameState["investigationPrompt"] = undefined;
-    let activeInventory = inventory; // Track which inventory to use
-    let activeCharacter = character; // Track which character stats to use
+    let activeInventory = inventory;
+    let activeCharacter = character;
 
     if (campaign.state === "game_over") {
       currentPhase = "game_over";
