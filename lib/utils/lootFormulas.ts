@@ -39,7 +39,7 @@
  */
 export function calculateItemRarity(
   eventNumber: number,
-  diceRoll: number
+  diceRoll: number,
 ): number {
   // Cursed items for bad rolls (1-5)
   // Gets progressively worse as campaign continues
@@ -82,7 +82,7 @@ export function calculateItemRarity(
  */
 export function calculateEnemyDifficulty(
   eventNumber: number,
-  diceRoll: number
+  diceRoll: number,
 ): number {
   const bossStart = BALANCE_CONFIG.BOSS_FORCED_EVENT_START;
 
@@ -138,7 +138,7 @@ export function calculateEnemyDifficulty(
  */
 export function calculateCombatRewardRarity(
   enemyDifficulty: number,
-  diceRoll: number
+  diceRoll: number,
 ): number {
   // Special enemies (Santa, Genie, Zeus) return exact difficulty as rarity
   if (
@@ -168,7 +168,7 @@ export function calculateCombatRewardRarity(
  */
 export function getRarityRange(
   targetRarity: number,
-  variance: number = 5
+  variance: number = 5,
 ): {
   min: number;
   max: number;
@@ -185,7 +185,7 @@ export function getRarityRange(
  */
 export function getDifficultyRange(
   targetDifficulty: number,
-  variance: number = 3
+  variance: number = 3,
 ): {
   min: number;
   max: number;

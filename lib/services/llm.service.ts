@@ -89,16 +89,16 @@ export class LLMService {
   // ==========================================================================
 
   public async generateCampaignIntroduction(
-    gameState: GameState
+    gameState: GameState,
   ): Promise<string> {
     // Get character race and class names from database
     const [raceRows] = await pool.query<RaceRow[]>(
       "SELECT name FROM races WHERE id = ?",
-      [gameState.character.raceId]
+      [gameState.character.raceId],
     );
     const [classRows] = await pool.query<ClassRow[]>(
       "SELECT name FROM classes WHERE id = ?",
-      [gameState.character.classId]
+      [gameState.character.classId],
     );
 
     const raceName = raceRows[0]?.name || "adventurer";
@@ -148,7 +148,7 @@ Your introduction:`;
    * Generate event type based on game context
    */
   public async generateEventType(
-    context: LLMContext
+    context: LLMContext,
   ): Promise<EventTypeString> {
     const recentEventsText =
       context.recentEvents.length > 0
@@ -158,7 +158,7 @@ Your introduction:`;
               (e) =>
                 `- Event ${e.eventNumber} (${
                   e.eventType
-                }): ${e.message.substring(0, 100)}...`
+                }): ${e.message.substring(0, 100)}...`,
             )
             .join("\n")
         : "No recent events";
@@ -222,7 +222,7 @@ Your response:`;
 
       // Fallback if invalid
       console.warn(
-        `[LLMService] Invalid event type "${eventType}", defaulting to Descriptive`
+        `[LLMService] Invalid event type "${eventType}", defaulting to Descriptive`,
       );
       return "Descriptive";
     } catch (error) {
@@ -241,7 +241,7 @@ Your response:`;
   public async generateDescription(
     eventType: string,
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield
+    lootItem?: Item | Weapon | Armour | Shield,
   ): Promise<string> {
     let prompt = "";
 
@@ -280,7 +280,7 @@ Your response:`;
     } catch (error) {
       console.error(
         `[LLMService] Error generating ${eventType} description:`,
-        error
+        error,
       );
       return this.getFallbackDescription(eventType, context, lootItem);
     }
@@ -307,7 +307,7 @@ Your description:`;
 
   private buildEnvironmentalPrompt(context: LLMContext): string {
     const healthPercent = Math.round(
-      (context.character.currentHealth / context.character.maxHealth) * 100
+      (context.character.currentHealth / context.character.maxHealth) * 100,
     );
 
     return `You are a D&D dungeon master. Create a description of an environmental event that will affect the character.
@@ -352,7 +352,7 @@ Your description:`;
    */
   private buildItemDropPrompt(
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield
+    lootItem?: Item | Weapon | Armour | Shield,
   ): string {
     // If no item provided (shouldnt happen), use generic prompt
     if (!lootItem) {
@@ -424,7 +424,7 @@ Your description:`;
   private getFallbackDescription(
     eventType: string,
     context: LLMContext,
-    lootItem?: Item | Weapon | Armour | Shield
+    lootItem?: Item | Weapon | Armour | Shield,
   ): string {
     const fallbacks: Record<string, string> = {
       Descriptive:
@@ -445,12 +445,12 @@ Your description:`;
             lootItem.name.toLowerCase().includes("potion")
               ? "a mystical vial"
               : lootItem.name.toLowerCase().includes("sword")
-              ? "a finely crafted blade"
-              : lootItem.name.toLowerCase().includes("shield")
-              ? "a sturdy shield"
-              : lootItem.name.toLowerCase().includes("armour")
-              ? "protective gear"
-              : "a valuable treasure"
+                ? "a finely crafted blade"
+                : lootItem.name.toLowerCase().includes("shield")
+                  ? "a sturdy shield"
+                  : lootItem.name.toLowerCase().includes("armour")
+                    ? "protective gear"
+                    : "a valuable treasure"
           } resting on a weathered stone pedestal.`
         : "Something glints in the dim light ahead—a small vial resting on a weathered stone pedestal, its contents swirling with an otherworldly glow.",
     };
@@ -467,10 +467,10 @@ Your description:`;
    * Validates and defaults to ensure non-zero values
    */
   public async requestStatBoost(
-    context: LLMContext
+    context: LLMContext,
   ): Promise<StatBoostResponse> {
     const healthPercent = Math.round(
-      (context.character.currentHealth / context.character.maxHealth) * 100
+      (context.character.currentHealth / context.character.maxHealth) * 100,
     );
 
     const prompt = `You are a D&D game master. Recommend a stat boost for an Environmental event based on the character's current state.
@@ -542,7 +542,7 @@ Your JSON response:`;
       const jsonMatch = text.match(/\{[^}]+\}/);
       if (!jsonMatch) {
         console.warn(
-          "[LLMService] No JSON object found in response, using intelligent default"
+          "[LLMService] No JSON object found in response, using intelligent default",
         );
         return this.getIntelligentStatBoost(context);
       }
@@ -560,11 +560,11 @@ Your JSON response:`;
       ];
       if (
         !validStatTypes.includes(
-          parsed.statType as "health" | "attack" | "defense"
+          parsed.statType as "health" | "attack" | "defense",
         )
       ) {
         console.warn(
-          `[LLMService] Invalid statType: "${parsed.statType}", using intelligent default`
+          `[LLMService] Invalid statType: "${parsed.statType}", using intelligent default`,
         );
         return this.getIntelligentStatBoost(context);
       }
@@ -573,7 +573,7 @@ Your JSON response:`;
       let baseValue = Number(parsed.baseValue);
       if (isNaN(baseValue)) {
         console.warn(
-          `[LLMService] Invalid baseValue: ${parsed.baseValue}, using intelligent default`
+          `[LLMService] Invalid baseValue: ${parsed.baseValue}, using intelligent default`,
         );
         return this.getIntelligentStatBoost(context);
       }
@@ -614,7 +614,7 @@ Your JSON response:`;
           statType: "health",
           baseValue: Math.floor(Math.random() * 4) - 5,
         }; // -5 to -2
-      } else if (negativeRoll < 0.80) {
+      } else if (negativeRoll < 0.8) {
         // 20% are attack debuffs
         return {
           statType: "attack",

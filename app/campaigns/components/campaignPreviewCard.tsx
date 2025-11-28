@@ -197,8 +197,7 @@ export default function CampaignPreviewCard({
                 {equipment.weapon ? (
                   <Image
                     src={
-                      equipment.weapon.spritePath ||
-                      "/drops/placeholder.png"
+                      equipment.weapon.spritePath || "/drops/placeholder.png"
                     }
                     alt={equipment.weapon.name}
                     width={30}
@@ -238,8 +237,7 @@ export default function CampaignPreviewCard({
                 {equipment.shield ? (
                   <Image
                     src={
-                      equipment.shield.spritePath ||
-                      "/drops/placeholder.png"
+                      equipment.shield.spritePath || "/drops/placeholder.png"
                     }
                     alt={equipment.shield.name}
                     width={30}
