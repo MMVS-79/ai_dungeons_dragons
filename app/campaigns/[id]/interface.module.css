@@ -248,3 +248,56 @@
     padding: 3px;
   }
 }
+
+/* Music Toggle Button */
+.musicToggle {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  z-index: 1000;
+  background: linear-gradient(to bottom right, #1a1a1a, #3a3a3a);
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.musicToggle:hover {
+  background: linear-gradient(to bottom right, #2a2a2a, #4a4a4a);
+  border-color: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(251, 191, 36, 0.4);
+}
+
+.musicToggle:active {
+  transform: scale(0.95);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .musicToggle {
+    top: 70px;
+    right: 15px;
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 550px) {
+  .musicToggle {
+    top: 60px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+}
