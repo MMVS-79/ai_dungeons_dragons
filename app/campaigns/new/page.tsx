@@ -38,8 +38,10 @@ export default function NewCampaignPage() {
   const [dbRaces, setDbRaces] = useState<Race[]>([]);
   const [dbClasses, setDbClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Track which steps have been completed (coworker's addition)
+  // Track which steps have been completed
   const [completedSteps, setCompletedSteps] = useState<Set<Step>>(new Set());
 
   // Fetch races and classes from database on mount
@@ -50,12 +52,19 @@ export default function NewCampaignPage() {
           fetch("/api/races"),
           fetch("/api/classes"),
         ]);
+
+        if (!racesRes.ok || !classesRes.ok) {
+          throw new Error("Failed to load character options");
+        }
+
         const { races } = await racesRes.json();
         const { classes } = await classesRes.json();
         setDbRaces(races);
         setDbClasses(classes);
       } catch {
-        // Failed to fetch character options
+        setFetchError(
+          "Failed to load character options. Please refresh the page.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -143,10 +152,19 @@ export default function NewCampaignPage() {
   };
 
   const handleStartCampaign = async () => {
+    if (isCreating) return; // Prevent double clicks
+
     try {
       if (!selectedRace?.id || !selectedClass?.id) {
         throw new Error("Invalid race or class selection");
       }
+
+      setIsCreating(true);
+
+      // Fetch race data to get sprite_path
+      const raceResponse = await fetch(`/api/races`);
+      const { races } = await raceResponse.json();
+      const raceData = races.find((r: any) => r.id === selectedRace.id);
 
       // Create campaign via API (accountId derived from session on server)
       const response = await fetch("/api/campaigns", {
@@ -159,6 +177,8 @@ export default function NewCampaignPage() {
             name: characterName,
             raceId: selectedRace.id,
             classId: selectedClass.id,
+            spritePath:
+              raceData?.sprite_path || "characters/player/warrior.png",
           },
         }),
       });
@@ -170,6 +190,7 @@ export default function NewCampaignPage() {
       const { campaign } = await response.json();
       router.push(`/campaigns/${campaign.id}`);
     } catch {
+      setIsCreating(false);
       alert("Failed to create campaign. Please try again.");
     }
   };
@@ -251,6 +272,8 @@ export default function NewCampaignPage() {
 
               {isLoading ? (
                 <p>Loading races...</p>
+              ) : fetchError ? (
+                <p className={styles.errorMessage}>{fetchError}</p>
               ) : (
                 <div className={styles.optionsContainer}>
                   {dbRaces.map((race) => (
@@ -283,6 +306,8 @@ export default function NewCampaignPage() {
 
               {isLoading ? (
                 <p>Loading classes...</p>
+              ) : fetchError ? (
+                <p className={styles.errorMessage}>{fetchError}</p>
               ) : (
                 <div className={styles.optionsContainer}>
                   {dbClasses.map((cls) => (
@@ -308,14 +333,19 @@ export default function NewCampaignPage() {
 
           {currentStep === "preview" && (
             <div className={styles.stepContent}>
-              <h1 className={styles.stepTitle}>Character Preview</h1>
+              <h1 className={styles.stepTitle}>Campaign Preview</h1>
               <p className={styles.stepDescription}>
-                Review your character before starting the campaign
+                Review your campaign and character before starting
               </p>
 
               <div className={styles.previewContainer}>
                 <div className={styles.previewSection}>
-                  <h3 className={styles.previewLabel}>Name</h3>
+                  <h3 className={styles.previewLabel}>Campaign Name</h3>
+                  <p className={styles.previewValue}>{campaignName}</p>
+                </div>
+
+                <div className={styles.previewSection}>
+                  <h3 className={styles.previewLabel}>Character Name</h3>
                   <p className={styles.previewValue}>{characterName}</p>
                 </div>
 
@@ -380,8 +410,9 @@ export default function NewCampaignPage() {
               <button
                 className={styles.startButton}
                 onClick={handleStartCampaign}
+                disabled={isCreating}
               >
-                Start Campaign
+                {isCreating ? "Creating..." : "Start Campaign"}
               </button>
             )}
           </div>

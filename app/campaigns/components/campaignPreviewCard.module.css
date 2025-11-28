@@ -1,0 +1,409 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 325px;
+  min-width: 325px;
+  height: 520px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  flex-shrink: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 40, 0.95) 0%,
+    rgba(20, 20, 30, 0.95) 100%
+  );
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(100, 100, 255, 0.05) 0%,
+    rgba(200, 100, 255, 0.05) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(150, 150, 255, 0.6);
+  box-shadow: 0 8px 24px rgba(100, 100, 255, 0.3);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+}
+
+.campaignName {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.turnNumber {
+  font-size: 1rem;
+  color: #fbbf24;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.startDate {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+/* Status Badges */
+.statusActive,
+.statusCompleted,
+.statusGameOver {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.statusActive {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.statusCompleted {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.statusGameOver {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* Content Area */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+}
+
+/* Character Section */
+.characterSection {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.characterImage {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.characterImage img {
+  object-fit: cover;
+}
+
+.characterStats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.characterName {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* HP Bar */
+.hpContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hpLabel {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.hpBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hpBarFill {
+  height: 100%;
+  background-color: #dc2626;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Stats */
+.stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.stat {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.statBase {
+  color: #fff;
+}
+
+.statBonus {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* Last Event */
+.lastEvent {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.lastEventLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.25rem;
+}
+
+.lastEventMessage {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  font-style: italic;
+  overflow-y: auto;
+  min-height: 54px;
+  max-height: 54px;
+}
+
+.lastEventMessage::-webkit-scrollbar {
+  width: 4px;
+}
+
+.lastEventMessage::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.lastEventMessage::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+/* Items Section (Equipment + Inventory) */
+.itemsSection {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Equipment Row */
+.equipmentRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.equipmentLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  min-width: 60px;
+}
+
+.equipmentSlots {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.equipSlot {
+  width: 35px;
+  height: 35px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.equipSlot.filled {
+  border-color: rgba(74, 222, 128, 0.5);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.equipSlot img {
+  object-fit: contain;
+}
+
+/* Inventory Row */
+.inventoryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.inventoryLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  min-width: 60px;
+  padding-top: 0.2rem;
+}
+
+.inventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.inventorySlot {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.inventorySlot.filled {
+  border-color: rgba(74, 222, 128, 0.5);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.inventorySlot img {
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.emptySlot {
+  font-size: 0.8rem;
+  opacity: 0.2;
+  color: #fff;
+}
+
+/* Footer */
+.footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.deleteButton {
+  width: 100%;
+  background-color: #c25858;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background-color: #bb6666;
+}
+
+/* Scrollbar for content */
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+

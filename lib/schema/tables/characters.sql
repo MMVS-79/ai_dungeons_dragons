@@ -21,4 +21,4 @@ CREATE TABLE characters (
     FOREIGN KEY (armour_id) REFERENCES armours (id) ON DELETE RESTRICT,
     FOREIGN KEY (weapon_id) REFERENCES weapons (id) ON DELETE RESTRICT,
     FOREIGN KEY (shield_id) REFERENCES shields (id) ON DELETE RESTRICT
-)
+);

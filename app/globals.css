@@ -24,7 +24,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--foreground-color);
-  /* Use gradient and keep it fixed */
   background: var(--light-gradient);
   background-attachment: fixed;   
   background-repeat: no-repeat;
