@@ -69,8 +69,8 @@ export class Stat_Calc {
       throw new Error(`[Stat_Calc] Invalid Roll_Value: ${rollValue}`);
     }
 
-    // Round to nearest integer and ensure non-negative
-    return Math.max(0, Math.round(finalValue));
+    // Round to nearest integer
+    return Math.round(finalValue);
   }
 
   /**
