@@ -1,0 +1,42 @@
+# .github/workflows/tests.yml
+
+name: Jest Tests
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  # Optional: You can also run this on pull_request if you want it 
+  # to run on the initial PR commit *before* auto-fixing happens.
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  run-tests:
+    name: Run Jest Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Ensure this checks out the latest state, which will include the auto-fix commit if run after the push.
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (Jest)
+        run: npm test
+        env:
+          CI: true
