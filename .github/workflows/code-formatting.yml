@@ -1,0 +1,111 @@
+name: Code Formatting and Auto-Fix
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  formatting-autofix:
+    name: Format and Lint (Auto-Fix)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_FOR_WORKFLOW }}
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install TypeScript + ESLint ecosystem (CI only)
+        run: |
+          npm install --no-save \
+            typescript \
+            eslint \
+            @typescript-eslint/parser \
+            @typescript-eslint/eslint-plugin \
+            eslint-plugin-react \
+            eslint-plugin-react-hooks \
+            eslint-plugin-jsx-a11y \
+            eslint-config-prettier \
+            prettier
+
+      - name: Find tracked source files
+        id: find_files
+        run: |
+          git ls-files 'app/**/*.[jt]s' 'app/**/*.[jt]sx' 'lib/**/*.[jt]s' 'lib/**/*.[jt]sx' 'src/**/*.[jt]s' 'src/**/*.[jt]sx' > files.txt || true
+          if [ ! -s files.txt ]; then
+            echo "No tracked source files found."
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_files=true" >> "$GITHUB_OUTPUT"
+            echo "Found $(wc -l < files.txt) source files"
+          fi
+
+      - name: Run Prettier on tracked files (if any)
+        if: steps.find_files.outputs.has_files == 'true'
+        run: |
+          if [ ! -s files.txt ]; then exit 0; fi
+          cat files.txt | xargs npx prettier --write || true
+
+      - name: Run ESLint --fix (tracked files, robust)
+        if: steps.find_files.outputs.has_files == 'true'
+        id: autofix
+        run: |
+          if [ ! -s files.txt ]; then exit 0; fi
+          cat files.txt | xargs npx eslint --fix --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern || true
+          
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "chore: auto-format source files (Prettier + ESLint)"
+          # The checkout token makes this push trigger other workflows
+          git push
+
+      - name: Comment on PR
+        if: steps.git-check.outputs.changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✨ Code has been auto-formatted with Prettier and ESLint. The full test suite is now running on the corrected code base.'
+            })
+            
+      - name: Run ESLint (final error check)
+        if: steps.find_files.outputs.has_files == 'true'
+        run: |
+          echo "Linting $(wc -l < files.txt) files for unfixable errors..."
+          if cat files.txt | xargs npx eslint --quiet --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern; then
+            echo "✅ ESLint passed - no unfixable errors found!"
+          else
+            echo "❌ ESLint failed - unfixable errors found above. Fix manually."
+            exit 1
+          fi
+          

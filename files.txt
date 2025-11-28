@@ -15,7 +15,9 @@ app/campaigns/[id]/page.tsx
 app/campaigns/components/campaignPreviewCard.tsx
 app/campaigns/new/page.tsx
 app/campaigns/page.tsx
+app/components/HeroSection.tsx
 app/components/Navbar.tsx
+app/components/TeamMember.tsx
 app/login/page.tsx
 app/services/background-music.service.ts
 lib/services/backend.service.ts
