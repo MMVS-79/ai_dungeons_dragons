@@ -20,7 +20,7 @@ const config: Config = {
   },
   
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*@(google/genai)|.*lib.*)/)',
+    '/node_modules/(?!(.*@google/genai|.*lib.*)/)',
   ],
   
   testMatch: [
