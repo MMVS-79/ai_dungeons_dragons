@@ -1250,17 +1250,22 @@ export class GameService {
       }
 
       // NORMAL ENEMY: Process combat rewards
-      const rewardRoll = Math.random();
       let rewardEquipment: Weapon | Armour | Shield | Item | null = null;
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.8) {
-        // EQUIPMENT REWARD (80%)
-        rewardRarity = calculateCombatRewardRarity(
-          snapshot.enemy.difficulty,
-          diceRoll
-        );
+      // Calculate reward rarity first
+      rewardRarity = calculateCombatRewardRarity(
+        snapshot.enemy.difficulty,
+        diceRoll
+      );
+
+      // SPECIAL ENEMIES (300/500/700) ALWAYS DROP EQUIPMENT
+      const isSpecialEnemy =
+        rewardRarity === 300 || rewardRarity === 500 || rewardRarity === 700;
+
+      if (isSpecialEnemy) {
+        // GUARANTEED LEGENDARY EQUIPMENT for special enemies
         const { message, equipment } = await this.processCombatRewards(
           snapshot,
           rewardRarity
@@ -1268,33 +1273,50 @@ export class GameService {
         rewardMessage = message;
         rewardEquipment = equipment;
       } else {
-        // ITEM REWARD (20%)
-        // Check snapshot inventory, not database inventory
-        const MAX_INVENTORY = 10;
+        // NORMAL ENEMY: 80% equipment, 20% item
+        const rewardRoll = Math.random();
 
-        // Use snapshot inventory count (reflects items used during combat)
-        const currentInventoryCount = snapshot.inventorySnapshot.length;
-
-        if (currentInventoryCount >= MAX_INVENTORY) {
-          rewardMessage = `💰 Victory Rewards:\nYou found an item, but your inventory is full!`;
-          rewardRarity = 0;
-        } else {
-          // Combat rewards should NEVER give negative items (cursed items)
-          // Use combat reward formula which is based on enemy difficulty
+        if (rewardRoll < 0.8) {
+          // EQUIPMENT REWARD (80%)
           rewardRarity = calculateCombatRewardRarity(
             snapshot.enemy.difficulty,
             diceRoll
           );
-
-          const item = await BackendService.getItemByRarity(rewardRarity);
-
-          await BackendService.addItemToInventory(
-            snapshot.characterSnapshot.id,
-            item.id
+          const { message, equipment } = await this.processCombatRewards(
+            snapshot,
+            rewardRarity
           );
+          rewardMessage = message;
+          rewardEquipment = equipment;
+        } else {
+          // ITEM REWARD (20%)
+          // Check snapshot inventory, not database inventory
+          const MAX_INVENTORY = 10;
 
-          rewardMessage = `💰 Victory Rewards:\nYou found: ${item.name}! (${item.description})`;
-          rewardEquipment = item;
+          // Use snapshot inventory count (reflects items used during combat)
+          const currentInventoryCount = snapshot.inventorySnapshot.length;
+
+          if (currentInventoryCount >= MAX_INVENTORY) {
+            rewardMessage = `💰 Victory Rewards:\nYou found an item, but your inventory is full!`;
+            rewardRarity = 0;
+          } else {
+            // Combat rewards should NEVER give negative items (cursed items)
+            // Use combat reward formula which is based on enemy difficulty
+            rewardRarity = calculateCombatRewardRarity(
+              snapshot.enemy.difficulty,
+              diceRoll
+            );
+
+            const item = await BackendService.getItemByRarity(rewardRarity);
+
+            await BackendService.addItemToInventory(
+              snapshot.characterSnapshot.id,
+              item.id
+            );
+
+            rewardMessage = `💰 Victory Rewards:\nYou found: ${item.name}! (${item.description})`;
+            rewardEquipment = item;
+          }
         }
       }
       const finalMessage = `${combatMessage}\n\n${rewardMessage}`;

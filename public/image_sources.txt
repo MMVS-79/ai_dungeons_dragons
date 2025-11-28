@@ -97,6 +97,7 @@ https://www.flaticon.com/free-icon/dragon_2332588
 https://www.flaticon.com/free-icon/dragon_4413197 // black dragon
 https://www.flaticon.com/free-icon/griffin_6007998
 https://www.flaticon.com/free-icon/chimera_2332571
+https://www.flaticon.com/free-icon/devil_2332577
 
 // high tier
 https://www.flaticon.com/free-icon/monster_2332614 // troll

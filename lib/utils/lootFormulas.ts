@@ -12,26 +12,26 @@
 
 /**
  * Calculate item rarity for exploration item drops
- * 
+ *
  * CURSED ITEMS (dice_roll <= 5):
  * Progressive system - worse items appear later in campaign
  * Formula: -(eventNumber / 4 + (6 - diceRoll) * 5)
- * 
+ *
  * Early game (turns 1-20):
  * - Roll 5: -5 to -10 rarity (very mild curses)
  * - Roll 1: -25 to -30 rarity (moderate curses)
- * 
+ *
  * Mid game (turns 20-40):
  * - Roll 5: -10 to -15 rarity (mild curses)
  * - Roll 1: -30 to -35 rarity (strong curses)
- * 
+ *
  * Late game (turns 40-60):
  * - Roll 5: -15 to -20 rarity (moderate curses)
  * - Roll 1: -35 to -40 rarity (devastating curses)
- * 
+ *
  * POSITIVE ITEMS (dice_roll >= 6):
  * Formula: (event_number * ITEM_EVENT_NUMBER_WEIGHT + dice_roll * ITEM_DICE_ROLL_WEIGHT)
- * 
+ *
  * Examples:
  * - Event 1, Roll 10: 1 + 20 = 21 rarity (low-tier items)
  * - Event 30, Roll 15: 30 + 30 = 60 rarity (mid-tier items)
@@ -39,7 +39,7 @@
  */
 export function calculateItemRarity(
   eventNumber: number,
-  diceRoll: number,
+  diceRoll: number
 ): number {
   // Cursed items for bad rolls (1-5)
   // Gets progressively worse as campaign continues
@@ -47,7 +47,7 @@ export function calculateItemRarity(
     const progressionComponent = eventNumber / 4; // 0 at start, 15 at turn 60
     const rollPenalty = (6 - diceRoll) * 5; // 5 for roll 5, 25 for roll 1
     const curseRarity = -(progressionComponent + rollPenalty);
-    
+
     // Round and ensure we don't go beyond what's in database
     return Math.round(Math.max(curseRarity, -60));
   }
@@ -82,17 +82,28 @@ export function calculateItemRarity(
  */
 export function calculateEnemyDifficulty(
   eventNumber: number,
-  diceRoll: number,
+  diceRoll: number
 ): number {
-  // Check for special enemy encounter (5% chance in last 5-9 turns)
-  if (eventNumber >= BALANCE_CONFIG.SPECIAL_ENEMY_START_TURN && eventNumber <= BALANCE_CONFIG.SPECIAL_ENEMY_END_TURN) {
-    const specialChance = Math.random();
-    if (specialChance <= BALANCE_CONFIG.SPECIAL_ENEMY_CHANCE) {
-      // 5% chance
-      // Randomly select one of the three special enemies
-      const specialEnemies = [300, 500, 700]; // Santa, Genie, Zeus
-      const randomIndex = Math.floor(Math.random() * specialEnemies.length);
-      return specialEnemies[randomIndex];
+  const bossStart = BALANCE_CONFIG.BOSS_FORCED_EVENT_START;
+
+  // Santa: 9-8 turns before boss
+  if (eventNumber >= bossStart - 9 && eventNumber <= bossStart - 8) {
+    if (Math.random() <= BALANCE_CONFIG.SPECIAL_ENEMY_CHANCE) {
+      return 300; // Santa Claus
+    }
+  }
+
+  // Zeus: 7-6 turns before boss
+  if (eventNumber >= bossStart - 7 && eventNumber <= bossStart - 6) {
+    if (Math.random() <= BALANCE_CONFIG.SPECIAL_ENEMY_CHANCE) {
+      return 500; // Zeus
+    }
+  }
+
+  // Genie: 5-4 turns before boss
+  if (eventNumber >= bossStart - 5 && eventNumber <= bossStart - 4) {
+    if (Math.random() <= BALANCE_CONFIG.SPECIAL_ENEMY_CHANCE) {
+      return 700; // Genie
     }
   }
 
@@ -127,10 +138,14 @@ export function calculateEnemyDifficulty(
  */
 export function calculateCombatRewardRarity(
   enemyDifficulty: number,
-  diceRoll: number,
+  diceRoll: number
 ): number {
   // Special enemies (Santa, Genie, Zeus) return exact difficulty as rarity
-  if (enemyDifficulty === 300 || enemyDifficulty === 500 || enemyDifficulty === 700) {
+  if (
+    enemyDifficulty === 300 ||
+    enemyDifficulty === 500 ||
+    enemyDifficulty === 700
+  ) {
     return enemyDifficulty;
   }
 
@@ -153,7 +168,7 @@ export function calculateCombatRewardRarity(
  */
 export function getRarityRange(
   targetRarity: number,
-  variance: number = 5,
+  variance: number = 5
 ): {
   min: number;
   max: number;
@@ -170,7 +185,7 @@ export function getRarityRange(
  */
 export function getDifficultyRange(
   targetDifficulty: number,
-  variance: number = 3,
+  variance: number = 3
 ): {
   min: number;
   max: number;
@@ -207,11 +222,9 @@ export const BALANCE_CONFIG = {
 
   // Campaign constants
   BOSS_DIFFICULTY_THRESHOLD: 1000,
-  MAX_EVENT_NUMBER: 62, // Updated from 50 to 62 for 60-turn campaign
-  BOSS_FORCED_EVENT_START: 60, // Updated from 48 to 60
-  
+  MAX_EVENT_NUMBER: 62,
+  BOSS_FORCED_EVENT_START: 60,
+
   // Special enemy constants
-  SPECIAL_ENEMY_START_TURN: 5,
-  SPECIAL_ENEMY_END_TURN: 30,
-  SPECIAL_ENEMY_CHANCE: 1, // 5% chance
+  SPECIAL_ENEMY_CHANCE: 0.1,
 };

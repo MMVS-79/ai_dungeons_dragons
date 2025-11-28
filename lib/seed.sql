@@ -43,10 +43,11 @@ INSERT INTO enemies (name, difficulty, health, attack, defense, sprite_path) VAL
 ('Minotaur',   110, 130, 32, 10, '/characters/enemy/high/minotaur.png'),
 
 -- BOSSES (Difficulty 1000+) - Turn 61+ forced
-('Griffin',        1000, 180, 30, 14, '/characters/enemy/boss/griffin.png'),
-('Chimera',        1001, 200, 32, 15, '/characters/enemy/boss/chimera.png'),
-('Black Dragon',   1002, 220, 34, 16, '/characters/enemy/boss/black_dragon.png'),
-('Ancient Dragon', 1003, 250, 38, 16, '/characters/enemy/boss/dragon.png'),
+('Griffin',        1000, 250, 32, 16, '/characters/enemy/boss/griffin.png'),
+('Chimera',        1001, 200, 38, 14, '/characters/enemy/boss/chimera.png'),
+('Black Dragon',   1002, 220, 34, 18, '/characters/enemy/boss/black_dragon.png'),
+('Ancient Dragon', 1003, 250, 38, 18, '/characters/enemy/boss/dragon.png'),
+('Demon King',     1004, 300, 40, 20, '/characters/enemy/boss/demon_king.png'),
 
 -- SPECIAL ENEMIES (5% chance turns 56-60)
 ('Santa Claus', 300, 400, 25, 11, '/characters/enemy/other/santa_claus.png'),  -- HP tank
