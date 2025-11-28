@@ -17,6 +17,7 @@ app/campaigns/new/page.tsx
 app/campaigns/page.tsx
 app/components/Navbar.tsx
 app/login/page.tsx
+lib/services/api.frontend.test.ts
 lib/services/backend.service.ts
 lib/services/game.service.ts
 lib/services/llm.service.ts
