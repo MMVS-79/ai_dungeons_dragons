@@ -197,17 +197,6 @@ INSERT INTO character_items (character_id, item_id) VALUES
 (3, 19),
 (8, 2);
 
-INSERT INTO chats (campaign_id, conversation_path) VALUES (101, 'conversations/campaign_101.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (102, 'conversations/campaign_102.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (103, 'conversations/campaign_103.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (104, 'conversations/campaign_104.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (105, 'conversations/campaign_105.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (106, 'conversations/campaign_106.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (107, 'conversations/campaign_107.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (108, 'conversations/campaign_108.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (109, 'conversations/campaign_109.json');
-INSERT INTO chats (campaign_id, conversation_path) VALUES (110, 'conversations/campaign_110.json');
-
 INSERT INTO enemies (name, difficulty, health, attack, defense, sprite_path) VALUES ('Goblin #1', 8, 192, 13, 8, 'sprites/enemies/enemy_1.png');
 INSERT INTO enemies (name, difficulty, health, attack, defense, sprite_path) VALUES ('Skeleton #2', 2, 131, 24, 15, 'sprites/enemies/enemy_2.png');
 INSERT INTO enemies (name, difficulty, health, attack, defense, sprite_path) VALUES ('Wolf #3', 7, 389, 15, 9, 'sprites/enemies/enemy_3.png');
