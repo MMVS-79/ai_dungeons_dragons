@@ -1,98 +1,508 @@
 .mainGrid {
-  gap: 16px;
-  padding-top: 220px;
+  gap: 0;
+  padding-top: 0;
   color: var(--foreground);
+  width: 100%;
+  overflow-x: hidden;
 }
 
-.mainInfo {
-  align-items: center;
-  padding: 0 10% 200px;
-  gap: 24px;
-  line-height: 1.4;
+/* ========================================
+   FEATURES SECTION (Why DumbgeonsAI?)
+   ======================================== */
+.featuresSection {
+  padding: 100px 8% 80px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  position: relative;
 }
 
-.mainInfo h1 {
+.featuresSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to bottom, #0a0a0a, transparent);
+  pointer-events: none;
+}
+
+.sectionTitle {
   font-size: 52px;
   font-weight: bold;
-  margin-bottom: 30px;
+  text-align: center;
+  margin-bottom: 20px;
+  color: white;
+  background: linear-gradient(135deg, #ffffff 0%, #d0d0d0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.mainInfoBody {
+.sectionSubtitle {
+  font-size: 20px;
+  text-align: center;
+  color: #999;
+  margin-bottom: 70px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.featuresGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.mainInfoText {
-  font-size: 32px;
-  text-align: justify;
-  color: #ccc;
-  width: auto;
-  min-width: 400px;
+.featureCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 50px 35px;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.mainInfoImage {
+.featureCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(170, 85, 85, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.featureCard:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(170, 85, 85, 0.3);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.featureCard:hover::before {
+  opacity: 1;
+}
+
+.featureIcon {
+  font-size: 72px;
+  margin-bottom: 25px;
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.featureCard:hover .featureIcon {
+  transform: scale(1.1) translateY(-5px);
+}
+
+.featureTitle {
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 18px;
+  line-height: 1.3;
+}
+
+.featureDescription {
+  font-size: 17px;
+  color: #b0b0b0;
+  line-height: 1.7;
+}
+
+/* ========================================
+   HOW IT WORKS SECTION
+   ======================================== */
+.howItWorksSection {
+  padding: 100px 8% 80px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #151515 100%);
+  position: relative;
+}
+
+.stepsContainer {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  flex-wrap: nowrap;
+  position: relative;
+}
+
+.step {
+  flex: 1;
+  min-width: 280px;
+  max-width: 380px;
+  text-align: center;
+  padding: 50px 40px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.step:first-child {
+  border-radius: 20px 0 0 20px;
+}
+
+.step:last-child {
+  border-radius: 0 20px 20px 0;
+}
+
+.step:only-child {
+  border-radius: 20px;
+}
+
+.step:hover {
+  background: linear-gradient(135deg, rgba(170, 85, 85, 0.15) 0%, rgba(170, 85, 85, 0.05) 100%);
+  transform: scale(1.05);
+  z-index: 2;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.stepNumber {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #aa5555 0%, #cc6666 100%);
+  color: white;
+  font-size: 36px;
+  font-weight: bold;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: auto;
+  margin: 0 auto 25px;
+  box-shadow: 0 8px 20px rgba(170, 85, 85, 0.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mainInfoImage img {
-  padding-top: 8px;
-  height: 100%;
-  max-height: 300px;
+.step:hover .stepNumber {
+  transform: scale(1.15) rotate(360deg);
+  box-shadow: 0 12px 30px rgba(170, 85, 85, 0.6);
 }
 
-@media (max-width: 1024px) {
-  .mainInfoBody {
-    grid-template-columns: 1fr;
-  }
-
-  .mainInfoImage {
-    margin-top: 100px;
-    width: 100%;
-  }
+.stepTitle {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 15px;
+  line-height: 1.3;
 }
 
-/* about us section */
+.stepDescription {
+  font-size: 16px;
+  color: #b0b0b0;
+  line-height: 1.7;
+}
+
+.stepArrow {
+  font-size: 40px;
+  color: rgba(170, 85, 85, 0.4);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  z-index: 0;
+  margin: 0 -1px;
+}
+
+/* ========================================
+   ABOUT US SECTION
+   ======================================== */
 .aboutUs {
   display: grid;
   grid-template-columns: 1fr;
   justify-self: center;
-  margin: 0 10% 250px;
+  padding: 100px 8% 80px;
+  background: linear-gradient(180deg, #151515 0%, #0a0a0a 100%);
+  width: 100%;
 }
 
 .aboutUs h2 {
   font-weight: 700;
-  font-size: 36px;
-  margin-bottom: 25px;
-  text-align: center;   
+  font-size: 52px;
+  margin-bottom: 30px;
+  text-align: center;
+  color: white;
+  background: linear-gradient(135deg, #ffffff 0%, #d0d0d0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.aboutUs h3 {
-  font-weight: 700;
+.aboutUsDescription {
   font-size: 18px;
-  margin-bottom: 45px;
-  text-align: center;   
+  line-height: 1.8;
+  color: #b0b0b0;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto 25px;
+  padding: 0 20px;
+}
+
+.aboutUsDescription em {
+  color: #fbbf24;
+  font-style: italic;
+  font-weight: 600;
 }
 
 .aboutUsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  row-gap: 100px;
-  column-gap: 100px;
-  justify-self: center;
-  margin-bottom: 200px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 50px;
+  justify-items: center;
+  margin-top: 70px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-@media (max-width: 1100px) and (min-width: 769px) {
+/* Tablet: 2 columns */
+@media (max-width: 1100px) {
   .aboutUsGrid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* Mobile: 1 column */
 @media (max-width: 768px) {
   .aboutUsGrid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ========================================
+   CTA SECTION
+   ======================================== */
+.ctaSection {
+  padding: 100px 8%;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.ctaSection::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(170, 85, 85, 0.1) 0%, transparent 70%);
+  animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.ctaContent {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.ctaTitle {
+  font-size: 52px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 25px;
+  background: linear-gradient(135deg, #ffffff 0%, #d0d0d0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ctaDescription {
+  font-size: 20px;
+  color: #b0b0b0;
+  margin-bottom: 45px;
+  line-height: 1.6;
+}
+
+.ctaButton {
+  display: inline-block;
+  padding: 22px 65px;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(135deg, #aa5555 0%, #cc6666 100%);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(170, 85, 85, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.ctaButton::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ctaButton:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.ctaButton:hover {
+  background: linear-gradient(135deg, #cc6666 0%, #dd7777 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(170, 85, 85, 0.6);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 1200px) {
+  .stepsContainer {
+    flex-wrap: wrap;
+  }
+
+  .step {
+    border-radius: 20px !important;
+  }
+
+  .stepArrow {
+    transform: rotate(90deg);
+    font-size: 36px;
+    width: 100%;
+    justify-content: center;
+    margin: 20px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .sectionTitle,
+  .aboutUs h2,
+  .ctaTitle {
+    font-size: 38px;
+  }
+
+  .featuresSection,
+  .howItWorksSection,
+  .aboutUs,
+  .ctaSection {
+    padding: 60px 5%;
+  }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .featureCard {
+    padding: 40px 30px;
+  }
+
+  .featureIcon {
+    font-size: 60px;
+  }
+
+  .featureTitle {
+    font-size: 22px;
+  }
+
+  .step {
+    padding: 40px 30px;
+  }
+
+  .stepNumber {
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+  }
+
+  .stepTitle {
+    font-size: 20px;
+  }
+
+  .aboutUsGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .ctaButton {
+    font-size: 20px;
+    padding: 18px 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionTitle,
+  .aboutUs h2,
+  .ctaTitle {
+    font-size: 32px;
+  }
+
+  .sectionSubtitle,
+  .aboutUsDescription,
+  .ctaDescription {
+    font-size: 16px;
+  }
+
+  .featuresSection,
+  .howItWorksSection,
+  .aboutUs,
+  .ctaSection {
+    padding: 50px 5%;
+  }
+
+  .featureCard {
+    padding: 35px 25px;
+  }
+
+  .featureIcon {
+    font-size: 56px;
+  }
+
+  .step {
+    padding: 35px 25px;
+  }
+
+  .ctaButton {
+    font-size: 18px;
+    padding: 16px 40px;
+  }
+}
+
+/* ========================================
+   SMOOTH SCROLL BEHAVIOR
+   ======================================== */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ========================================
+   SELECTION STYLING
+   ======================================== */
+::selection {
+  background-color: rgba(170, 85, 85, 0.3);
+  color: white;
+}
+
+::-moz-selection {
+  background-color: rgba(170, 85, 85, 0.3);
+  color: white;
 }
