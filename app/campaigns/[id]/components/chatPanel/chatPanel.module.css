@@ -15,7 +15,7 @@
   font-weight: bold;
   color: #f1f5f9;
   margin-bottom: 0.75rem;
-  flex-shrink: 0; /* Prevents header from shrinking */
+  flex-shrink: 0;
 }
 
 .messagesContainer {
@@ -28,7 +28,7 @@
   gap: 0.75rem;
   border: 2px solid white;
   border-radius: 5px;
-  min-height: 0; /* Important: allows flex child to shrink below content size */
+  min-height: 0;
 }
 
 .message {
@@ -37,13 +37,13 @@
   margin: 0 0.75rem;
   padding: 0.75rem;
   color: #ffffff;
-  flex-shrink: 0; /* Prevents individual messages from shrinking */
+  flex-shrink: 0;
 }
 
 .choicesContainer {
   display: flex;
   gap: 0.5rem;
-  flex-shrink: 0; /* Prevents choices from shrinking */
+  flex-shrink: 0;
 }
 
 .choiceButton {
@@ -65,4 +65,61 @@
 .choiceButton:disabled {
   background-color: #666666;
   cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .panel {
+    padding: 0.75rem;
+    height: auto;
+    min-height: 400px;
+  }
+
+  .messagesContainer {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 550px) {
+  .panel {
+    padding: 0.75rem;
+    height: auto;
+    min-height: 400px;
+  }
+
+  .header {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .messagesContainer {
+    max-height: 300px;
+  }
+
+  .message {
+    font-size: 0.85rem;
+    padding: 0.6rem;
+  }
+
+  .choicesContainer {
+    gap: 0.5rem;
+  }
+
+  .choiceButton {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+  }
+
+  .inputContainer {
+    gap: 0.5rem;
+  }
+
+  .input {
+    font-size: 0.85rem;
+    padding: 0.6rem;
+  }
+
+  .sendButton {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
 }

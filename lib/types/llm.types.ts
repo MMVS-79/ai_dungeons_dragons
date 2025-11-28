@@ -26,7 +26,7 @@ export type EventTypeString =
   | "Item_Drop"; // Items found or lost
 
 // Event history entry (what gets saved and passed as context to LLM)
-export interface EventHistoryEntry {
+interface EventHistoryEntry {
   description: string; // What happened in the event
   type: EventTypeString; // Event type for context
   effects: {

@@ -114,3 +114,40 @@
   color: #d97706;
   font-style: italic;
 }
+
+@media (max-width: 550px) {
+  .panel {
+    padding: 0.75rem;
+    max-height: 400px;
+  }
+
+  .header {
+    font-size: 1rem;
+  }
+
+  .eventHeader {
+    font-size: 1rem;
+  }
+
+  .enemyImage,
+  .itemImage {
+    width: 150px;
+    max-width: 150px;
+  }
+
+  .statsContainer {
+    margin-top: 0.75rem;
+  }
+
+  .statRow {
+    font-size: 0.8rem;
+  }
+
+  .itemName {
+    font-size: 0.9rem;
+  }
+
+  .itemDescription {
+    font-size: 0.8rem;
+  }
+}

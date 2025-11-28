@@ -4,6 +4,8 @@
   align-items: center;
   padding: 40px 40px;
   margin: 10px 10% 0;
+  min-height: calc(100vh - 20px);
+  position: relative;
 }
 
 .header {
@@ -16,9 +18,29 @@
 .innerContainer {
   width: 100%;
   padding: 20px 0px;
-  overflow-x: auto; /* horizontal scroll for panels */
+  overflow-x: scroll; /* always show scrollbar */
   padding-bottom: 1rem;
   border-top: 1px solid grey;
+}
+
+.innerContainer::-webkit-scrollbar {
+  height: 12px;
+}
+
+.innerContainer::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.innerContainer::-webkit-scrollbar-thumb {
+  background: linear-gradient(to right, #6b7280, #9ca3af);
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+}
+
+.innerContainer::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to right, #9ca3af, #d1d5db);
 }
 
 .panelsContainer {
@@ -35,7 +57,7 @@
   justify-content: center;
   width: 325px;
   min-width: 250px;
-  height: 55vh;
+  height: 520px;
   border: 1px dashed grey;
   border-radius: 12px;
   cursor: pointer;
@@ -80,7 +102,7 @@
 
 .campaignPanel:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-3px); /* lift effect on hover */
+  transform: translateY(-3px);
 }
 
 .campaignInfo {
@@ -190,7 +212,7 @@
   color: white;
 }
 
-.modalButtonCancel:hover {
+.modalButtonCancel:hover:not(:disabled) {
   background-color: #5a6578;
   transform: translateY(-2px);
 }
@@ -200,7 +222,65 @@
   color: white;
 }
 
-.modalButtonConfirm:hover {
+.modalButtonConfirm:hover:not(:disabled) {
   background-color: #cc6666;
   transform: translateY(-2px);
+}
+
+.modalButtonCancel:disabled,
+.modalButtonConfirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mobile screens below 550px */
+@media (max-width: 550px) {
+  .pageContainer {
+    padding: 20px 10px;
+    margin: 10px 2% 0;
+    padding-top: 80px;
+  }
+
+  .header {
+    font-size: 32px;
+    margin-bottom: 1rem;
+  }
+
+  .innerContainer {
+    padding: 10px 0;
+  }
+
+  .panelsContainer {
+    gap: 15px;
+  }
+
+  .newCampaignPanel,
+  .campaignPanel {
+    width: 240px;
+    min-width: 240px;
+    padding: 0.75rem;
+  }
+
+  .plusCircle {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .pageContainer {
+    padding: 15px 5px;
+  }
+
+  .header {
+    font-size: 28px;
+  }
+
+  .newCampaignPanel,
+  .campaignPanel {
+    width: 180px;
+    min-width: 180px;
+  }
 }

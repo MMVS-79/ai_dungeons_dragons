@@ -1,7 +1,6 @@
 /**
- * Backend Service (Database Layer) - UPDATED FOR NEW ARCHITECTURE
+ * Backend Service (Database Layer)
  * ================================================================
- * Complete database abstraction layer with full implementations
  *
  * KEY FEATURES:
  * - Character operations with equipment and inventory loading
@@ -180,25 +179,6 @@ function mapCampaignRow(row: CampaignRow): Campaign {
   };
 }
 
-/*export interface RaceRow {
-  id: number;
-  name: string;
-  health: number;
-  attack: number;
-  defense: number;
-  sprite_path?: string;
-}
-
-export interface ClassRow {
-  id: number;
-  name: string;
-  health: number;
-  attack: number;
-  defense: number;
-  sprite_path?: string;
-}
-*/
-
 async function getRace(id: number): Promise<RaceRow> {
   const sql = `SELECT * FROM races WHERE id = ?`;
   const [rows] = await pool.query<RaceRow[]>(sql, [id]);
@@ -240,6 +220,7 @@ export async function createCharacter(
   name: string,
   raceId: number,
   classId: number,
+  spritePath?: string | "characters/player/warrior.png",
 ): Promise<Character> {
   try {
     // 1. Load race + class data
@@ -251,7 +232,10 @@ export async function createCharacter(
     const baseAttack = race.attack + cls.attack;
     const baseDefense = race.defense + cls.defense;
 
-    // 3. Insert the new character
+    // 3. Use provided spritePath, or fall back to race sprite_path
+    const characterSprite = spritePath || race.sprite_path || null;
+
+    // 4. Insert the new character
     const sql = `
       INSERT INTO characters (
         name, current_health, max_health,
@@ -267,7 +251,7 @@ export async function createCharacter(
       baseHealth, // max
       baseAttack,
       baseDefense,
-      null, // sprite_path for character
+      characterSprite, // sprite_path for character
       campaignId,
       raceId,
       classId,
@@ -275,7 +259,7 @@ export async function createCharacter(
 
     const newId = result.insertId;
 
-    // 4. Return it using same mapping as getCharacter
+    // 5. Return it using same mapping as getCharacter
     return await getCharacter(newId);
   } catch (err) {
     console.error("[BackendService] createCharacter failed:", err);
@@ -931,6 +915,33 @@ export async function getCampaign(campaignId: number): Promise<Campaign> {
 }
 
 /**
+ * Verify campaign exists and belongs to the specified account
+ *
+ * @param campaignId - Campaign ID to verify
+ * @param accountId - Account ID that should own the campaign
+ * @returns Campaign object if ownership is verified
+ * @throws Error if campaign not found or doesn't belong to account
+ *
+ * Use this instead of getCampaign() in API routes that need authorization.
+ * Returns 404-style error to prevent ID enumeration attacks.
+ */
+export async function verifyCampaignOwnership(
+  campaignId: number,
+  accountId: number,
+): Promise<Campaign> {
+  const [rows] = await pool.query<CampaignRow[]>(
+    "SELECT * FROM campaigns WHERE id = ? AND account_id = ?",
+    [campaignId, accountId],
+  );
+
+  if (rows.length === 0) {
+    throw new Error("Campaign not found or access denied");
+  }
+
+  return mapCampaignRow(rows[0]);
+}
+
+/**
  * Update campaign state
  */
 export async function updateCampaign(
@@ -981,7 +992,7 @@ export async function getCampaignsByAccount(
   try {
     // Query all campaigns for this user, ordered by most recently updated first
     const sql =
-      "SELECT * FROM campaigns WHERE account_id = ? ORDER BY updated_at DESC";
+      "SELECT * FROM campaigns WHERE account_id = ? ORDER BY created_at DESC";
 
     // Execute query and map database rows to Campaign objects
     const [rows] = await pool.query<CampaignRow[]>(sql, [accountId]);

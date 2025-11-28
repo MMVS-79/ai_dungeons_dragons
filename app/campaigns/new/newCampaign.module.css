@@ -396,6 +396,23 @@
   background: #66bb66;
 }
 
+.startButton:disabled {
+  background: rgba(85, 170, 85, 0.4);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Error message */
+.errorMessage {
+  color: #ff6b6b;
+  font-size: 18px;
+  padding: 20px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .sidePanel {
@@ -408,7 +425,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .pageContainer {
     flex-direction: column;
     padding-top: 120px;

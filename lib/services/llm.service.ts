@@ -89,7 +89,6 @@ export class LLMService {
   // ==========================================================================
 
   public async generateCampaignIntroduction(
-    campaignId: number,
     gameState: GameState,
   ): Promise<string> {
     // Get character race and class names from database
@@ -355,7 +354,7 @@ Your description:`;
     context: LLMContext,
     lootItem?: Item | Weapon | Armour | Shield,
   ): string {
-    // If no item provided (shouldn't happen), use generic prompt
+    // If no item provided (shouldnt happen), use generic prompt
     if (!lootItem) {
       return `You are a D&D dungeon master. Create a description of discovering loot.
 
@@ -469,7 +468,6 @@ Your description:`;
    */
   public async requestStatBoost(
     context: LLMContext,
-    eventType: string,
   ): Promise<StatBoostResponse> {
     const healthPercent = Math.round(
       (context.character.currentHealth / context.character.maxHealth) * 100,

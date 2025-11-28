@@ -108,3 +108,28 @@
   height: 100%;
   transition: width 0.3s ease;
 }
+
+@media (max-width: 550px) {
+  .panel {
+    padding: 0.75rem;
+    max-height: 400px;
+  }
+
+  .header {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .characterImage {
+    width: 180px;
+    height: 180px;
+  }
+
+  .characterName {
+    font-size: 1rem;
+  }
+
+  .statRow {
+    font-size: 0.8rem;
+  }
+}

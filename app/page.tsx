@@ -11,15 +11,16 @@ export default function Landing() {
 
           <div className={styles.mainInfoBody}>
             <p className={styles.mainInfoText}>
-              Step into the tavern with nothing but your imagination—our
-              intelligent Game Master takes it from there. No prep, no
-              spreadsheets—just fair rulings, smart prompts, and a living world
-              that remembers each adventure. Start your campaign, roll the dice,
-              and let your story unfold..
+              Enter a world where strategy meets storytelling. Build your
+              character, engage in tactical turn-based combat, and explore an
+              ever-evolving narrative crafted by AI. Each dice roll determines
+              your fate as you battle enemies, collect legendary equipment, and
+              forge your own epic tale through dynamic encounters and strategic
+              choices.
             </p>
             <div className={styles.mainInfoImage}>
               <Image
-                src="/webpage-images/20 Dice image.png"
+                src="/webpage-images/20_dice_image.png"
                 alt="D&D Illustration"
                 width={512}
                 height={512}
@@ -49,13 +50,23 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -73,13 +84,23 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -97,13 +118,23 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -121,13 +152,23 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -145,13 +186,23 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
@@ -169,17 +220,26 @@ export default function Landing() {
               <p className={styles.memberBackground}> background 1 </p>
               <div className={styles.profileLinks}>
                 <a href="https://linkedin.com" target="_blank">
-                  <Image src="/icons/icon_linkedin.png" alt="linkedin logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_linkedin.png"
+                    alt="linkedin logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
                 <a
                   href="https://github.com/MMVS-79/ai_dungeons_dragons"
                   target="_blank"
                 >
-                  <Image src="/icons/icon_github.png" alt="github logo icon" width={30} height={30} />
+                  <Image
+                    src="/icons/icon_github.png"
+                    alt="github logo icon"
+                    width={30}
+                    height={30}
+                  />
                 </a>
               </div>
             </div>
-
           </div>
         </section>
       </main>

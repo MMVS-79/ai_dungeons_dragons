@@ -13,7 +13,9 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   // Tell Jest to look for tests in the test directory
-    testMatch: ['<rootDir>/test/**/*.(test|spec).(ts|tsx)'],
+    testMatch: ['<rootDir>/test/**/*.(test|spec).(ts|tsx)',
+      '<rootDir>/lib/**/__tests__/**/*.(test|spec).(ts|tsx)'
+    ],
 }
 
 export default createJestConfig(config)
