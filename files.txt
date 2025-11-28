@@ -6,7 +6,6 @@ app/api/classes/route.ts
 app/api/game/action/route.ts
 app/api/game/state/route.ts
 app/api/races/route.ts
-app/api/wiki/route.ts
 app/campaigns/[id]/components/characterPanel/characterPanel.tsx
 app/campaigns/[id]/components/chatPanel/chatPanel.tsx
 app/campaigns/[id]/components/dicePanel/dicePanel.tsx
@@ -21,7 +20,6 @@ app/components/Navbar.tsx
 app/components/TeamMember.tsx
 app/login/page.tsx
 app/services/background-music.service.ts
-app/wiki/page.tsx
 lib/services/backend.service.ts
 lib/services/game.service.ts
 lib/services/llm.service.ts
