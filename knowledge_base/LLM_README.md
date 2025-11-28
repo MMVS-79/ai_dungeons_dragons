@@ -336,7 +336,7 @@ Based on your original design:
 
 - **Health:** -10 to +10 (damage/healing)
 - **Attack:** -5 to +5 (weapon bonuses/penalties)
-- **Defense:** -5 to +5 (armor changes)
+- **Defense:** -5 to +5 (armour changes)
 
 Events are constrained by prompting, but validation should happen in game engine.
 

@@ -295,7 +295,7 @@ export default function ItemPanel({
             <div className={styles.detailHeader}>
               <div className={styles.detailImage}>
                 <Image
-                  src={selectedItem.spritePath || "/items/placeholder.png"}
+                  src={selectedItem.spritePath || "/drops/placeholder.png"}
                   alt={selectedItem.name}
                   width={100}
                   height={100}
@@ -353,7 +353,7 @@ export default function ItemPanel({
                 <Image
                   src={
                     selectedEquipment.item?.spritePath ||
-                    "/items/placeholder.png"
+                    "/drops/placeholder.png"
                   }
                   alt={selectedEquipment.item?.name || "Equipment"}
                   width={100}

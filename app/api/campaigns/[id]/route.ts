@@ -21,7 +21,7 @@ import * as BackendService from "@/lib/services/backend.service";
  *     success: boolean;
  *     campaign: Campaign;              // Campaign metadata (name, state, etc.)
  *     character: Character;            // Player character with calculated stats
- *     equipment: Equipment;            // Currently equipped weapon, armor, shield
+ *     equipment: Equipment;            // Currently equipped weapon, armour, shield
  *     inventory: Item[];               // All items in character's inventory
  *     recentEvents: GameEvent[];       // Last 10 game events for event log
  *   }
@@ -31,7 +31,7 @@ import * as BackendService from "@/lib/services/backend.service";
  *   2. Fetches campaign record (throws if not found)
  *   3. Fetches character with full data including:
  *      - Base character stats
- *      - Equipped weapon/armor/shield
+ *      - Equipped weapon/armour/shield
  *      - Complete inventory
  *   4. Fetches last 10 events ordered by event_number DESC
  *   5. Returns all data in single response to minimize round trips
@@ -81,7 +81,7 @@ export async function GET(
 
     // Fetch character with complete data:
     // - Character stats (HP, attack, defense)
-    // - Equipped items (weapon, armor, shield) with their stats
+    // - Equipped items (weapon, armour, shield) with their stats
     // - Full inventory of unequipped items
     const { character, equipment, inventory } =
       await BackendService.getCharacterWithFullData(campaignId);

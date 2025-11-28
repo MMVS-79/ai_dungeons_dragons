@@ -239,7 +239,7 @@ export class TestDataGenerator {
       raceId: 1,
       classId: 1,
       weaponId: 1, // Iron Sword
-      armourId: 1, // Leather Armor
+      armourId: 1, // Leather Armour
       shieldId: 1, // Wooden Shield
     });
 
@@ -368,9 +368,9 @@ export const TestFixtures = {
 
   // Test armours
   armours: {
-    leatherArmor: { id: 1, name: 'Leather Armor', rarity: 10, health: 5 },
+    leatherArmour: { id: 1, name: 'Leather Armour', rarity: 10, health: 5 },
     chainmail: { id: 2, name: 'Chainmail', rarity: 20, health: 10 },
-    plateArmor: { id: 3, name: 'Plate Armor', rarity: 30, health: 15 },
+    plateArmour: { id: 3, name: 'Plate Armour', rarity: 30, health: 15 },
   },
 
   // Test shields

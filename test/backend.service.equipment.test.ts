@@ -31,9 +31,9 @@ describe('Backend Service - Equipment Operations', () => {
       { id: 4, name: 'Legendary Blade', rarity: 50, attack: 20 },
     ],
     armours: [
-      { id: 1, name: 'Leather Armor', rarity: 10, health: 5 },
+      { id: 1, name: 'Leather Armour', rarity: 10, health: 5 },
       { id: 2, name: 'Chainmail', rarity: 20, health: 10 },
-      { id: 3, name: 'Plate Armor', rarity: 30, health: 15 },
+      { id: 3, name: 'Plate Armour', rarity: 30, health: 15 },
     ],
     shields: [
       { id: 1, name: 'Wooden Shield', rarity: 8, defense: 2 },

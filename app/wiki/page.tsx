@@ -214,7 +214,7 @@ export default function WikiPage() {
               <div key={item.id} className={styles.card}>
                 <div className={styles.cardImage}>
                   <Image
-                    src={item.sprite_path || "/items/placeholder.png"}
+                    src={item.sprite_path || "/drops/placeholder.png"}
                     alt={item.name}
                     width={120}
                     height={120}
@@ -278,7 +278,7 @@ export default function WikiPage() {
               <div key={weapon.id} className={styles.card}>
                 <div className={styles.cardImage}>
                   <Image
-                    src={weapon.sprite_path || "/items/weapons/default.png"}
+                    src={weapon.sprite_path || "/drops/placeholder.png"}
                     alt={weapon.name}
                     width={120}
                     height={120}
@@ -338,7 +338,7 @@ export default function WikiPage() {
               <div key={armour.id} className={styles.card}>
                 <div className={styles.cardImage}>
                   <Image
-                    src={armour.sprite_path || "/items/armour/default.png"}
+                    src={armour.sprite_path || "/drops/placeholder.png"}
                     alt={armour.name}
                     width={120}
                     height={120}
@@ -398,7 +398,7 @@ export default function WikiPage() {
               <div key={shield.id} className={styles.card}>
                 <div className={styles.cardImage}>
                   <Image
-                    src={shield.sprite_path || "/items/shields/default.png"}
+                    src={shield.sprite_path || "/drops/placeholder.png"}
                     alt={shield.name}
                     width={120}
                     height={120}
