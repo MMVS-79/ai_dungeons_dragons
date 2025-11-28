@@ -60,7 +60,7 @@ export default function Landing() {
       <main className={styles.mainGrid}>
         {/* Main Info Section */}
         <div className={styles.mainInfo}>
-          <h1>Your Adventure Awaits You</h1>
+          <h1>Your Adventure Awaits</h1>
 
           <div className={styles.mainInfoBody}>
             <p className={styles.mainInfoText}>
