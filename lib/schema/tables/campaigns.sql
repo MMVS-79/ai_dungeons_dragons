@@ -21,6 +21,6 @@ BEGIN
   IF cnt >= 5 THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Limit of 5 campaigns per account exceeded';
   END IF;
-END$$
+END $$
 
 DELIMITER ;
