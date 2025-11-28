@@ -242,7 +242,7 @@ export default function CampaignPage() {
           const inCombat = result.enemy !== null;
           currentMusicState.current = inCombat ? "combat" : "exploration";
           const musicFile = inCombat
-            ? "/music/combat-theme.mp3"
+            ? "/music/dramatic-orchestral-combat-music-loop-382814.mp3"
             : "/music/rpg-city-8381.mp3";
           BackgroundMusicService.play(musicFile, 3000);
         }
