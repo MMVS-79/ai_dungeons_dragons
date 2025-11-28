@@ -152,6 +152,6 @@ export const BALANCE_CONFIG = {
 
   // Campaign constants
   BOSS_DIFFICULTY_THRESHOLD: 1000,
-  MAX_EVENT_NUMBER: 50,
-  BOSS_FORCED_EVENT_START: 48, // Boss encounters forced after this many events
+  MAX_EVENT_NUMBER: 62,
+  BOSS_FORCED_EVENT_START: 60, // Boss encounters forced after this many events
 };

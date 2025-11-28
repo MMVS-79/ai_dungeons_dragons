@@ -104,7 +104,7 @@ export class LLMService {
     const raceName = raceRows[0]?.name || "adventurer";
     const className = classRows[0]?.name || "warrior";
 
-    const introPrompt = `You are a D&D dungeon master starting a new 48-turn campaign. Create an epic introduction.
+    const introPrompt = `You are a D&D dungeon master starting a new 60-turn campaign. Create an epic introduction.
 
 Character:
 - Name: ${gameState.character.name}
@@ -163,7 +163,7 @@ Your introduction:`;
             .join("\n")
         : "No recent events";
 
-    const prompt = `You are a D&D dungeon master creating a 48-turn campaign. Generate the next event type based on context.
+    const prompt = `You are a D&D dungeon master creating a 60-turn campaign. Generate the next event type based on context.
 
 Context:
 - Current Event Number: ${context.currentEventNumber}

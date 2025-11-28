@@ -283,7 +283,7 @@ export class TestDataGenerator {
       early: { eventNumber: 5, name: 'Early Game Campaign' },
       mid: { eventNumber: 25, name: 'Mid Game Campaign' },
       late: { eventNumber: 45, name: 'Late Game Campaign' },
-      boss: { eventNumber: 48, name: 'Boss Fight Campaign' },
+      boss: { eventNumber: 60, name: 'Boss Fight Campaign' },
     };
 
     const config = stageConfig[stage];
