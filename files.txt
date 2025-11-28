@@ -16,6 +16,7 @@ app/campaigns/components/campaignPreviewCard.tsx
 app/campaigns/new/page.tsx
 app/campaigns/page.tsx
 app/components/Navbar.tsx
+app/components/TeamMember.tsx
 app/login/page.tsx
 lib/services/backend.service.ts
 lib/services/game.service.ts
