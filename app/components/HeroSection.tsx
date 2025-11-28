@@ -56,9 +56,7 @@ export default function HeroSection({
       <div className={styles.heroContent}>
         <h1 className={styles.heroTitle}>{title}</h1>
         <p className={styles.heroSubtitle}>{subtitle}</p>
-        {description && (
-          <p className={styles.heroDescription}>{description}</p>
-        )}
+        {description && <p className={styles.heroDescription}>{description}</p>}
 
         {/* Buttons Container */}
         <div className={styles.buttonContainer}>
@@ -66,11 +64,16 @@ export default function HeroSection({
             {buttonText}
           </Link>
 
-          {showSecondaryButton && secondaryButtonText && secondaryButtonLink && (
-            <Link href={secondaryButtonLink} className={styles.secondaryButton}>
-              {secondaryButtonText}
-            </Link>
-          )}
+          {showSecondaryButton &&
+            secondaryButtonText &&
+            secondaryButtonLink && (
+              <Link
+                href={secondaryButtonLink}
+                className={styles.secondaryButton}
+              >
+                {secondaryButtonText}
+              </Link>
+            )}
         </div>
       </div>
     </section>
