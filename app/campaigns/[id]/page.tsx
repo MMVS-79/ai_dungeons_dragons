@@ -9,6 +9,7 @@ import EventPanel from "./components/eventPanel/eventPanel";
 import ChatPanel from "./components/chatPanel/chatPanel";
 import ItemPanel from "./components/itemPanel/itemPanel";
 import DicePanel from "./components/dicePanel/dicePanel";
+import { BackgroundMusicService } from "@/app/services/background-music.service";
 
 // Type definitions
 interface Item {
@@ -116,6 +117,7 @@ export default function CampaignPage() {
   const router = useRouter();
 
   const messageIdCounter = useRef(0);
+  const currentMusicState = useRef<"exploration" | "combat">("exploration");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
@@ -133,6 +135,16 @@ export default function CampaignPage() {
     attack: 0,
     defense: 0,
   });
+  const [musicPlaying, setMusicPlaying] = useState(true);
+
+  const toggleMusic = () => {
+    if (musicPlaying) {
+      BackgroundMusicService.pause();
+    } else {
+      BackgroundMusicService.resume();
+    }
+    setMusicPlaying(!musicPlaying);
+  };
 
   const generateMessageId = () => {
     messageIdCounter.current += 1;
@@ -143,6 +155,36 @@ export default function CampaignPage() {
   useEffect(() => {
     loadGameState();
   }, [params.id]);
+
+  useEffect(() => {
+    return () => {
+      BackgroundMusicService.fadeOut(500);
+    };
+  }, []);
+
+  const updateBackgroundMusic = (inCombat: boolean) => {
+    const desiredState = inCombat ? "combat" : "exploration";
+
+    // Only change music if state actually changed
+    if (currentMusicState.current === desiredState) {
+      return;
+    }
+
+    console.log(
+      `[Music] Switching from ${currentMusicState.current} to ${desiredState}`
+    );
+    currentMusicState.current = desiredState;
+
+    // Fade out current music, then fade in new music
+    BackgroundMusicService.fadeOut(1500);
+    setTimeout(() => {
+      if (desiredState === "combat") {
+        BackgroundMusicService.play("/music/dramatic-orchestral-combat-music-loop-382814.mp3", 2000);
+      } else {
+        BackgroundMusicService.play("/music/rpg-city-8381.mp3", 2000);
+      }
+    }, 1500);
+  };
 
   const loadGameState = async () => {
     try {
@@ -161,7 +203,7 @@ export default function CampaignPage() {
         // Handle 404 (not found or access denied)
         if (response.status === 404) {
           setError(
-            "You don't have access to this campaign or it doesn't exist.",
+            "You don't have access to this campaign or it doesn't exist."
           );
         } else {
           setError(errorData.error || "Failed to load game state");
@@ -194,6 +236,16 @@ export default function CampaignPage() {
           equipment: equip,
           class: char.class?.name,
         });
+
+        // Start music on initial load
+        if (!playerState) {
+          const inCombat = result.enemy !== null;
+          currentMusicState.current = inCombat ? "combat" : "exploration";
+          const musicFile = inCombat
+            ? "/music/combat-theme.mp3"
+            : "/music/rpg-city-8381.mp3";
+          BackgroundMusicService.play(musicFile, 3000);
+        }
       }
 
       // Initialize enemy state if present
@@ -302,7 +354,7 @@ export default function CampaignPage() {
     } catch (error) {
       console.error("[Frontend] Error loading game state:", error);
       setError(
-        error instanceof Error ? error.message : "Unknown error occurred",
+        error instanceof Error ? error.message : "Unknown error occurred"
       );
       setLoading(false);
     }
@@ -332,7 +384,7 @@ export default function CampaignPage() {
       }
 
       console.log(
-        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`,
+        `[Frontend] Calling API: ${choice} -> ${actionType}, dice: ${diceResult}`
       );
 
       const response = await fetch("/api/game/action", {
@@ -404,6 +456,9 @@ export default function CampaignPage() {
           defense: result.gameState.enemy.defense,
         });
 
+        // comabt music
+        updateBackgroundMusic(true);
+
         // Update temporary buffs
         if (combatState?.temporaryBuffs) {
           setTemporaryBuffs(combatState.temporaryBuffs);
@@ -411,6 +466,9 @@ export default function CampaignPage() {
       } else {
         setEnemyState(null);
         setTemporaryBuffs({ attack: 0, defense: 0 });
+
+        // back to regular music
+        updateBackgroundMusic(false);
       }
 
       if (result.itemFound) {
@@ -577,6 +635,16 @@ export default function CampaignPage() {
 
   return (
     <div className={styles.pageContainer}>
+      {/* Music Toggle Button - ADD THIS ENTIRE BLOCK */}
+      <button
+        onClick={toggleMusic}
+        className={styles.musicToggle}
+        aria-label={musicPlaying ? "Mute music" : "Play music"}
+        title={musicPlaying ? "Mute music" : "Play music"}
+      >
+        {musicPlaying ? "🔊" : "🔇"}
+      </button>
+
       <div className={styles.panelsGrid}>
         {/* Left Column */}
         <div className={styles.leftColumn}>
