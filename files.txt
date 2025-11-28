@@ -18,6 +18,7 @@ app/campaigns/page.tsx
 app/components/Navbar.tsx
 app/login/page.tsx
 lib/services/backend.service.ts
+lib/services/background-music.service.ts
 lib/services/game.service.ts
 lib/services/llm.service.ts
 lib/types/db.types.ts
