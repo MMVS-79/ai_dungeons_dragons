@@ -64,7 +64,9 @@ export default function WikiPage() {
   const [data, setData] = useState<WikiData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"items" | "weapons" | "armours" | "shields" | "enemies">("items");
+  const [activeTab, setActiveTab] = useState<
+    "items" | "weapons" | "armours" | "shields" | "enemies"
+  >("items");
 
   useEffect(() => {
     fetchWikiData();
@@ -89,30 +91,42 @@ export default function WikiPage() {
 
   // Calculate max values for each stat type
   const getMaxValues = () => {
-    if (!data) return { maxHealth: 0, maxAttack: 0, maxDefense: 0, maxRarity: 0, maxDifficulty: 0, maxEnemyHealth: 0, maxEnemyAttack: 0, maxEnemyDefense: 0 };
+    if (!data)
+      return {
+        maxHealth: 0,
+        maxAttack: 0,
+        maxDefense: 0,
+        maxRarity: 0,
+        maxDifficulty: 0,
+        maxEnemyHealth: 0,
+        maxEnemyAttack: 0,
+        maxEnemyDefense: 0,
+      };
 
-    const healthItems = data.items.filter(i => i.stat_modified === "health");
-    const attackItems = data.items.filter(i => i.stat_modified === "attack");
-    const defenseItems = data.items.filter(i => i.stat_modified === "defense");
+    const healthItems = data.items.filter((i) => i.stat_modified === "health");
+    const attackItems = data.items.filter((i) => i.stat_modified === "attack");
+    const defenseItems = data.items.filter(
+      (i) => i.stat_modified === "defense",
+    );
 
     return {
-      maxHealth: Math.max(...healthItems.map(i => i.stat_value), 0),
-      maxAttack: Math.max(...attackItems.map(i => i.stat_value), 0),
-      maxDefense: Math.max(...defenseItems.map(i => i.stat_value), 0),
-      maxWeaponAttack: Math.max(...data.weapons.map(w => w.attack), 0),
-      maxArmourHealth: Math.max(...data.armours.map(a => a.health), 0),
-      maxShieldDefense: Math.max(...data.shields.map(s => s.defense), 0),
+      maxHealth: Math.max(...healthItems.map((i) => i.stat_value), 0),
+      maxAttack: Math.max(...attackItems.map((i) => i.stat_value), 0),
+      maxDefense: Math.max(...defenseItems.map((i) => i.stat_value), 0),
+      maxWeaponAttack: Math.max(...data.weapons.map((w) => w.attack), 0),
+      maxArmourHealth: Math.max(...data.armours.map((a) => a.health), 0),
+      maxShieldDefense: Math.max(...data.shields.map((s) => s.defense), 0),
       maxRarity: Math.max(
-        ...data.items.map(i => i.rarity),
-        ...data.weapons.map(w => w.rarity),
-        ...data.armours.map(a => a.rarity),
-        ...data.shields.map(s => s.rarity),
-        0
+        ...data.items.map((i) => i.rarity),
+        ...data.weapons.map((w) => w.rarity),
+        ...data.armours.map((a) => a.rarity),
+        ...data.shields.map((s) => s.rarity),
+        0,
       ),
-      maxDifficulty: Math.max(...data.enemies.map(e => e.difficulty), 0),
-      maxEnemyHealth: Math.max(...data.enemies.map(e => e.health), 0),
-      maxEnemyAttack: Math.max(...data.enemies.map(e => e.attack), 0),
-      maxEnemyDefense: Math.max(...data.enemies.map(e => e.defense), 0),
+      maxDifficulty: Math.max(...data.enemies.map((e) => e.difficulty), 0),
+      maxEnemyHealth: Math.max(...data.enemies.map((e) => e.health), 0),
+      maxEnemyAttack: Math.max(...data.enemies.map((e) => e.attack), 0),
+      maxEnemyDefense: Math.max(...data.enemies.map((e) => e.defense), 0),
     };
   };
 
@@ -120,11 +134,16 @@ export default function WikiPage() {
 
   const getStatColor = (statType: string) => {
     switch (statType) {
-      case "health": return "#dc2626"; // red
-      case "attack": return "#f59e0b"; // orange
-      case "defense": return "#3b82f6"; // blue
-      case "rarity": return "#a855f7"; // purple
-      default: return "#6b7280"; // gray
+      case "health":
+        return "#dc2626"; // red
+      case "attack":
+        return "#f59e0b"; // orange
+      case "defense":
+        return "#3b82f6"; // blue
+      case "rarity":
+        return "#a855f7"; // purple
+      default:
+        return "#6b7280"; // gray
     }
   };
 
@@ -156,7 +175,9 @@ export default function WikiPage() {
     return (
       <div className={styles.pageContainer}>
         <h1 className={styles.title}>Game Wiki</h1>
-        <div className={styles.error}>Error: {error || "Failed to load data"}</div>
+        <div className={styles.error}>
+          Error: {error || "Failed to load data"}
+        </div>
       </div>
     );
   }
@@ -164,7 +185,9 @@ export default function WikiPage() {
   return (
     <div className={styles.pageContainer}>
       <h1 className={styles.title}>Game Wiki</h1>
-      <p className={styles.subtitle}>Explore all items, equipment, and enemies in the game</p>
+      <p className={styles.subtitle}>
+        Explore all items, equipment, and enemies in the game
+      </p>
 
       {/* Tabs */}
       <div className={styles.tabs}>
@@ -204,11 +227,18 @@ export default function WikiPage() {
       {activeTab === "items" && (
         <div className={styles.grid}>
           {data.items.map((item) => {
-            const maxStat = item.stat_modified === "health" ? maxValues.maxHealth :
-                           item.stat_modified === "attack" ? maxValues.maxAttack :
-                           maxValues.maxDefense;
-            const statPercent = maxStat > 0 ? (item.stat_value / maxStat) * 100 : 0;
-            const rarityPercent = maxValues.maxRarity > 0 ? (item.rarity / maxValues.maxRarity) * 100 : 0;
+            const maxStat =
+              item.stat_modified === "health"
+                ? maxValues.maxHealth
+                : item.stat_modified === "attack"
+                  ? maxValues.maxAttack
+                  : maxValues.maxDefense;
+            const statPercent =
+              maxStat > 0 ? (item.stat_value / maxStat) * 100 : 0;
+            const rarityPercent =
+              maxValues.maxRarity > 0
+                ? (item.rarity / maxValues.maxRarity) * 100
+                : 0;
 
             return (
               <div key={item.id} className={styles.card}>
@@ -225,11 +255,13 @@ export default function WikiPage() {
                 {item.description && (
                   <p className={styles.cardDescription}>{item.description}</p>
                 )}
-                
+
                 <div className={styles.stats}>
                   {/* Rarity */}
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Rarity: {getRarityLabel(item.rarity)}</span>
+                    <span className={styles.statLabel}>
+                      Rarity: {getRarityLabel(item.rarity)}
+                    </span>
                     <span className={styles.statValue}>{item.rarity}</span>
                   </div>
                   <div className={styles.statBar}>
@@ -245,10 +277,12 @@ export default function WikiPage() {
                   {/* Main Stat */}
                   <div className={styles.statRow}>
                     <span className={styles.statLabel}>
-                      {item.stat_modified.charAt(0).toUpperCase() + item.stat_modified.slice(1)}
+                      {item.stat_modified.charAt(0).toUpperCase() +
+                        item.stat_modified.slice(1)}
                     </span>
                     <span className={styles.statValue}>
-                      {item.stat_value > 0 ? "+" : ""}{item.stat_value}
+                      {item.stat_value > 0 ? "+" : ""}
+                      {item.stat_value}
                     </span>
                   </div>
                   <div className={styles.statBar}>
@@ -271,8 +305,14 @@ export default function WikiPage() {
       {activeTab === "weapons" && (
         <div className={styles.grid}>
           {data.weapons.map((weapon) => {
-            const attackPercent = maxValues.maxWeaponAttack > 0 ? (weapon.attack / maxValues.maxWeaponAttack) * 100 : 0;
-            const rarityPercent = maxValues.maxRarity > 0 ? (weapon.rarity / maxValues.maxRarity) * 100 : 0;
+            const attackPercent =
+              maxValues.maxWeaponAttack > 0
+                ? (weapon.attack / maxValues.maxWeaponAttack) * 100
+                : 0;
+            const rarityPercent =
+              maxValues.maxRarity > 0
+                ? (weapon.rarity / maxValues.maxRarity) * 100
+                : 0;
 
             return (
               <div key={weapon.id} className={styles.card}>
@@ -289,11 +329,13 @@ export default function WikiPage() {
                 {weapon.description && (
                   <p className={styles.cardDescription}>{weapon.description}</p>
                 )}
-                
+
                 <div className={styles.stats}>
                   {/* Rarity */}
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Rarity: {getRarityLabel(weapon.rarity)}</span>
+                    <span className={styles.statLabel}>
+                      Rarity: {getRarityLabel(weapon.rarity)}
+                    </span>
                     <span className={styles.statValue}>{weapon.rarity}</span>
                   </div>
                   <div className={styles.statBar}>
@@ -331,8 +373,14 @@ export default function WikiPage() {
       {activeTab === "armours" && (
         <div className={styles.grid}>
           {data.armours.map((armour) => {
-            const healthPercent = maxValues.maxArmourHealth > 0 ? (armour.health / maxValues.maxArmourHealth) * 100 : 0;
-            const rarityPercent = maxValues.maxRarity > 0 ? (armour.rarity / maxValues.maxRarity) * 100 : 0;
+            const healthPercent =
+              maxValues.maxArmourHealth > 0
+                ? (armour.health / maxValues.maxArmourHealth) * 100
+                : 0;
+            const rarityPercent =
+              maxValues.maxRarity > 0
+                ? (armour.rarity / maxValues.maxRarity) * 100
+                : 0;
 
             return (
               <div key={armour.id} className={styles.card}>
@@ -349,11 +397,13 @@ export default function WikiPage() {
                 {armour.description && (
                   <p className={styles.cardDescription}>{armour.description}</p>
                 )}
-                
+
                 <div className={styles.stats}>
                   {/* Rarity */}
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Rarity: {getRarityLabel(armour.rarity)}</span>
+                    <span className={styles.statLabel}>
+                      Rarity: {getRarityLabel(armour.rarity)}
+                    </span>
                     <span className={styles.statValue}>{armour.rarity}</span>
                   </div>
                   <div className={styles.statBar}>
@@ -391,8 +441,14 @@ export default function WikiPage() {
       {activeTab === "shields" && (
         <div className={styles.grid}>
           {data.shields.map((shield) => {
-            const defensePercent = maxValues.maxShieldDefense > 0 ? (shield.defense / maxValues.maxShieldDefense) * 100 : 0;
-            const rarityPercent = maxValues.maxRarity > 0 ? (shield.rarity / maxValues.maxRarity) * 100 : 0;
+            const defensePercent =
+              maxValues.maxShieldDefense > 0
+                ? (shield.defense / maxValues.maxShieldDefense) * 100
+                : 0;
+            const rarityPercent =
+              maxValues.maxRarity > 0
+                ? (shield.rarity / maxValues.maxRarity) * 100
+                : 0;
 
             return (
               <div key={shield.id} className={styles.card}>
@@ -409,11 +465,13 @@ export default function WikiPage() {
                 {shield.description && (
                   <p className={styles.cardDescription}>{shield.description}</p>
                 )}
-                
+
                 <div className={styles.stats}>
                   {/* Rarity */}
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Rarity: {getRarityLabel(shield.rarity)}</span>
+                    <span className={styles.statLabel}>
+                      Rarity: {getRarityLabel(shield.rarity)}
+                    </span>
                     <span className={styles.statValue}>{shield.rarity}</span>
                   </div>
                   <div className={styles.statBar}>
@@ -451,9 +509,18 @@ export default function WikiPage() {
       {activeTab === "enemies" && (
         <div className={styles.grid}>
           {data.enemies.map((enemy) => {
-            const healthPercent = maxValues.maxEnemyHealth > 0 ? (enemy.health / maxValues.maxEnemyHealth) * 100 : 0;
-            const attackPercent = maxValues.maxEnemyAttack > 0 ? (enemy.attack / maxValues.maxEnemyAttack) * 100 : 0;
-            const defensePercent = maxValues.maxEnemyDefense > 0 ? (enemy.defense / maxValues.maxEnemyDefense) * 100 : 0;
+            const healthPercent =
+              maxValues.maxEnemyHealth > 0
+                ? (enemy.health / maxValues.maxEnemyHealth) * 100
+                : 0;
+            const attackPercent =
+              maxValues.maxEnemyAttack > 0
+                ? (enemy.attack / maxValues.maxEnemyAttack) * 100
+                : 0;
+            const defensePercent =
+              maxValues.maxEnemyDefense > 0
+                ? (enemy.defense / maxValues.maxEnemyDefense) * 100
+                : 0;
 
             return (
               <div key={enemy.id} className={styles.card}>
@@ -467,11 +534,13 @@ export default function WikiPage() {
                   />
                 </div>
                 <h3 className={styles.cardName}>{enemy.name}</h3>
-                
+
                 <div className={styles.stats}>
                   {/* Difficulty (no bar, just value) */}
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Difficulty: {getDifficultyLabel(enemy.difficulty)}</span>
+                    <span className={styles.statLabel}>
+                      Difficulty: {getDifficultyLabel(enemy.difficulty)}
+                    </span>
                     <span className={styles.statValue}>{enemy.difficulty}</span>
                   </div>
 

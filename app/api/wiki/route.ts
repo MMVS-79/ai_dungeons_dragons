@@ -17,12 +17,28 @@ import type {
 export async function GET() {
   try {
     // Fetch all data in parallel
-    const [itemsResult, weaponsResult, armoursResult, shieldsResult, enemiesResult] = await Promise.all([
-      pool.query<ItemRow[]>("SELECT * FROM items ORDER BY rarity ASC, name ASC"),
-      pool.query<WeaponRow[]>("SELECT * FROM weapons ORDER BY rarity ASC, name ASC"),
-      pool.query<ArmourRow[]>("SELECT * FROM armours ORDER BY rarity ASC, name ASC"),
-      pool.query<ShieldRow[]>("SELECT * FROM shields ORDER BY rarity ASC, name ASC"),
-      pool.query<EnemyRow[]>("SELECT * FROM enemies ORDER BY difficulty ASC, name ASC"),
+    const [
+      itemsResult,
+      weaponsResult,
+      armoursResult,
+      shieldsResult,
+      enemiesResult,
+    ] = await Promise.all([
+      pool.query<ItemRow[]>(
+        "SELECT * FROM items ORDER BY rarity ASC, name ASC",
+      ),
+      pool.query<WeaponRow[]>(
+        "SELECT * FROM weapons ORDER BY rarity ASC, name ASC",
+      ),
+      pool.query<ArmourRow[]>(
+        "SELECT * FROM armours ORDER BY rarity ASC, name ASC",
+      ),
+      pool.query<ShieldRow[]>(
+        "SELECT * FROM shields ORDER BY rarity ASC, name ASC",
+      ),
+      pool.query<EnemyRow[]>(
+        "SELECT * FROM enemies ORDER BY difficulty ASC, name ASC",
+      ),
     ]);
 
     const items = itemsResult[0];
@@ -48,7 +64,7 @@ export async function GET() {
         success: false,
         error: "Failed to fetch wiki data",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
