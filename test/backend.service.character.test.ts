@@ -107,11 +107,21 @@ describe('Backend Service - Character Operations', () => {
   describe('updateCharacter()', () => {
     it('should update character fields', async () => {
       const updatedChar = { ...testData.characters[0], name: 'Updated Hero', attack: 20 };
+      let callCount = 0;
 
-      (pool.query as jest.Mock)
-        .mockResolvedValueOnce([[testData.characters[0]], []]) // Initial getCharacter
-        .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]) // UPDATE
-        .mockResolvedValueOnce([[updatedChar], []]); // Final getCharacter
+      (pool.query as jest.Mock).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First getCharacter call
+          return Promise.resolve([[testData.characters[0]], []]);
+        } else if (callCount === 2) {
+          // UPDATE query
+          return Promise.resolve([{ affectedRows: 1 } as ResultSetHeader, []]);
+        } else {
+          // Second getCharacter call after update
+          return Promise.resolve([[updatedChar], []]);
+        }
+      });
 
       const result = await updateCharacter(1, { name: 'Updated Hero', attack: 20 });
 
