@@ -481,7 +481,7 @@ Character Status:
 - Attack: ${context.character.attack}
 - Defense: ${context.character.defense}
 
-Choose ONE stat type and provide a base value (can be positive OR negative) randomyl from the pvoided ranges:
+Choose ONE stat type and provide a base value (can be positive OR negative) randomly from the pvoided ranges:
 
 **health**: HP change (positive = heal, negative = damage from hazard)
   - Base value: -5 to 15 HP
