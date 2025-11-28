@@ -7,10 +7,10 @@ export class BackgroundMusicService {
   static play(trackPath: string, fadeInMs: number = 1000) {
     // If already playing a different track → stop & replace
     if (this.audio && !this.audio.src.includes(trackPath)) {
-      this.stop(); 
+      this.stop();
     }
     // If same track already playing → ignore
-    if (this.audio) return; 
+    if (this.audio) return;
 
     const audio = new Audio(trackPath);
     audio.loop = true;
@@ -41,7 +41,7 @@ export class BackgroundMusicService {
   private static fadeIn(duration = 1000) {
     if (!this.audio) return;
 
-    const target = 0.5;               // final volume
+    const target = 0.5; // final volume
     const steps = 30;
     const step = target / steps;
     const interval = duration / steps;
