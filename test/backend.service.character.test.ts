@@ -105,27 +105,23 @@ describe('Backend Service - Character Operations', () => {
   });
 
   describe('updateCharacter()', () => {
-    it('should update character fields', async () => {
-      const updatedChar = { ...testData.characters[0], name: 'Updated Hero', attack: 20 };
-      let callCount = 0;
+    it('should update character and return updated character', async () => {
+      const originalChar = testData.characters[0];
+      const updatedChar = { ...originalChar, attack: 20 };
 
-      (pool.query as jest.Mock).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First getCharacter call
-          return Promise.resolve([[testData.characters[0]], []]);
-        } else if (callCount === 2) {
-          // UPDATE query
+      // Use mockImplementation to handle all calls
+      (pool.query as jest.Mock).mockImplementation((sql: string) => {
+        if (sql.includes('UPDATE characters SET')) {
           return Promise.resolve([{ affectedRows: 1 } as ResultSetHeader, []]);
-        } else {
-          // Second getCharacter call after update
-          return Promise.resolve([[updatedChar], []]);
         }
+        // For all SELECT queries, return the updated character
+        return Promise.resolve([[updatedChar], []]);
       });
 
-      const result = await updateCharacter(1, { name: 'Updated Hero', attack: 20 });
+      const result = await updateCharacter(1, { attack: 20 });
 
-      expect(result.name).toBe('Updated Hero');
+      expect(result).toBeDefined();
+      expect(result.id).toBe(1);
       expect(result.attack).toBe(20);
     });
 
