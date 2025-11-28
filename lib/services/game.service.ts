@@ -157,7 +157,7 @@ export class GameService {
 
     // First event is campaign introduction
     if (nextEventNumber === 1) {
-      BackgroundMusicService.play("../music/rpg-city-8381.mp3", 1000);
+      BackgroundMusicService.play("/music/rpg-city-8381.mp3", 1000);
       const introText =
         await this.llmService.generateCampaignIntroduction(gameState);
 
