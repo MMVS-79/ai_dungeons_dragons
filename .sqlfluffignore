@@ -2,3 +2,4 @@ knowledge_base/archived/
 lib/rebuild.sql
 lib/schema/tables/logs.sql
 lib/seed.sql
+20 queries/Combined Data Population Script.sql
