@@ -1,10 +1,32 @@
-// background-music.service.ts
+// app/services/background-music.service.ts
 export class BackgroundMusicService {
   private static audio: HTMLAudioElement | null = null;
   private static fadeInterval: number | null = null;
+  private static isMuted: boolean = false; // ← NEW: Global mute state
+
+  // ========= SET MUTE STATE =========
+  static setMuted(muted: boolean) {
+    this.isMuted = muted;
+    if (this.audio) {
+      if (muted) {
+        this.audio.pause();
+      } else {
+        this.audio.play();
+      }
+    }
+  }
+
+  static isMutedState(): boolean {
+    return this.isMuted;
+  }
 
   // ========= PLAY (with FADE-IN) =========
   static play(trackPath: string, fadeInMs: number = 1000) {
+    // If muted, don't play anything
+    if (this.isMuted) {
+      console.log("[Music] Attempted to play while muted, ignoring");
+      return;
+    }
     // If already playing a different track → stop & replace
     if (this.audio && !this.audio.src.includes(trackPath)) {
       this.stop();
