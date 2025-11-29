@@ -150,8 +150,8 @@ describe("Backend Service - Equipment Operations", () => {
         };
 
         (pool.query as jest.Mock)
-          .mockResolvedValueOnce([[legendaryWeapon], []]) // getWeapon - legendary
-          .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]); // UPDATE (skips checks)
+          .mockResolvedValueOnce([[legendaryWeapon], []])
+          .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]);
 
         await equipWeapon(1, 99);
 
@@ -166,9 +166,9 @@ describe("Backend Service - Equipment Operations", () => {
     describe("equipArmour()", () => {
       it("should successfully equip non-legendary armour", async () => {
         (pool.query as jest.Mock)
-          .mockResolvedValueOnce([[testData.armours[0]], []]) // getArmour - non-legendary
-          .mockResolvedValueOnce([[{ id: 1, armour_id: null }], []]) // getCharacter
-          .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]); // UPDATE
+          .mockResolvedValueOnce([[testData.armours[0]], []])
+          .mockResolvedValueOnce([[{ id: 1, armour_id: null }], []])
+          .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]);
 
         await equipArmour(1, 1);
 
@@ -184,9 +184,9 @@ describe("Backend Service - Equipment Operations", () => {
         };
 
         (pool.query as jest.Mock)
-          .mockResolvedValueOnce([[testData.armours[0]], []]) // getArmour(new) - non-legendary
-          .mockResolvedValueOnce([[{ id: 1, armour_id: 99 }], []]) // getCharacter
-          .mockResolvedValueOnce([[legendaryArmour], []]); // getArmour(current) - legendary
+          .mockResolvedValueOnce([[testData.armours[0]], []])
+          .mockResolvedValueOnce([[{ id: 1, armour_id: 99 }], []])
+          .mockResolvedValueOnce([[legendaryArmour], []]);
 
         await equipArmour(1, 1);
 
@@ -201,9 +201,9 @@ describe("Backend Service - Equipment Operations", () => {
     describe("equipShield()", () => {
       it("should successfully equip non-legendary shield", async () => {
         (pool.query as jest.Mock)
-          .mockResolvedValueOnce([[testData.shields[0]], []]) // getShield - non-legendary
-          .mockResolvedValueOnce([[{ id: 1, shield_id: null }], []]) // getCharacter
-          .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]); // UPDATE
+          .mockResolvedValueOnce([[testData.shields[0]], []])
+          .mockResolvedValueOnce([[{ id: 1, shield_id: null }], []])
+          .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []]);
 
         await equipShield(1, 1);
 
@@ -219,9 +219,9 @@ describe("Backend Service - Equipment Operations", () => {
         };
 
         (pool.query as jest.Mock)
-          .mockResolvedValueOnce([[testData.shields[0]], []]) // getShield(new) - non-legendary
-          .mockResolvedValueOnce([[{ id: 1, shield_id: 99 }], []]) // getCharacter
-          .mockResolvedValueOnce([[legendaryShield], []]); // getShield(current) - legendary
+          .mockResolvedValueOnce([[testData.shields[0]], []])
+          .mockResolvedValueOnce([[{ id: 1, shield_id: 99 }], []])
+          .mockResolvedValueOnce([[legendaryShield], []]);
 
         await equipShield(1, 1);
 
