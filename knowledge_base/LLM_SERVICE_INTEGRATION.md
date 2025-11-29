@@ -133,7 +133,7 @@ interface LLMEvent {
   effects: {
     health: number;           // Range: -10 to +10 (damage/healing)
     attack: number;           // Range: -5 to +5 (weapon bonuses/nerfs)
-    defense: number;          // Range: -5 to +5 (armor changes)
+    defense: number;          // Range: -5 to +5 (armour changes)
   };
 }
 
@@ -352,7 +352,7 @@ The LLM service will generate effects within these ranges:
 |------|-----|-----|----------------|
 | **Health** | -10 | +10 | Severe damage (-10) to significant healing (+10) |
 | **Attack** | -5 | +5 | Weapon penalty (-5) to powerful bonus (+5) |
-| **Defense** | -5 | +5 | Armor breaking (-5) to enhanced protection (+5) |
+| **Defense** | -5 | +5 | Armour breaking (-5) to enhanced protection (+5) |
 
 **Important**: The LLM *tries* to respect these ranges via its prompt instructions, but **you should clamp/validate** these values in your game engine. Don't trust the LLM's output completely—treat it as a suggestion that needs validation.
 

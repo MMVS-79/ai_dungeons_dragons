@@ -57,7 +57,7 @@ The system follows a layered architecture with clear separation of concerns:
 │  • Phase management (exploration → investigation → combat)      │
 │  • Event generation and progression                             │
 │  • Combat state management via snapshots                        │
-│  • Boss fight triggers at event 48+                             │
+│  • Boss fight triggers at event 60+                             │
 │  • Victory/defeat detection and campaign completion             │
 └─────────────────────────────────────────────────────────────────┘
             ↕              ↕               ↕              ↕
@@ -136,12 +136,12 @@ Continue → Event Generated → Investigation Prompt
 
 ### 3. Event Progression System
 
-**Campaign Structure**: 48 events → Boss fight → Victory or defeat
+**Campaign Structure**: 60 events → Boss fight → Victory or defeat
 
 **Event Counter Logic**:
 ```
 Events 1-47:  Normal event generation (LLM decides type)
-Events 48+:   Forced boss encounters (difficulty ≥ 1000)
+Events 60+:   Forced boss encounters (difficulty ≥ 1000)
 Victory:      Defeat boss → Campaign state = "completed"
 Defeat:       HP ≤ 0 → Campaign state = "game_over"
 ```
@@ -173,7 +173,7 @@ rewardRarity = (enemyDifficulty × 0.5) + (diceRoll × 1)
 **Boss Encounters**:
 - Difficulty threshold: 1000+
 - Guaranteed legendary rewards
-- Only appear at events 48+
+- Only appear at events 60+
 
 ---
 
@@ -266,7 +266,7 @@ rewardRarity = (enemyDifficulty × 0.5) + (diceRoll × 1)
 Main entry point - routes all player actions to appropriate handlers.
 
 #### Event Generation
-- `handleContinue()` - Generate next event (events 1-47) or boss fight (48+)
+- `handleContinue()` - Generate next event (events 1-59) or boss fight (60+)
 - Uses LLM to determine event type based on game context
 - Creates investigation prompt for Environmental/Item_Drop events
 - Directly processes Descriptive events
@@ -304,7 +304,7 @@ Main entry point - routes all player actions to appropriate handlers.
   - Clear combat snapshot from memory
 
 #### Boss Fight Logic
-- `checkForBossFight()` - Trigger boss at event 48+
+- `checkForBossFight()` - Trigger boss at event 60+
 - `startBossCombat()` - Create boss encounter
 - Boss victory = Campaign completion
 
@@ -508,8 +508,8 @@ BALANCE_CONFIG = {
   REWARD_DIFFICULTY_WEIGHT: 0.5,
   REWARD_DICE_ROLL_WEIGHT: 1,
   BOSS_DIFFICULTY_THRESHOLD: 1000,
-  MAX_EVENT_NUMBER: 50,
-  BOSS_FORCED_EVENT_START: 48
+  MAX_EVENT_NUMBER: 62,
+  BOSS_FORCED_EVENT_START: 60
 }
 ```
 
@@ -646,7 +646,7 @@ BALANCE_CONFIG = {
 ### Example 3: Boss Fight and Victory
 
 ```
-1. Event 48 reached
+1. Event 60 reached
         ↓
 2. GameService.handleContinue()
    - checkForBossFight() → TRUE
@@ -919,7 +919,7 @@ await BackendService.updateCampaign(campaignId, { state: "completed" });
 
 5. **LLM Integration**: Separate calls for event type, description, and stat modifications (not monolithic)
 
-6. **Boss Fight Trigger**: Automatic boss encounters starting at event 48
+6. **Boss Fight Trigger**: Automatic boss encounters starting at event 60
 
 7. **Temporary vs Permanent**: Items give temporary combat buffs, environmental events give permanent stat changes
 

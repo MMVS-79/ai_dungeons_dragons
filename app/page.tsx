@@ -143,7 +143,7 @@ export default function Landing() {
 
         {/* About Us Section */}
         <section id="about-us" className={styles.aboutUs}>
-          <h2>Meet Your Dungeon Masters</h2>
+          <h2>Meet Your Dungeon Architects</h2>
           <p className={styles.aboutUsDescription}>
             
           </p>

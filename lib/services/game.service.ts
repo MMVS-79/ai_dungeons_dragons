@@ -1252,17 +1252,22 @@ export class GameService {
       }
 
       // NORMAL ENEMY: Process combat rewards
-      const rewardRoll = Math.random();
       let rewardEquipment: Weapon | Armour | Shield | Item | null = null;
       let rewardMessage = "💰 Victory Rewards:\n";
       let rewardRarity: number = 0;
 
-      if (rewardRoll < 0.8) {
-        // EQUIPMENT REWARD (80%)
-        rewardRarity = calculateCombatRewardRarity(
-          snapshot.enemy.difficulty,
-          diceRoll,
-        );
+      // Calculate reward rarity first
+      rewardRarity = calculateCombatRewardRarity(
+        snapshot.enemy.difficulty,
+        diceRoll,
+      );
+
+      // SPECIAL ENEMIES (300/500/700) ALWAYS DROP EQUIPMENT
+      const isSpecialEnemy =
+        rewardRarity === 300 || rewardRarity === 500 || rewardRarity === 700;
+
+      if (isSpecialEnemy) {
+        // GUARANTEED LEGENDARY EQUIPMENT for special enemies
         const { message, equipment } = await this.processCombatRewards(
           snapshot,
           rewardRarity,
@@ -1270,28 +1275,50 @@ export class GameService {
         rewardMessage = message;
         rewardEquipment = equipment;
       } else {
-        // ITEM REWARD (20%)
-        // Check snapshot inventory, not database inventory
-        const MAX_INVENTORY = 10;
+        // NORMAL ENEMY: 80% equipment, 20% item
+        const rewardRoll = Math.random();
 
-        // Use snapshot inventory count (reflects items used during combat)
-        const currentInventoryCount = snapshot.inventorySnapshot.length;
-
-        if (currentInventoryCount >= MAX_INVENTORY) {
-          rewardMessage = `💰 Victory Rewards:\nYou found an item, but your inventory is full!`;
-          rewardRarity = 0;
-        } else {
-          const eventNumber = gameState.recentEvents.length + 1;
-          rewardRarity = calculateItemRarity(eventNumber, diceRoll);
-          const item = await BackendService.getItemByRarity(rewardRarity);
-
-          await BackendService.addItemToInventory(
-            snapshot.characterSnapshot.id,
-            item.id,
+        if (rewardRoll < 0.8) {
+          // EQUIPMENT REWARD (80%)
+          rewardRarity = calculateCombatRewardRarity(
+            snapshot.enemy.difficulty,
+            diceRoll,
           );
+          const { message, equipment } = await this.processCombatRewards(
+            snapshot,
+            rewardRarity,
+          );
+          rewardMessage = message;
+          rewardEquipment = equipment;
+        } else {
+          // ITEM REWARD (20%)
+          // Check snapshot inventory, not database inventory
+          const MAX_INVENTORY = 10;
 
-          rewardMessage = `💰 Victory Rewards:\nYou found: ${item.name}! (${item.description})`;
-          rewardEquipment = item;
+          // Use snapshot inventory count (reflects items used during combat)
+          const currentInventoryCount = snapshot.inventorySnapshot.length;
+
+          if (currentInventoryCount >= MAX_INVENTORY) {
+            rewardMessage = `💰 Victory Rewards:\nYou found an item, but your inventory is full!`;
+            rewardRarity = 0;
+          } else {
+            // Combat rewards should NEVER give negative items (cursed items)
+            // Use combat reward formula which is based on enemy difficulty
+            rewardRarity = calculateCombatRewardRarity(
+              snapshot.enemy.difficulty,
+              diceRoll,
+            );
+
+            const item = await BackendService.getItemByRarity(rewardRarity);
+
+            await BackendService.addItemToInventory(
+              snapshot.characterSnapshot.id,
+              item.id,
+            );
+
+            rewardMessage = `💰 Victory Rewards:\nYou found: ${item.name}! (${item.description})`;
+            rewardEquipment = item;
+          }
         }
       }
       const finalMessage = `${combatMessage}\n\n${rewardMessage}`;
@@ -1523,23 +1550,13 @@ export class GameService {
     message: string;
     equipment: Weapon | Armour | Shield;
   }> {
-    // Determine reward type randomly (weighted)
-    const rewardRoll = Math.random();
-
     let rewardMessage = "💰 Victory Rewards:\n";
     let equipment: Weapon | Armour | Shield;
 
-    if (rewardRoll < 0.33) {
-      // WEAPON REWARD
-      const weapon = await BackendService.getWeaponByRarity(rewardRarity);
-      await BackendService.equipWeapon(
-        snapshot.characterSnapshot.id,
-        weapon.id,
-      );
-      rewardMessage += `You found: ${weapon.name}! (+${weapon.attack} ATK)`;
-      equipment = weapon;
-    } else if (rewardRoll < 0.66) {
-      // ARMOUR REWARD
+    // SPECIAL ENEMY HANDLING
+    // Santa (300) → Armour, Genie (500) → Shield, Zeus (700) → Weapon
+    if (rewardRarity === 300) {
+      // SANTA CLAUS - Always drop Santa's Robe (armour)
       const armour = await BackendService.getArmourByRarity(rewardRarity);
       await BackendService.equipArmour(
         snapshot.characterSnapshot.id,
@@ -1547,8 +1564,8 @@ export class GameService {
       );
       rewardMessage += `You found: ${armour.name}! (+${armour.health} Max HP)`;
       equipment = armour;
-    } else {
-      // SHIELD REWARD
+    } else if (rewardRarity === 500) {
+      // GENIE - Always drop Caps Shield (shield)
       const shield = await BackendService.getShieldByRarity(rewardRarity);
       await BackendService.equipShield(
         snapshot.characterSnapshot.id,
@@ -1556,6 +1573,47 @@ export class GameService {
       );
       rewardMessage += `You found: ${shield.name}! (+${shield.defense} DEF)`;
       equipment = shield;
+    } else if (rewardRarity === 700) {
+      // ZEUS - Always drop Zeus Lightning (weapon)
+      const weapon = await BackendService.getWeaponByRarity(rewardRarity);
+      await BackendService.equipWeapon(
+        snapshot.characterSnapshot.id,
+        weapon.id,
+      );
+      rewardMessage += `You found: ${weapon.name}! (+${weapon.attack} ATK)`;
+      equipment = weapon;
+    } else {
+      // NORMAL ENEMY - Random equipment type
+      const rewardRoll = Math.random();
+
+      if (rewardRoll < 0.33) {
+        // WEAPON REWARD
+        const weapon = await BackendService.getWeaponByRarity(rewardRarity);
+        await BackendService.equipWeapon(
+          snapshot.characterSnapshot.id,
+          weapon.id,
+        );
+        rewardMessage += `You found: ${weapon.name}! (+${weapon.attack} ATK)`;
+        equipment = weapon;
+      } else if (rewardRoll < 0.66) {
+        // ARMOUR REWARD
+        const armour = await BackendService.getArmourByRarity(rewardRarity);
+        await BackendService.equipArmour(
+          snapshot.characterSnapshot.id,
+          armour.id,
+        );
+        rewardMessage += `You found: ${armour.name}! (+${armour.health} Max HP)`;
+        equipment = armour;
+      } else {
+        // SHIELD REWARD
+        const shield = await BackendService.getShieldByRarity(rewardRarity);
+        await BackendService.equipShield(
+          snapshot.characterSnapshot.id,
+          shield.id,
+        );
+        rewardMessage += `You found: ${shield.name}! (+${shield.defense} DEF)`;
+        equipment = shield;
+      }
     }
 
     return { message: rewardMessage, equipment };

@@ -32,7 +32,7 @@ describe('Backend Service - Character Operations', () => {
       { id: 1, name: 'Iron Sword', rarity: 10, attack: 5 },
     ],
     armours: [
-      { id: 1, name: 'Leather Armor', rarity: 10, health: 5 },
+      { id: 1, name: 'Leather Armour', rarity: 10, health: 5 },
     ],
     shields: [
       { id: 1, name: 'Wooden Shield', rarity: 8, defense: 2 },

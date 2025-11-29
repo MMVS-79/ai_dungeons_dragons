@@ -200,7 +200,7 @@ async function getClass(id: number): Promise<ClassRow> {
 // ---------------------------------------------------------------------------
 export type CharacterUpdates = Partial<Omit<Character, "race" | "class">> & {
   weapon?: Partial<Weapon>;
-  armor?: Partial<Armour>;
+  armour?: Partial<Armour>;
   shield?: Partial<Shield>;
 };
 
@@ -491,6 +491,29 @@ export async function equipWeapon(
   characterId: number,
   weaponId: number,
 ): Promise<void> {
+  // Check if weapon is legendary (rarity 300, 500, 700)
+  const weapon = await getWeapon(weaponId);
+  const isLegendary =
+    weapon.rarity === 300 || weapon.rarity === 500 || weapon.rarity === 700;
+
+  // If trying to equip non-legendary, check if current is legendary
+  if (!isLegendary) {
+    const char = await getCharacter(characterId);
+    if (char.weaponId) {
+      const currentWeapon = await getWeapon(char.weaponId);
+      const currentIsLegendary =
+        currentWeapon.rarity === 300 ||
+        currentWeapon.rarity === 500 ||
+        currentWeapon.rarity === 700;
+      if (currentIsLegendary) {
+        console.log(
+          `[BackendService] Cannot replace legendary weapon ${currentWeapon.name} with ${weapon.name}`,
+        );
+        return; // Don't replace legendary equipment
+      }
+    }
+  }
+
   await pool.query(
     "UPDATE characters SET weapon_id = ?, updated_at = NOW() WHERE id = ?",
     [weaponId, characterId],
@@ -504,6 +527,24 @@ export async function equipArmour(
   characterId: number,
   armourId: number,
 ): Promise<void> {
+  // Check if armour is legendary (rarity 300)
+  const armour = await getArmour(armourId);
+  const isLegendary = armour.rarity === 300;
+
+  // If trying to equip non-legendary, check if current is legendary
+  if (!isLegendary) {
+    const char = await getCharacter(characterId);
+    if (char.armourId) {
+      const currentArmour = await getArmour(char.armourId);
+      if (currentArmour.rarity === 300) {
+        console.log(
+          `[BackendService] Cannot replace legendary armour ${currentArmour.name} with ${armour.name}`,
+        );
+        return; // Don't replace legendary equipment
+      }
+    }
+  }
+
   await pool.query(
     "UPDATE characters SET armour_id = ?, updated_at = NOW() WHERE id = ?",
     [armourId, characterId],
@@ -517,6 +558,24 @@ export async function equipShield(
   characterId: number,
   shieldId: number,
 ): Promise<void> {
+  // Check if shield is legendary (rarity 500)
+  const shield = await getShield(shieldId);
+  const isLegendary = shield.rarity === 500;
+
+  // If trying to equip non-legendary, check if current is legendary
+  if (!isLegendary) {
+    const char = await getCharacter(characterId);
+    if (char.shieldId) {
+      const currentShield = await getShield(char.shieldId);
+      if (currentShield.rarity === 500) {
+        console.log(
+          `[BackendService] Cannot replace legendary shield ${currentShield.name} with ${shield.name}`,
+        );
+        return; // Don't replace legendary equipment
+      }
+    }
+  }
+
   await pool.query(
     "UPDATE characters SET shield_id = ?, updated_at = NOW() WHERE id = ?",
     [shieldId, characterId],

@@ -197,8 +197,7 @@ export default function CampaignPreviewCard({
                 {equipment.weapon ? (
                   <Image
                     src={
-                      equipment.weapon.spritePath ||
-                      "/items/weapons/default.png"
+                      equipment.weapon.spritePath || "/drops/placeholder.png"
                     }
                     alt={equipment.weapon.name}
                     width={30}
@@ -218,7 +217,7 @@ export default function CampaignPreviewCard({
                 {equipment.armour ? (
                   <Image
                     src={
-                      equipment.armour.spritePath || "/items/armour/default.png"
+                      equipment.armour.spritePath || "/drops/placeholder.png"
                     }
                     alt={equipment.armour.name}
                     width={30}
@@ -238,8 +237,7 @@ export default function CampaignPreviewCard({
                 {equipment.shield ? (
                   <Image
                     src={
-                      equipment.shield.spritePath ||
-                      "/items/shields/default.png"
+                      equipment.shield.spritePath || "/drops/placeholder.png"
                     }
                     alt={equipment.shield.name}
                     width={30}
@@ -267,7 +265,7 @@ export default function CampaignPreviewCard({
                 >
                   {item ? (
                     <Image
-                      src={item.spritePath || "/items/placeholder.png"}
+                      src={item.spritePath || "/drops/placeholder.png"}
                       alt={item.name}
                       width={25}
                       height={25}

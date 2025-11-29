@@ -47,7 +47,7 @@ import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
  *
  *   continue:
  *     - Advances to next event (increments event number)
- *     - Triggers boss fight at event 48+
+ *     - Triggers boss fight at event 60+
  *     - Calls LLM to generate event type and description
  *     - May present investigation prompt for Environmental/Item_Drop events
  *     - May start combat encounter
@@ -84,7 +84,7 @@ import type { PlayerAction, GameServiceResponse } from "@/lib/types/game.types";
  * Special Features:
  *   - Combat Snapshots: Preserves combat state across server restarts
  *   - Investigation Prompts: Lost on page refresh (auto-declined)
- *   - Boss Encounters: Forced at event 48 with difficulty >= 1000
+ *   - Boss Encounters: Forced at event 60 with difficulty >= 1000
  *   - Loot Scaling: Rarity based on enemy difficulty and dice rolls
  *   - Two-Phase Combat Logging: Separate logs for encounter and conclusion
  *

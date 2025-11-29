@@ -92,7 +92,7 @@ Keep descriptions vivid but concise (1-2 sentences). Events should build tension
 STAT EFFECTS RULES:
 - Health: -10 to +10 (healing/damage)
 - Attack: -5 to +5 (weapon bonuses/penalties)
-- Defense: -5 to +5 (armor/protection changes)
+- Defense: -5 to +5 (armour/protection changes)
 - Use 0 for stats that don't change
 
 CONTEXT: You are in a ${randomScenario} ${randomTrigger}.

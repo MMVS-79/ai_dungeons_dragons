@@ -55,7 +55,7 @@ interface EventPanelProps {
 
 // Helper function to normalize image path
 const normalizeImagePath = (path?: string): string => {
-  if (!path) return "/items/placeholder.png";
+  if (!path) return "/drops/placeholder.png";
 
   // Add .png extension if missing
   const normalizedPath = path.endsWith(".png") ? path : `${path}.png`;
@@ -66,7 +66,7 @@ const normalizeImagePath = (path?: string): string => {
 // Helper function to handle image load errors
 const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
   const target = e.target as HTMLImageElement;
-  target.src = "/items/placeholder.png";
+  target.src = "/drops/placeholder.png";
 };
 
 export default function EventPanel({ enemy, itemFound }: EventPanelProps) {

@@ -2,17 +2,54 @@
 https://www.flaticon.com/free-icon/armor_8519926
 https://www.flaticon.com/free-icon/knight_909450
 https://www.flaticon.com/free-icon/armour_7835730
-
+https://www.flaticon.com/free-icon/dress_6272159
+https://www.flaticon.com/free-icon/clothes_6308411
+https://www.flaticon.com/free-icon/chainmail_1185753
+https://www.flaticon.com/free-icon/armor_9480489
+https://www.flaticon.com/free-icon/armor_3763592
+https://www.flaticon.com/free-icon/armor_9650866
+https://www.flaticon.com/free-icon/armor_6844560
+https://www.flaticon.com/free-icon/sport_13559937
+https://www.flaticon.com/free-icon/armor_9057877
+https://www.flaticon.com/free-icon/armor_2453651
+https://www.flaticon.com/free-icon/armor_2010179
+https://www.flaticon.com/free-icon/armor_4243175
 
 // shields
 https://www.flaticon.com/free-icon/shield_9414678
 https://www.flaticon.com/free-icon/shield_4021553
 https://www.flaticon.com/free-icon/award_1959469
+https://www.flaticon.com/free-icon/shield_1866926
+https://www.flaticon.com/free-icon/shield_1800229
+https://www.flaticon.com/free-icon/shield_2350522
+https://www.flaticon.com/free-icon/shield_993607
+https://www.flaticon.com/free-icon/wooden_2858877
+https://www.flaticon.com/free-icon/shield_9709946
+https://www.flaticon.com/free-icon/shield_3275466
+https://www.flaticon.com/free-icon/shield_7571955
+https://www.flaticon.com/free-icon/shield_473619
+https://www.flaticon.com/free-icon/shield_2701824
+https://www.flaticon.com/free-icon/shield_7514105
+https://www.flaticon.com/free-icon/shield_4244453
+https://www.flaticon.com/free-icon/fight_3400109
+https://www.flaticon.com/free-icon/shield_9967265
 
-// swords
+// weapons
 https://www.flaticon.com/free-icon/sword_4155687
 https://www.flaticon.com/free-icon/sword_4155897
 https://www.flaticon.com/free-icon/sword_4330788
+https://www.flaticon.com/free-icon/axe_7551442
+https://www.flaticon.com/free-icon/axe_4334306
+https://www.flaticon.com/free-icon/sword_9954132
+https://www.flaticon.com/free-icon/sword_2432748
+https://www.flaticon.com/free-icon/sword_1862667
+https://www.flaticon.com/free-icon/mjolnir_6436244
+https://www.flaticon.com/free-icon/club_6981331
+https://www.flaticon.com/free-icon/spear_4334170
+https://www.flaticon.com/free-icon/sword_1258101
+https://www.flaticon.com/free-icon/lighting_478793
+https://www.flaticon.com/free-icon/sword_6984656
+https://www.flaticon.com/free-icon/sword_4061404
 
 // items
 https://www.flaticon.com/free-icon/love-potion_9812572
@@ -60,6 +97,7 @@ https://www.flaticon.com/free-icon/dragon_2332588
 https://www.flaticon.com/free-icon/dragon_4413197 // black dragon
 https://www.flaticon.com/free-icon/griffin_6007998
 https://www.flaticon.com/free-icon/chimera_2332571
+https://www.flaticon.com/free-icon/devil_2332577
 
 // high tier
 https://www.flaticon.com/free-icon/monster_2332614 // troll
@@ -67,6 +105,9 @@ https://www.flaticon.com/free-icon/vampire_2332775
 https://www.flaticon.com/free-icon/minotaur_2332712
 https://wiki.melvoridle.com/w/Hill_Giant // cyclops
 https://www.flaticon.com/free-icon/ghost_2332612
+https://www.flaticon.com/free-icon/angel_2332555
+https://www.flaticon.com/free-icon/cerberus_2332568
+https://www.flaticon.com/free-icon/hydra_6008143
 
 // mid tier
 https://www.flaticon.com/free-icon/undead_4413209 // orc
@@ -74,6 +115,8 @@ https://www.flaticon.com/free-icon/echidna_2332593
 https://www.flaticon.com/free-icon/wizard_2332721?term=wizard&page=1&position=67 // dark wizard
 https://www.flaticon.com/free-icon/centaur_2332567
 https://www.flaticon.com/free-icon/devil_2332664
+https://www.flaticon.com/free-icon/golem_2332647
+https://www.flaticon.com/free-icon/monster_2332806
 
 // low tier
 https://www.flaticon.com/free-icon/mouse_3099299
@@ -85,3 +128,6 @@ https://www.flaticon.com/free-icon/mummy_2332720
 // other
 https://www.flaticon.com/free-icon/treasures_4215429 // mimic
 https://www.flaticon.com/free-icon/packaging_10469224  // placeholder
+https://www.flaticon.com/free-icon/santa-claus_2332736
+https://www.flaticon.com/free-icon/zeus_2332642
+https://www.flaticon.com/free-icon/genie-lamp_2332608

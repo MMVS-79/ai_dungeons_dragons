@@ -104,7 +104,7 @@ export class LLMService {
     const raceName = raceRows[0]?.name || "adventurer";
     const className = classRows[0]?.name || "warrior";
 
-    const introPrompt = `You are a D&D dungeon master starting a new 48-turn campaign. Create an epic introduction.
+    const introPrompt = `You are a D&D dungeon master starting a new 60-turn campaign. Create an epic introduction.
 
 Character:
 - Name: ${gameState.character.name}
@@ -163,7 +163,7 @@ Your introduction:`;
             .join("\n")
         : "No recent events";
 
-    const prompt = `You are a D&D dungeon master creating a 48-turn campaign. Generate the next event type based on context.
+    const prompt = `You are a D&D dungeon master creating a 60-turn campaign. Generate the next event type based on context.
 
 Context:
 - Current Event Number: ${context.currentEventNumber}
@@ -481,20 +481,25 @@ Character Status:
 - Attack: ${context.character.attack}
 - Defense: ${context.character.defense}
 
-Choose ONE stat type and provide a base value (can be positive OR negative):
+Choose ONE stat type and provide a base value (can be positive OR negative) randomly from the pvoided ranges:
 
 **health**: HP change (positive = heal, negative = damage from hazard)
   - Base value: -5 to 15 HP
-  - Positive values for healing, negative for environmental hazards
+  - ~30% of the time, choose NEGATIVE values (-5 to -1) for environmental hazards like traps, poison, falls
+  - Positive values for healing from rest areas, shrines, or beneficial discoveries
   - Priority: HIGH if HP < 50%
 
 **attack**: Permanent attack change
   - Base value: -3 to 4 points
-  - Usually positive, negative only for curses
+  - ~20% of the time, choose NEGATIVE values (-3 to -1) for curses or equipment damage
+  - Usually positive for training or discoveries
 
 **defense**: Permanent defense change
   - Base value: -3 to 4 points
-  - Usually positive, negative only for curses
+  - ~20% of the time, choose NEGATIVE values (-3 to -1) for armor damage or debuffs
+  - Usually positive for fortifications or protective blessings
+
+IMPORTANT: Don't be afraid to use negative values! Environmental events should include hazards and dangers, not just benefits.
 
 CRITICAL FORMATTING RULES:
 1. Return ONLY a JSON object
@@ -597,12 +602,31 @@ Your JSON response:`;
     const healthPercent =
       (context.character.currentHealth / context.character.maxHealth) * 100;
 
-    // 20% chance of negative effect
-    const isNegative = Math.random() < 0.2;
+    // 30% chance of negative effect
+    const isNegative = Math.random() < 0.3;
 
     if (isNegative) {
       // Negative effect (hazard/curse)
-      return { statType: "health", baseValue: -3 };
+      const negativeRoll = Math.random();
+      if (negativeRoll < 0.6) {
+        // 60% of negatives are health damage
+        return {
+          statType: "health",
+          baseValue: Math.floor(Math.random() * 4) - 5,
+        }; // -5 to -2
+      } else if (negativeRoll < 0.8) {
+        // 20% are attack debuffs
+        return {
+          statType: "attack",
+          baseValue: Math.floor(Math.random() * 3) - 3,
+        }; // -3 to -1
+      } else {
+        // 20% are defense debuffs
+        return {
+          statType: "defense",
+          baseValue: Math.floor(Math.random() * 3) - 3,
+        }; // -3 to -1
+      }
     }
 
     // Positive effects
