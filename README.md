@@ -1,3 +1,12 @@
+# 🛑 DEPRECATED
+
+**This project is no longer actively maintained.** 
+
+No further updates, bug fixes, or security patches will be issued. 
+Deployed app no longer works due to shut down of infastructure.
+This repo is only for reference and was in a working state when last deployed and used.
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
